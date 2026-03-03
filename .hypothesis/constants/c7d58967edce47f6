@@ -1,0 +1,4 @@
+# file: C:\Tolerance_Project\server\validation\multi_tolerance_processor.py
+# hypothesis_version: 6.151.9
+
+['(', ')', ',', '-', '[', ']', 'individual_count', 'total_count']

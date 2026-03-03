@@ -1,0 +1,55 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+
+# Virtual Environment
+.venv/
+venv/
+ENV/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Excel 暫存檔
+~$*.xlsx
+~$*.xlsm
+
+# 測試和除錯檔案
+check_*.py
+debug_*.py
+test_*.py
+!test_complete_api.py
+
+# 資料庫
+*.db
+*.sqlite
+
+# 日誌
+*.log
+logs/
+
+# 環境變數
+.env
+.env.local
+
+# 作業系統
+.DS_Store
+Thumbs.db
+
+# 不需要的資料檔案
+*.csv
+test.xlsx
+ISO_286_1_test.xlsx
+
+# 不相關的目錄
+Ontology/
+Oracle_JDK-24/

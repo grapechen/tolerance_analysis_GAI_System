@@ -1,0 +1,1081 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>製程知識庫</title>
+    <style>
+        :root {
+            --bg: #0b1220;
+            --card: #121a2b;
+            --muted: #91a4c7;
+            --text: #e9f1ff;
+            --line: rgba(255, 255, 255, .09);
+            --ok: #7ee787;
+            --bad: #ff7b72;
+            --warn: #ffd33d;
+            --btn: #1f6feb;
+        }
+
+        body {
+            margin: 0;
+            background: var(--bg);
+            color: var(--text);
+            font-family: system-ui, -apple-system, "Noto Sans TC", Segoe UI, Arial;
+        }
+
+        header {
+            padding: 14px 18px;
+            border-bottom: 1px solid var(--line);
+            display: flex;
+            gap: 12px;
+            align-items: center
+        }
+
+        header h1 {
+            margin: 0;
+            font-size: 16px
+        }
+
+        .wrap {
+            display: grid;
+            grid-template-columns: 420px 1fr;
+            gap: 14px;
+            padding: 14px
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--line);
+            border-radius: 14px;
+            overflow: hidden
+        }
+
+        .card .hd {
+            padding: 12px 12px;
+            border-bottom: 1px solid var(--line);
+            font-weight: 700
+        }
+
+        .card .bd {
+            padding: 12px
+        }
+
+        .grid {
+            display: grid;
+            gap: 10px
+        }
+
+        .row {
+            display: grid;
+            grid-template-columns: 140px 1fr;
+            gap: 10px;
+            align-items: center
+        }
+
+        label {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        input,
+        select {
+            width: 100%;
+            padding: 9px 10px;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .05);
+            color: var(--text);
+            outline: none;
+            font-size: 12px;
+            box-sizing: border-box;
+        }
+
+        option {
+            background: #0b1220;
+            color: var(--text);
+        }
+
+        .inline {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+            flex-wrap: wrap
+        }
+
+        .chip {
+            font-size: 12px;
+            padding: 6px 10px;
+            border-radius: 999px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .04);
+            cursor: pointer;
+            user-select: none
+        }
+
+        .chip.on {
+            border-color: rgba(31, 111, 235, .9);
+            background: rgba(31, 111, 235, .15)
+        }
+
+        .btns {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+            margin-top: 8px
+        }
+
+        button {
+            cursor: pointer;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 255, 255, .12);
+            background: rgba(255, 255, 255, .06);
+            color: var(--text);
+            padding: 9px 10px;
+            font-size: 12px
+        }
+
+        button.primary {
+            background: var(--btn);
+            border-color: transparent
+        }
+
+        .muted {
+            color: var(--muted);
+            font-size: 12px
+        }
+
+        .kpis {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 10px
+        }
+
+        .kpi {
+            background: rgba(255, 255, 255, .04);
+            border: 1px solid rgba(255, 255, 255, .08);
+            border-radius: 12px;
+            padding: 10px
+        }
+
+        .kpi .t {
+            font-size: 12px;
+            color: var(--muted)
+        }
+
+        .kpi .v {
+            font-size: 16px;
+            font-weight: 800;
+            margin-top: 4px
+        }
+
+        .list {
+            display: grid;
+            gap: 10px;
+            margin-top: 12px
+        }
+
+        .item {
+            border: 1px solid rgba(255, 255, 255, .10);
+            border-radius: 14px;
+            background: rgba(255, 255, 255, .03);
+            overflow: hidden
+        }
+
+        .item .top {
+            display: flex;
+            gap: 10px;
+            align-items: flex-start;
+            padding: 10px 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, .08)
+        }
+
+        .score {
+            margin-left: auto;
+            font-weight: 800
+        }
+
+        .score.ok {
+            color: var(--ok)
+        }
+
+        .score.bad {
+            color: var(--bad)
+        }
+
+        .score.warn {
+            color: var(--warn)
+        }
+
+        .item .mid {
+            padding: 10px 12px;
+            display: grid;
+            gap: 8px
+        }
+
+        .kv {
+            display: grid;
+            grid-template-columns: 180px 1fr;
+            gap: 8px;
+            font-size: 12px
+        }
+
+        .kv div:nth-child(odd) {
+            color: var(--muted)
+        }
+
+        details {
+            padding: 0 12px 12px
+        }
+
+        details summary {
+            cursor: pointer;
+            color: var(--muted);
+            font-size: 12px
+        }
+
+        .reason {
+            margin-top: 8px;
+            font-size: 12px;
+            color: var(--muted);
+            line-height: 1.5
+        }
+
+        .reason .ok {
+            color: var(--ok)
+        }
+
+        .reason .bad {
+            color: var(--bad)
+        }
+
+        .reason .warn {
+            color: var(--warn)
+        }
+
+        .tiny {
+            font-size: 11px;
+            color: rgba(233, 241, 255, .55)
+        }
+
+        .sep {
+            height: 1px;
+            background: var(--line);
+            margin: 10px 0
+        }
+
+        @media (max-width: 960px) {
+            .wrap {
+                grid-template-columns: 1fr
+            }
+        }
+    </style>
+</head>
+
+<body>
+    <header>
+        <h1>製程知識庫</h1>
+    </header>
+
+    <div class="wrap">
+        <div class="card">
+            <div class="hd">需求與應用情境</div>
+            <div class="bd">
+                <div class="grid">
+
+                    <div class="row"
+                        style="background:rgba(31,111,235,0.1); padding:8px; border-radius:8px; border:1px solid rgba(31,111,235,0.3)">
+                        <label style="color:#6db3ff; font-weight:bold">應用場景</label>
+                        <select id="f_scenario" style="border-color:#6db3ff">
+                            <option value="GENERAL">通用加工 (General)</option>
+                            <option value="MOLD">模具加工 (Mold & Die)</option>
+                            <option value="AERO">航太零件 (Aerospace)</option>
+                            <option value="MASS">量產加工 (Mass Production)</option>
+                        </select>
+                    </div>
+
+
+                    <div class="row">
+                        <label>公司</label>
+                        <select id="f_company">
+                            <option value="ALL">全部</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <label>機台類型</label>
+                        <select id="f_process">
+                            <option value="ALL">全部 </option>
+                            <option value="TURNING">數控車床 (CNC Lathe)</option>
+                            <option value="CNC_MILLING">數控銑床 (CNC Milling Machine)</option>
+                            <option value="VMC_MILLING">立式加工機 (Vertical Machining Center)</option>
+                            <option value="HMC_MILLING">臥式加工機 (Horizontal Machining Center)</option>
+                            <option value="FIVE_AXIS_MILLING">五軸加工機 (5-Axis Machining Center)</option>
+                            <option value="MILL_TURN">車銑複合 (Mill-Turn)</option>
+                            <option value="GRINDING">磨床 (Grinding Machine)</option>
+                        </select>
+                    </div>
+
+                    <div class="row">
+                        <label>最低軸數</label>
+                        <input id="f_axes" type="number" min="0" step="1" placeholder="例如：3 / 5 / 6" />
+                    </div>
+
+                    <div class="sep"></div>
+
+                    <div class="row grp-mill">
+                        <label>最大加工行程X (mm)</label>
+                        <input id="f_x" type="number" min="0" step="1" placeholder="例如：800" />
+                    </div>
+                    <div class="row grp-mill">
+                        <label>最大加工行程 Y (mm)</label>
+                        <input id="f_y" type="number" min="0" step="1" placeholder="例如：500" />
+                    </div>
+                    <div class="row grp-mill">
+                        <label>最大加工行程 Z (mm)</label>
+                        <input id="f_z" type="number" min="0" step="1" placeholder="例如：500" />
+                    </div>
+
+                    <div class="sep"></div>
+
+                    <div class="row">
+                        <label>主軸最高轉速 (rpm) <span style="color:#888; font-size:0.8em">(通用)</span></label>
+                        <input id="f_rpm" type="number" min="0" step="100" placeholder="例如：10000" />
+                    </div>
+
+                    <div class="row">
+                        <label>主軸馬達出力 (kW) <span style="color:#d2a8ff; font-size:0.8em">(切削力)</span></label>
+                        <input id="f_power" type="number" min="0" step="0.5" placeholder="例如：11 / 15" />
+                    </div>
+
+
+
+                    <div class="sep"></div>
+
+                    <div class="row grp-turn">
+                        <label>棒材送料能力 (mm)</label>
+                        <input id="f_bar" type="number" min="0" step="1" placeholder="例如：70" />
+                    </div>
+
+                    <div class="row grp-turn">
+                        <label>工件最大直徑 (mm)</label>
+                        <input id="f_work_d" type="number" min="0" step="1" placeholder="如：300" />
+                    </div>
+
+                    <div class="row grp-turn">
+                        <label>工件最大長度 (mm)</label>
+                        <input id="f_work_l" type="number" min="0" step="1" placeholder="如：500" />
+                    </div>
+
+                    <div class="sep"></div>
+
+                    <div
+                        style="background:rgba(31,111,235,0.1); padding:8px; border-radius:8px; border:1px solid rgba(31,111,235,0.3)">
+                        <div class="row" style="margin-bottom:8px">
+                            <label style="color:#6db3ff; font-weight:bold">重現性(Positioning Repeatability)</label>
+                            <input type="number" id="f_accuracy" step="0.001"
+                                placeholder="輸入 Positioning Repeatability (如 0.005)"
+                                style="width: 100%; background: #252526; color: white; border: 1px solid #3e3e42; padding: 4px; border-radius: 4px;">
+                        </div>
+                        <div class="row">
+                            <label style="color:#6db3ff; font-weight:bold">定位精度(Positioning Accuracy)</label>
+                            <input type="number" id="f_positioning" step="0.001"
+                                placeholder="輸入 Positioning Accuracy (如 0.010)"
+                                style="width: 100%; background: #252526; color: white; border: 1px solid #3e3e42; padding: 4px; border-radius: 4px;">
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <label>排序方式</label>
+                        <div class="inline" id="sort_btns">
+                            <div class="chip on" data-sort="SCORE">綜合推薦</div>
+                            <div class="chip" data-sort="CAP">規格符合度</div>
+                            <div class="chip" data-sort="CONF">資料信賴度</div>
+                        </div>
+                        <input type="hidden" id="f_sort" value="SCORE">
+                    </div>
+
+                    <div class="btns">
+                        <button class="primary" id="btn_run">推論推薦</button>
+                        <button id="btn_reset">重置條件</button>
+                        <button id="btn_showdata">匯出目前資料 JSON</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="hd">推薦清單</div>
+            <div class="bd">
+                <div class="kpis">
+                    <div class="kpi">
+                        <div class="t">候選機台</div>
+                        <div class="v" id="k_all">-</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="t">符合條件</div>
+                        <div class="v" id="k_ok">-</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="t">被淘汰</div>
+                        <div class="v" id="k_bad">-</div>
+                    </div>
+                    <div class="kpi">
+                        <div class="t">Top 1 分數</div>
+                        <div class="v" id="k_top">-</div>
+                    </div>
+                </div>
+                <div class="list" id="result"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        /** =========================
+         * 資料修正重點 (根據 ChatGPT 建議)：
+         * 1. Tongtai TMS-3000S: 補 W 軸、工具主軸轉速、副主軸。
+         * 2. Tongtai GT-800E: 修正字串空白 (8 0 0 -> 800)。
+         * 3. AWEA A+: 修正 Source 連結 (移除 BM 系列錯置)，並採用 A+ 標準 VDI 3441 精度。
+         * 4. YCM FP66A: 修正精度欄位，ISO 為主，JIS 寫入 notes 避免矛盾。
+         * ========================= */
+
+        const companies = [
+            { company_id: "C_TONGTAI", company_name: "東台精機 Tongtai" },
+            { company_id: "C_AWEA", company_name: "亞崴機電 AWEA" },
+            { company_id: "C_YCM", company_name: "永進機械 YCM" },
+            { company_id: "C_LATC", company_name: "雷應科技 i-LATC" },
+            { company_id: "C_SUPERALLOY", company_name: "巧新科技 SuperAlloy" },
+            { company_id: "C_BASSO", company_name: "鑽全實業 BASSO" }
+        ];
+
+        const processes = [
+            { process_id: "P_TURN", process_type: "TURNING", name: "CNC Lathe (數控車床)" },
+            { process_id: "P_MILL", process_type: "CNC_MILLING", name: "CNC Milling Machine (數控銑床)" },
+            { process_id: "P_VMC", process_type: "VMC_MILLING", name: "Vertical Machining Center (立式加工中心)" },
+            { process_id: "P_HMC", process_type: "HMC_MILLING", name: "Horizontal Machining Center (臥式加工中心)" },
+            { process_id: "P_5AX", process_type: "FIVE_AXIS_MILLING", name: "5-Axis Machining Center (五軸加工中心)" },
+            { process_id: "P_MTURN", process_type: "MILL_TURN", name: "Mill-Turn (車銑複合)" },
+            { process_id: "P_GRIND", process_type: "GRINDING", name: "Grinding Machine (磨床)" }
+        ];
+
+        const machines = [
+            // Tongtai
+            {
+                machine_id: "TT_TG-2500_1P6M", company_id: "C_TONGTAI", brand: "Tongtai", model: "TG-2500[1.6M]", series: "TG", process_id: "P_TURN",
+                source: { name: "Tongtai TG Specs", url: "https://www.tongtai.com.tw/tw/product-detail.php?id=1015" }
+            },
+            {
+                machine_id: "TT_VP-8", company_id: "C_TONGTAI", brand: "Tongtai", model: "VP-8", series: "VP", process_id: "P_VMC",
+                source: { name: "Tongtai VP Specs", url: "https://www.tongtai.com.tw/tw/product-detail.php?id=172" }
+            },
+            {
+                machine_id: "TT_GT-800E", company_id: "C_TONGTAI", brand: "Tongtai", model: "GT-800E", series: "GT", process_id: "P_5AX",
+                source: { name: "Tongtai GT Specs", url: "https://www.tongtai.com.tw/tw/product-detail.php?id=151" }
+            },
+            {
+                machine_id: "TT_TMS-3000S", company_id: "C_TONGTAI", brand: "Tongtai", model: "TMS-3000[S]", series: "TMS", process_id: "P_MTURN",
+                source: { name: "Tongtai TMS Specs", url: "https://www.tongtai.com.tw/en/product-detail.php?id=521" }
+            },
+
+            // AWEA
+            // AWEA (修正: A+ 1020II -> BM-1020 以符合公開規格來源)
+            {
+                machine_id: "AWEA_BM-1020", company_id: "C_AWEA", brand: "AWEA", model: "BM-1020", series: "BM", process_id: "P_VMC",
+                controller: "FANUC / MITSUBISHI",
+                source: { name: "AWEA BM specs", url: "https://www.awea.com/awea_en/milling/vertical/bm/specifications.htm" }
+            },
+            {
+                machine_id: "AWEA_AH-500", company_id: "C_AWEA", brand: "AWEA", model: "AH-500", series: "AH", process_id: "P_HMC",
+                source: { name: "AWEA AH specs", url: "https://www.awea.com/awea_en/milling/horizontal-milling/ah/specifications.htm" }
+            },
+
+
+
+            // BASSO (Mazak)
+            {
+                machine_id: "BASSO_MAZAK_FJV-250", company_id: "C_BASSO", brand: "Mazak", model: "FJV-250", series: "FJV", process_id: "P_VMC",
+                source: { name: "BASSO equipment list", url: "https://www.basso.com.tw/zh-tw/a2-2938/%E5%8A%A0%E5%B7%A5%E8%99%95%E7%90%86.html" }
+            },
+
+            // YCM
+            {
+                machine_id: "YCM_NXV-1020A", company_id: "C_YCM", brand: "YCM", model: "NXV 1020A", series: "NXV", process_id: "P_VMC",
+                source: { name: "YCM NXV Page", url: "https://www.ycmcnc.com/en/products/vertical-machining-center/nxv-series" }
+            },
+            {
+                machine_id: "YCM_GT-250MA", company_id: "C_YCM", brand: "YCM", model: "GT-250MA", series: "GT", process_id: "P_TURN",
+                source: { name: "YCM GT Page", url: "https://www.ycmcnc.com/en/products/turning-center/gt-series" }
+            },
+            {
+                machine_id: "YCM_FP66A", company_id: "C_YCM", brand: "YCM", model: "FP66A", series: "FP", process_id: "P_VMC",
+                source: { name: "YCM FP Page", url: "https://www.ycmcnc.com/en/products/die-mold-machining-center/fp-series" }
+            }
+        ];
+
+        const capabilities = [
+            // --- Tongtai ---
+            {
+                capability_id: "CAP_TT_TG-2500_1P6M", machine_id: "TT_TG-2500_1P6M", company_id: "C_TONGTAI", unit_system: "METRIC",
+                axes: { count: 2, travel_mm: { X: 275, Z: 1600 } },
+                spindle: { speed_max_rpm: "3500", power_kw: "25/18.5/15" },
+                tooling: { tool_capacity: 12 },
+                feed: { rapid_m_per_min: { X: 24, Z: 24 } },
+                work_envelope: { bar_capacity_mm: 74, chuck_inch: "10 (12)" },
+                accuracy: { positioning_mm: null, repeatability_mm: null, notes: "公開頁未列精度/重現性" }
+            },
+            {
+                capability_id: "CAP_TT_VP-8", machine_id: "TT_VP-8", company_id: "C_TONGTAI", unit_system: "METRIC",
+                axes: { count: 3, travel_mm: { X: 820, Y: 510, Z: 535 } },
+                spindle: { speed_max_rpm: "10000 ", taper: "No.40", power_kw: "11/7.5" },
+                tooling: { magazine_capacity: "24 (30)" },
+                feed: { rapid_m_per_min: { X: 48, Y: 48, Z: 36 } },
+                work_envelope: { table_size_mm: [900, 510], table_load_kg: 500 },
+                accuracy: { positioning_mm: null, repeatability_mm: null, notes: "公開頁未列精度/重現性" }
+            },
+            {
+                capability_id: "CAP_TT_GT-800E", machine_id: "TT_GT-800E", company_id: "C_TONGTAI", unit_system: "METRIC",
+                axes: { count: 5, travel_mm: { X: 800, Y: 820, Z: 560 }, rotary_range_deg: { A: "+30~-120", C: "±360" } },
+                spindle: { speed_max_rpm: "15000", taper: "No.40", power_kw: "40/40" },
+                tooling: { magazine_capacity: "32 (40) (64)" },
+                feed: { rapid_m_per_min: { X: 48, Y: 48, Z: 48 } },
+                work_envelope: { table_size_mm: ["Ø800"], table_load_kg: 800 },
+                accuracy: { positioning_mm: null, repeatability_mm: null, notes: "公開頁未列精度/重現性" }
+            },
+            {
+                capability_id: "CAP_TT_TMS-3000S", machine_id: "TT_TMS-3000S", company_id: "C_TONGTAI", unit_system: "METRIC",
+                // 補上 W 軸、副主軸等資訊
+                axes: { count: 5, travel_mm: { X: 725, Y: 300, Z: 1500, W: 1500 }, notes: "X: -150~+575; Y: ±150" },
+                spindle: { speed_max_rpm: 3500, spindle_nose: "A2-8" },
+                sub_spindle: { speed_max_rpm: 3500, spindle_nose: "A2-8" },
+                tooling: { magazine_capacity: "40 (opt.80)", tool_shank: "HSK-T63", tool_spindle_rpm: 12000 },
+                feed: { rapid_m_per_min: { X: 40, Y: 40, Z: 40, W: 30 } },
+                work_envelope: { bar_capacity_mm: 72, chuck_inch: 12 },
+                accuracy: { positioning_mm: null, repeatability_mm: null, notes: "公開頁未列精度/重現性" }
+            },
+
+            // --- AWEA ---
+            // AWEA (修正: A+ -> BM)
+            {
+                capability_id: "CAP_AWEA_BM-1020", machine_id: "AWEA_BM-1020", company_id: "C_AWEA", unit_system: "METRIC",
+                axes: { count: 3, travel_mm: { X: 1020, Y: 600, Z: 600 } }, // BM-1020 行程
+                spindle: { speed_max_rpm: 8000, taper: "BT40", power_kw: "7.5/11" },
+                tooling: { magazine_capacity: 24, max_tool_length_mm: 250, max_tool_weight_kg: 7 },
+                feed: { rapid_m_per_min: { X: 24, Y: 24, Z: 20 } }, // BM Spec
+                work_envelope: { table_size_mm: [1120, 600], table_load_kg: 800 },
+                accuracy: { positioning_mm: 0.008, repeatability_mm: 0.006, standard: "ISO 230-2", notes: "BM spec page" }
+            },
+            {
+                capability_id: "CAP_AWEA_AH-500", machine_id: "AWEA_AH-500", company_id: "C_AWEA", unit_system: "METRIC",
+                axes: { count: 4, travel_mm: { X: 780, Y: 670, Z: 650 }, rotary_note: "B 軸分度 0.001°/1°" },
+                spindle: { speed_max_rpm: "10000 (direct)/6000 (gear)", taper: "BBT50", power_kw: "22/26 kw" },
+                tooling: { magazine_capacity: 60, max_tool_length_mm: 400, max_tool_weight_kg: 20 },
+                feed: { rapid_m_per_min: { X: 60, Y: 48, Z: 60 }, cutting_m_per_min_range: "1–10" },
+                work_envelope: { table_size_mm: [500, 500], table_load_kg: 500, max_workpiece_note: "Ø700/H800" },
+                accuracy: { positioning_mm: 0.010, repeatability_mm: 0.008, standard: "VDI 3441", notes: "Ref: AH specs VDI values" }
+            },
+
+            // YCM
+            {
+                capability_id: "CAP_YCM_NXV-1020A", machine_id: "YCM_NXV-1020A", company_id: "C_YCM", unit_system: "METRIC",
+                axes: { count: 3, travel_mm: { X: 1020, Y: 520, Z: 540 } },
+                spindle: { speed_max_rpm: 12000, taper: "BT40", power_kw: "18.5" },
+                tooling: { magazine_capacity: 24 },
+                feed: { rapid_m_per_min: { X: 36, Y: 36, Z: 24 } },
+                work_envelope: { table_size_mm: [1120, 520], table_load_kg: 500 },
+                accuracy: { positioning_mm: 0.003, repeatability_mm: 0.002, notes: "Derived from ±0.00012'' / ±0.00008''" }
+            },
+            {
+                capability_id: "CAP_YCM_FP66A", machine_id: "YCM_FP66A", company_id: "C_YCM", unit_system: "METRIC",
+                axes: { count: 3, travel_mm: { X: 660, Y: 510, Z: 510 } },
+                spindle: { speed_max_rpm: 20000, taper: "HSK-A63" },
+                tooling: { magazine_capacity: 30 },
+                feed: { rapid_m_per_min: { X: 48, Y: 48, Z: 48 } },
+                work_envelope: { table_size_mm: [800, 510] },
+                // **Dual Accuracy Standards**
+                accuracy: { positioning_mm: 0.007, repeatability_mm: 0.005, notes: "支援多種檢測標準 (ISO / JIS)" }
+            },
+
+            // --- BASSO (Mazak) ---
+            {
+                capability_id: "CAP_BASSO_MAZAK_FJV-250", machine_id: "BASSO_MAZAK_FJV-250", company_id: "C_BASSO", unit_system: "METRIC",
+                axes: { count: 3, travel_mm: { X: 1020, Y: 510, Z: 460 } },
+                spindle: { speed_max_rpm: 12000, taper: "CAT40" },
+                tooling: { magazine_capacity: 30 },
+                work_envelope: { table_size_mm: [1200, 500], table_load_kg: 800 },
+                accuracy: { positioning_mm: null, repeatability_mm: null, notes: "官網未公開具體數值 (High Precision)" }
+            },
+
+            // --- YCM ---
+            {
+                capability_id: "CAP_YCM_GT-250MA", machine_id: "YCM_GT-250MA", company_id: "C_YCM", unit_system: "METRIC",
+                axes: { count: 2, travel_mm: { X: 230, Z: 560 } },
+                spindle: { speed_max_rpm: 4500, power_kw: "15", spindle_nose: "A2-6" },
+                tooling: { tool_capacity: 12 },
+                feed: { rapid_m_per_min: { X: 20, Z: 24 } },
+                accuracy: { positioning_mm: 0.005, repeatability_mm: 0.003, notes: "High Rigidity Turning Center" }
+            },
+        ];
+
+        // ---------- helpers (Same logic, slightly robust) ----------
+        const byId = (id) => document.getElementById(id);
+        const toNum = (v) => (v === "" || v == null) ? null : Number(v);
+        const clamp = (n) => Number.isFinite(n) ? n : null;
+
+        function companyName(company_id) {
+            return companies.find(c => c.company_id === company_id)?.company_name || company_id;
+        }
+        function processTypeFromProcessId(pid) {
+            return processes.find(p => p.process_id === pid)?.process_type || "UNKNOWN";
+        }
+        function getCap(machine_id) {
+            return capabilities.find(c => c.machine_id === machine_id) || null;
+        }
+        function parseRpm(v) {
+            if (v == null) return null;
+            if (typeof v === "number") return v;
+            const nums = String(v).match(/\d+/g);
+            if (!nums) return null;
+            return Math.max(...nums.map(n => Number(n)));
+        }
+
+        function parsePower(v) {
+            if (v == null) return null;
+            if (typeof v === "number") return v;
+            // extract all numbers, take max
+            const nums = String(v).match(/[\d.]+/g);
+            if (!nums) return null;
+            return Math.max(...nums.map(n => parseFloat(n)));
+        }
+        function getTravel(c, axis) {
+            return c?.axes?.travel_mm?.[axis] ?? null;
+        }
+        // Helper to extract accuracy for scoring (Prioritize ISO)
+        function getAccVals(c) {
+            if (!c?.accuracy) return null;
+            // New structure: standards
+            if (c.accuracy.standards) {
+                // Prefer ISO > JIS > others
+                const s = c.accuracy.standards;
+                if (s.ISO_10791_4) return { ...s.ISO_10791_4, source: "ISO 10791-4" };
+                if (s.ISO_230_2) return { ...s.ISO_230_2, source: "ISO 230-2" };
+                if (s.JIS_B_6338) return { ...s.JIS_B_6338, source: "JIS B 6338" };
+                // fallback to first key
+                const k = Object.keys(s)[0];
+                return { ...s[k], source: k };
+            }
+            // Old structure (flat)
+            return c.accuracy;
+        }
+
+        function hasRepeatability(c) {
+            const a = getAccVals(c);
+            return (a?.repeatability_mm != null) || (a?.repeatability_um != null) || (a?.repeatability_arcsec != null);
+        }
+        function getRepeatabilityMm(c) {
+            const a = getAccVals(c);
+            if (a?.repeatability_mm != null) return a.repeatability_mm;
+            if (a?.repeatability_um != null) {
+                const v = parseFloat(a.repeatability_um);
+                if (!isNaN(v)) return v / 1000.0;
+            }
+            return 999;
+        }
+        function hasPositioning(c) {
+            const a = getAccVals(c);
+            return (a?.positioning_mm != null) || (a?.positioning_arcsec != null);
+        }
+        function getPositioningMm(c) {
+            const av = getAccVals(c);
+            if (av?.positioning_mm != null) return av.positioning_mm;
+            return 999;
+        }
+        function formatVal(v, unit = "") {
+            if (v == null) return "—";
+            return `${v}${unit}`;
+        }
+
+        // ---------- Scoring Logic (Same logic) ----------
+        function scoreMachine(m, c, q) {
+            const reasons = [];
+            let ok = true;
+            let score = 0;
+            const ptype = processTypeFromProcessId(m.process_id);
+
+            // Filters
+            if (q.company !== "ALL" && m.company_id !== q.company) return fail("公司不符");
+            if (q.process !== "ALL" && ptype !== q.process) return fail("製程類型不符");
+
+            function fail(msg) {
+                return { ok: false, score: 0, capScore: 0, confScore: 0, riskFlags: [], reasons: [`<span class="bad">✗ ${msg}</span>`] };
+            }
+
+            // Accuracy
+            const targetAcc = parseFloat(q.accuracy);
+            if (!isNaN(targetAcc) && targetAcc > 0) {
+                if (!hasRepeatability(c)) {
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ 缺 Positioning Repeatability 資料 (無法驗證 < ${q.accuracy} mm)</span>`);
+                } else {
+                    const machRep = getRepeatabilityMm(c);
+                    if (machRep > targetAcc) {
+                        ok = false;
+                        reasons.push(`<span class="bad">✗ Positioning Repeatability 不足 (機台:${machRep} > 目標:${targetAcc})</span>`);
+                    } else {
+                        score += 20;
+                        const ratio = targetAcc / machRep;
+                        if (ratio >= 2) score += 10;
+                        reasons.push(`<span class="ok">✓ 符合 Positioning Repeatability (能力比 ${(ratio).toFixed(1)}x)</span>`);
+                    }
+                }
+            }
+
+            // Positioning
+            const targetPos = parseFloat(q.positioning);
+            if (!isNaN(targetPos) && targetPos > 0) {
+                if (!hasPositioning(c)) {
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ 缺 Positioning Accuracy 資料</span>`);
+                } else {
+                    const machPos = getPositioningMm(c);
+                    if (machPos > targetPos) {
+                        ok = false;
+                        reasons.push(`<span class="bad">✗ Positioning Accuracy 不足 (${machPos} > ${targetPos})</span>`);
+                    } else {
+                        score += 15;
+                        const ratio = targetPos / machPos;
+                        if (ratio >= 2) score += 5;
+                        reasons.push(`<span class="ok">✓ 符合 Positioning Accuracy (能力比 ${ratio.toFixed(1)}x)</span>`);
+                    }
+                }
+            }
+
+            // Axes
+            if (q.axes != null) {
+                const axes = c?.axes?.count ?? null;
+                if (axes == null) {
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ 未提供軸數</span>`);
+                } else if (axes < q.axes) {
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ 軸數 ${axes} ＜ ${q.axes}</span>`);
+                } else {
+                    score += 10 + (axes - q.axes);
+                    reasons.push(`<span class="ok">✓ 軸數 ${axes} ≥ ${q.axes}</span>`);
+                }
+            }
+
+            // Travels
+            const travelChecks = [{ axis: "X", need: q.x }, { axis: "Y", need: q.y }, { axis: "Z", need: q.z }];
+            travelChecks.forEach(t => {
+                if (t.need == null) return;
+                const val = getTravel(c, t.axis);
+                if (val == null) {
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ 缺 ${t.axis} 行程資料</span>`);
+                } else if (val < t.need) {
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ ${t.axis} 行程 ${val} ＜ ${t.need}</span>`);
+                } else {
+                    score += 8 + Math.min(5, Math.floor((val - t.need) / 200));
+                    reasons.push(`<span class="ok">✓ ${t.axis} 行程 ${val} ≥ ${t.need}</span>`);
+                }
+            });
+
+            // RPM
+            if (q.rpm != null) {
+                const rpm = parseRpm(c?.spindle?.speed_max_rpm);
+                if (rpm == null) {
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ 缺轉速資料</span>`);
+                } else if (rpm < q.rpm) {
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ 主軸 ${rpm} ＜ ${q.rpm}</span>`);
+                } else {
+                    score += 8;
+                    reasons.push(`<span class="ok">✓ 主軸 ${rpm} ≥ ${q.rpm}</span>`);
+                }
+            }
+
+
+            // Power (New)
+            if (q.power != null) {
+                const kw = parsePower(c?.spindle?.power_kw);
+                if (kw == null) {
+                    // ok = false; // Don't filter strictly if missing, maybe just warn? 
+                    // Let's filter strictly if user asks for it, but allow missing with penalty?
+                    // Usually if user specifies power, they need it.
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ 缺馬達出力資料</span>`);
+                } else if (kw < q.power) {
+                    ok = false;
+                    reasons.push(`<span class="bad">✗ 馬達出力 ${kw}kW ＜ ${q.power}kW</span>`);
+                } else {
+                    score += 10 + Math.min(10, (kw - q.power));
+                    reasons.push(`<span class="ok">✓ 馬達出力 ${kw}kW ≥ ${q.power}kW (切削能力)</span>`);
+                }
+            }
+
+
+
+            // Bar / Workpiece
+            if (q.bar != null) {
+                const bar = c?.work_envelope?.bar_capacity_mm ?? null;
+                if (bar == null) { ok = false; reasons.push(`<span class="bad">✗ 缺棒材資料</span>`); }
+                else if (bar < q.bar) { ok = false; reasons.push(`<span class="bad">✗ 棒材 ${bar} ＜ ${q.bar}</span>`); }
+                else { score += 6; reasons.push(`<span class="ok">✓ 棒材 ${bar} ≥ ${q.bar}</span>`); }
+            }
+            if (q.work_d != null) {
+                const d = c?.work_envelope?.max_workpiece_diameter_mm ?? null;
+                if (d != null && d < q.work_d) { ok = false; reasons.push(`<span class="bad">✗ 工件直徑 ${d} ＜ ${q.work_d}</span>`); }
+                else if (d != null) { score += 6; reasons.push(`<span class="ok">✓ 工件直徑 ${d} ≥ ${q.work_d}</span>`); }
+                else { ok = false; reasons.push(`<span class="bad">✗ 缺直徑資料</span>`); }
+            }
+            if (q.work_l != null) {
+                const L = c?.work_envelope?.max_workpiece_length_mm ?? null;
+                if (L != null && L < q.work_l) { ok = false; reasons.push(`<span class="bad">✗ 工件長度 ${L} ＜ ${q.work_l}</span>`); }
+                else if (L != null) { score += 6; reasons.push(`<span class="ok">✓ 工件長度 ${L} ≥ ${q.work_l}</span>`); }
+                else { ok = false; reasons.push(`<span class="bad">✗ 缺長度資料</span>`); }
+            }
+
+            // --- Multi-dimensional Metrics ---
+            let capScore = score;
+            let confScore = 0;
+            let riskFlags = [];
+
+            if (c?.spindle?.speed_max_rpm) confScore += 20;
+            if (getTravel(c, "X")) confScore += 20;
+            if (c?.tooling?.magazine_capacity) confScore += 10;
+            if (hasRepeatability(c)) {
+                confScore += 30;
+                const accVals = getAccVals(c);
+                if (accVals?.source) confScore += 10;
+            } else {
+                riskFlags.push("MISSING_ACCURACY");
+            }
+            if (hasPositioning(c)) confScore += 10;
+
+            const scenario = q.scenario || "GENERAL";
+            if (scenario === "MOLD") {
+                if (riskFlags.includes("MISSING_ACCURACY")) {
+                    score *= 0.5;
+                    reasons.push(`<span class="warn">⚠ [模具] 缺 Positioning Repeatability 資料，風險極高</span>`);
+                } else {
+                    const rep = getRepeatabilityMm(c);
+                    if (rep <= 0.005) { score += 30; reasons.push(`<span class="ok">★ [模具] 超高 Positioning Repeatability (≦5µm)</span>`); }
+                    else if (rep <= 0.010) { score += 15; reasons.push(`<span class="ok">★ [模具] 高 Positioning Repeatability (≦10µm)</span>`); }
+                }
+                const rpm = parseRpm(c?.spindle?.speed_max_rpm);
+                if (rpm && rpm >= 15000) { score += 10; reasons.push(`<span class="ok">★ [模具] 高轉速適合精修</span>`); }
+            } else if (scenario === "AERO") {
+                if (riskFlags.includes("MISSING_ACCURACY")) reasons.push(`<span class="warn">⚠ [航太] 缺 Positioning Repeatability 驗證資料</span>`);
+            } else if (scenario === "MASS") {
+                const rapidX = c?.feed?.rapid_m_per_min?.X;
+                if (rapidX && rapidX >= 48) { score += 10; reasons.push(`<span class="ok">★ [量產] 快送速度優 (≧48m/min)</span>`); }
+            }
+
+            return {
+                ok,
+                score,
+                capScore: Math.min(100, Math.round(capScore)),
+                confScore: Math.min(100, confScore),
+                riskFlags,
+                reasons
+            };
+        }
+
+        function sortCandidates(list, sortMode) {
+            const cmp = {
+                "SCORE": (a, b) => b.score - a.score,
+                "CAP": (a, b) => b.capScore - a.capScore,
+                "CONF": (a, b) => b.confScore - a.confScore,
+            }[sortMode] || ((a, b) => b.score - a.score);
+            return list.sort(cmp);
+        }
+
+        // ---------- UI Rendering (Same) ----------
+        const selCompany = byId("f_company");
+        companies.forEach(c => {
+            const opt = document.createElement("option");
+            opt.value = c.company_id;
+            opt.textContent = c.company_name;
+            selCompany.appendChild(opt);
+        });
+
+        const sortChips = document.querySelectorAll('#sort_btns .chip');
+        sortChips.forEach(chip => {
+            chip.onclick = () => {
+                sortChips.forEach(c => c.classList.remove('on'));
+                chip.classList.add('on');
+                byId('f_sort').value = chip.dataset.sort;
+                render();
+            };
+        });
+
+        function readQuery() {
+            return {
+                company: byId("f_company").value,
+                process: byId("f_process").value,
+                scenario: byId("f_scenario").value,
+                accuracy: byId("f_accuracy").value,
+                positioning: byId("f_positioning").value,
+                axes: toNum(byId("f_axes").value),
+                x: toNum(byId("f_x").value),
+                y: clamp(toNum(byId("f_y").value)),
+                z: clamp(toNum(byId("f_z").value)),
+                rpm: clamp(toNum(byId("f_rpm").value)),
+                power: clamp(toNum(byId("f_power").value)),
+                bar: clamp(toNum(byId("f_bar").value)),
+                work_d: clamp(toNum(byId("f_work_d").value)),
+                work_l: clamp(toNum(byId("f_work_l").value)),
+                sort: byId("f_sort").value
+            };
+        }
+
+        function render() {
+            const q = readQuery();
+            const candidates = machines.map(m => {
+                const cap = getCap(m.machine_id);
+                const ev = scoreMachine(m, cap, q);
+                return { m, cap, ...ev };
+            });
+
+            const okList = candidates.filter(x => x.ok);
+            const badList = candidates.filter(x => !x.ok);
+            sortCandidates(okList, q.sort);
+
+            byId("k_all").textContent = candidates.length;
+            byId("k_ok").textContent = okList.length;
+            byId("k_bad").textContent = badList.length;
+            byId("k_top").textContent = okList.length ? okList[0].score : "—";
+
+            const res = byId("result");
+            res.innerHTML = "";
+            okList.forEach((x, idx) => res.appendChild(renderItem(x, idx + 1, true)));
+
+            if (badList.length) {
+                const div = document.createElement("div");
+                div.className = "muted";
+                div.style.marginTop = "10px";
+                div.textContent = `以下為被淘汰的候選：`;
+                res.appendChild(div);
+                badList.slice(0, 10).forEach((x, idx) => res.appendChild(renderItem(x, idx + 1, false)));
+                if (badList.length > 10) {
+                    const more = document.createElement("div");
+                    more.className = "tiny";
+                    more.style.marginTop = "6px";
+                    more.textContent = `（另有 ${badList.length - 10} 筆淘汰結果未顯示）`;
+                    res.appendChild(more);
+                }
+            }
+        }
+
+        function renderItem(x, rank, passed) {
+            const m = x.m, c = x.cap;
+            const ptype = processTypeFromProcessId(m.process_id);
+            const comp = companyName(m.company_id);
+            const item = document.createElement("div");
+            item.className = "item";
+
+            const scoreClass = passed ? (x.score >= 35 ? "ok" : "warn") : "bad";
+
+            const top = document.createElement("div");
+            top.className = "top";
+            top.innerHTML = `
+                <div>
+                  <div style="font-weight:800">${passed ? `#${rank} ` : ""}${m.brand} ${m.model}</div>
+                  <div class="tiny">${comp} ｜ ${ptype} </div>
+                </div>
+                <div style="text-align:right">
+                    <div class="score ${scoreClass}">${passed ? `Score ${x.score}` : "Rejected"}</div>
+                    <div class="tiny" style="margin-top:2px">
+                        規格: ${x.capScore}% ｜ 信賴: ${x.confScore}%
+                    </div>
+                </div>
+            `;
+            item.appendChild(top);
+
+            const mid = document.createElement("div");
+            mid.className = "mid";
+
+            const rpm = parseRpm(c?.spindle?.speed_max_rpm);
+            const axes = c?.axes?.count ?? null;
+            const X = getTravel(c, "X"), Y = getTravel(c, "Y"), Z = getTravel(c, "Z");
+            const bar = c?.work_envelope?.bar_capacity_mm ?? null;
+            const av = getAccVals(c);
+            const rep = av?.repeatability_mm ?? null;
+            const pos = av?.positioning_mm ?? null;
+
+            mid.innerHTML = `
+                <div class="kv"><div>軸數</div><div>${formatVal(axes)}</div></div>
+                <div class="kv"><div>行程 X/Y/Z (mm)</div><div>${[X, Y, Z].map(v => v ?? "—").join(" / ")}</div></div>
+                <div class="kv"><div>主軸轉速 / 功率</div><div>${c?.spindle?.speed_max_rpm ?? "—"} rpm <span style="color:#d2a8ff">(${c?.spindle?.power_kw ?? "?"} kW)</span></div></div>
+                <div class="kv"><div>棒材能力（車床/複合）</div><div>${formatVal(bar, " mm")}</div></div>
+    <div class="kv"><div>Positioning Repeatability</div><div>${(() => {
+                    if (c?.accuracy?.standards) {
+                        // Show ISO and JIS if avail
+                        const s = c.accuracy.standards;
+                        let out = [];
+                        if (s.ISO_10791_4) out.push(`ISO: ${s.ISO_10791_4.repeatability_mm}mm`);
+                        if (s.JIS_B_6338) out.push(`JIS: ±${s.JIS_B_6338.repeatability_mm}mm`);
+                        if (out.length) return out.join(" / ");
+                    }
+                    return rep != null ? rep + " mm" : (c?.accuracy?.repeatability_um ? c.accuracy.repeatability_um + " µm" : "—");
+                })()
+                }</div></div>
+    <div class="kv"><div>Positioning Accuracy</div><div>${(() => {
+                    if (c?.accuracy?.standards) {
+                        const s = c.accuracy.standards;
+                        let out = [];
+                        if (s.ISO_10791_4) out.push(`ISO: ${s.ISO_10791_4.positioning_mm}mm`);
+                        if (s.JIS_B_6338) out.push(`JIS: ${s.JIS_B_6338.positioning_mm}mm`);
+                        if (out.length) return out.join(" / ");
+                    }
+                    return pos != null ? pos + " mm" : "—";
+                })()
+                }</div></div>
+    <div class="kv"><div>資料來源</div><div><a href="${m.source?.url || "#"}" target="_blank" style="color:#9cc2ff;text-decoration:none">${m.source?.name || "—"}</a></div></div>
+  `;
+            item.appendChild(mid);
+
+            const det = document.createElement("details");
+            det.innerHTML = `
+                <summary>查看推論理由 / 備註</summary>
+                <div class="reason">
+                  ${x.reasons.map(r => `<div>${r}</div>`).join("")}
+                  ${(!c ? `<div class="bad">✗ 找不到 Capability 記錄</div>` : "")}
+                  ${(c?.accuracy?.notes ? `<div class="warn">ℹ 精度備註: ${c.accuracy.notes}</div>` : "")}
+                  ${(c?.axes?.notes ? `<div class="warn">ℹ 軸向備註: ${c.axes.notes}</div>` : "")}
+                </div>
+            `;
+            item.appendChild(det);
+
+            return item;
+        }
+
+        byId("btn_run").onclick = render;
+        byId("btn_reset").onclick = () => {
+            selCompany.value = "ALL";
+            byId("f_scenario").value = "GENERAL";
+            byId("f_process").value = "ALL";
+            ["f_axes", "f_x", "f_y", "f_z", "f_rpm", "f_power", "f_bar", "f_work_d", "f_work_l", "f_accuracy", "f_positioning"].forEach(id => byId(id).value = "");
+            byId("f_sort").value = "SCORE";
+            sortChips.forEach(c => c.classList.remove('on'));
+            document.querySelector('.chip[data-sort="SCORE"]').classList.add('on');
+            updateFieldVisibility();
+            render();
+        };
+
+        const fProcess = byId("f_process");
+        function updateFieldVisibility() {
+            document.querySelectorAll('.grp-mill').forEach(el => el.style.display = '');
+            document.querySelectorAll('.grp-turn').forEach(el => el.style.display = '');
+        }
+        fProcess.addEventListener('change', updateFieldVisibility);
+        updateFieldVisibility();
+
+        render();
+    </script>
+</body>
+
+</html>

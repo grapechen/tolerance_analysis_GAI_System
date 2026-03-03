@@ -1,0 +1,463 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>製程知識庫 JSON 編輯器（Process / Machine / Capability）</title>
+  <style>
+    :root { --bg:#0b1220; --card:#121a2b; --muted:#8aa0c2; --text:#e8f0ff; --ok:#7ee787; --bad:#ff7b72; --btn:#1f6feb; }
+    body { margin:0; font-family: system-ui, -apple-system, "Noto Sans TC", Segoe UI, Arial; background:var(--bg); color:var(--text); }
+    header { padding:14px 18px; border-bottom:1px solid rgba(255,255,255,.08); display:flex; gap:12px; align-items:center; }
+    header h1 { font-size:16px; margin:0; font-weight:700; }
+    header .hint { color:var(--muted); font-size:12px; }
+    .wrap { display:grid; grid-template-columns: 1.2fr .8fr; gap:14px; padding:14px; }
+    .card { background:var(--card); border:1px solid rgba(255,255,255,.08); border-radius:14px; overflow:hidden; }
+    .tabs { display:flex; border-bottom:1px solid rgba(255,255,255,.08); }
+    .tab { padding:10px 12px; cursor:pointer; font-size:13px; color:var(--muted); user-select:none; border-right:1px solid rgba(255,255,255,.06); }
+    .tab.active { color:var(--text); background:rgba(255,255,255,.04); }
+    .toolbar { display:flex; gap:8px; padding:10px; flex-wrap:wrap; border-bottom:1px solid rgba(255,255,255,.08); }
+    button { background:rgba(255,255,255,.06); color:var(--text); border:1px solid rgba(255,255,255,.12); border-radius:10px; padding:8px 10px; font-size:12px; cursor:pointer; }
+    button.primary { background:var(--btn); border-color:transparent; }
+    button:disabled { opacity:.5; cursor:not-allowed; }
+    textarea { width:100%; height:64vh; background:transparent; color:var(--text); border:0; outline:none; padding:12px; font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; font-size:12px; line-height:1.4; resize:none; }
+    .right { display:grid; gap:14px; }
+    .panel { padding:12px; }
+    .kpi { display:grid; grid-template-columns: 1fr 1fr; gap:10px; }
+    .kpi .box { background:rgba(255,255,255,.04); border:1px solid rgba(255,255,255,.08); border-radius:12px; padding:10px; }
+    .box .label { color:var(--muted); font-size:12px; }
+    .box .value { font-size:16px; font-weight:800; margin-top:4px; }
+    .status { display:flex; gap:10px; align-items:center; padding:10px 12px; border-top:1px solid rgba(255,255,255,.08); font-size:12px; }
+    .dot { width:10px; height:10px; border-radius:999px; background:var(--muted); }
+    .dot.ok { background:var(--ok); }
+    .dot.bad { background:var(--bad); }
+    .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size:12px; color:var(--muted); }
+    .list { margin:10px 0 0; padding-left:16px; color:var(--muted); }
+    .list li { margin:6px 0; }
+    .small { font-size:12px; color:var(--muted); }
+    input[type="file"] { display:none; }
+    .splitbtn { display:flex; gap:8px; flex-wrap:wrap; }
+  </style>
+</head>
+<body>
+<header>
+  <h1>製程知識庫 JSON 編輯器</h1>
+  <div class="hint">三份 JSON：Process / Machine / Capability。可格式化、載入、下載、生成 Neo4j Cypher。</div>
+</header>
+
+<div class="wrap">
+  <!-- Left: Editor -->
+  <div class="card">
+    <div class="tabs" id="tabs"></div>
+
+    <div class="toolbar">
+      <div class="splitbtn">
+        <button class="primary" id="btnFormat">格式化</button>
+        <button id="btnValidate">檢查 JSON</button>
+        <button id="btnDownload">下載目前 JSON</button>
+        <button id="btnLoad">從檔案載入</button>
+        <button id="btnExportCypher">匯出 Neo4j Cypher</button>
+      </div>
+      <span class="small">提示：用 UTF-8 儲存。Neo4j Cypher 會以 MERGE/SET 產生。</span>
+      <input type="file" id="fileInput" accept=".json,application/json" />
+    </div>
+
+    <textarea id="editor" spellcheck="false"></textarea>
+
+    <div class="status">
+      <div class="dot" id="statusDot"></div>
+      <div id="statusText">就緒</div>
+      <div style="margin-left:auto" class="mono" id="activeName"></div>
+    </div>
+  </div>
+
+  <!-- Right: Summary -->
+  <div class="right">
+    <div class="card">
+      <div class="panel">
+        <div style="font-weight:700; margin-bottom:8px;">摘要</div>
+        <div class="kpi">
+          <div class="box">
+            <div class="label">物件數量</div>
+            <div class="value" id="countVal">-</div>
+          </div>
+          <div class="box">
+            <div class="label">必填欄位缺漏</div>
+            <div class="value" id="missingVal">-</div>
+          </div>
+        </div>
+
+        <div style="margin-top:12px; font-weight:700;">欄位快覽</div>
+        <ul class="list" id="fieldsList"></ul>
+
+        <div style="margin-top:12px; font-weight:700;">錯誤/警告</div>
+        <ul class="list" id="errorList"></ul>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="panel">
+        <div style="font-weight:700; margin-bottom:8px;">入庫建議（給你的 GAI inference）</div>
+        <div class="small">
+          1) 先用 Capability 的 envelope（行程、最大工件尺寸、主軸、刀庫）做可行性過濾<br/>
+          2) 再用你自家量測統計（μ/σ/Cpk）做排序與風險解釋<br/>
+          3) Machine.source.url 保留公開依據，方便 trace 與引用
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ---- Sample data (you can replace with your own) ----
+  const samples = {
+    processes: [
+      { process_id: "P_TURN", name: "CNC Turning", process_type: "TURNING", description: "車削/車床製程" },
+      { process_id: "P_VMC",  name: "Vertical Machining Center", process_type: "VMC_MILLING", description: "立式加工中心（銑削）" },
+      { process_id: "P_HMC",  name: "Horizontal Machining Center", process_type: "HMC_MILLING", description: "臥式加工中心（箱體/多面加工）" },
+      { process_id: "P_5AX",  name: "5-Axis Machining", process_type: "FIVE_AXIS_MILLING", description: "同動五軸銑削" },
+      { process_id: "P_MTURN",name: "Mill-Turn", process_type: "MILL_TURN", description: "車銑複合加工" }
+    ],
+    machines: [
+      {
+        machine_id: "YCM_NXV1020A", brand: "YCM", model: "NXV1020A", series: "NXV",
+        process_id: "P_VMC", controller: "N/A",
+        source: { name: "NXV1020A Spec PDF", url: "https://www.ycmcnc.com/uploads/2021/09/NXV1020A.pdf" }
+      },
+      {
+        machine_id: "YCM_UV650", brand: "YCM", model: "UV650", series: "UV",
+        process_id: "P_5AX", controller: "N/A",
+        source: { name: "UV650 Specs (public)", url: "https://fractory.com/ycm-uv650/" }
+      },
+      {
+        machine_id: "YCM_H_SERIES", brand: "YCM", model: "H Series (H500A/H500B/H800B...)", series: "H",
+        process_id: "P_HMC", controller: "N/A",
+        source: { name: "H Series Brochure", url: "https://ycmalliance.com/wp-content/uploads/2024/12/YCM_H_Series.pdf" }
+      },
+      {
+        machine_id: "YCM_TURNING_6AX_DUAL", brand: "YCM", model: "Turning Series (6-axis dual spindle example)", series: "Turning",
+        process_id: "P_MTURN", controller: "N/A",
+        source: { name: "Turning Series Brochure", url: "https://ycmalliance.com/wp-content/uploads/2025/01/YCM_Turning_Series.pdf" }
+      }
+    ],
+    capabilities: [
+      {
+        capability_id: "CAP_YCM_NXV1020A",
+        machine_id: "YCM_NXV1020A",
+        unit_system: "MIXED",
+        axes: { count: 3, travel_mm: { X: 1020, Y: 520, Z: 540 } },
+        work_envelope: { table_size_mm: [1118, 520], table_load_kg: 500 },
+        spindle: { speed_max_rpm: 12000, power_kw: 18.5, taper: "BBT40" },
+        tooling: { magazine_capacity: 24, tool_change_tt_s: 1.7, tool_change_cc_s: 3.5 },
+        feed: { cutting_mm_per_min_range: "1 ~ 20000" },
+        accuracy: { positioning_mm: 0.00305, repeatability_mm: 0.00203, standard: "Spec sheet", notes: "Positioning ±0.00012\", Repeatability ±0.00008\"" }
+      },
+      {
+        capability_id: "CAP_YCM_UV650",
+        machine_id: "YCM_UV650",
+        unit_system: "METRIC",
+        axes: { count: 5, rotary_range_deg: { B: "-50° ~ +110° (160°)", C: "360°" } },
+        work_envelope: { max_machining_range_mm: "Ø520 x 330" },
+        feed: { rapid_m_per_min: { X: 36, Y: 36, Z: 36 }, cutting_mm_per_min_range: "1 ~ 20000" },
+        tooling: { magazine_capacity: 32 },
+        accuracy: { positioning_mm: 0.007, repeatability_mm: 0.005, positioning_arcsec: 10, repeatability_arcsec: 8, standard: "ISO 10791-4" }
+      },
+      {
+        capability_id: "CAP_YCM_H_SERIES",
+        machine_id: "YCM_H_SERIES",
+        unit_system: "METRIC",
+        axes: { count: 3 },
+        feed: { rapid_m_per_min: { X: 30, Y: 30, Z: 30 }, cutting_mm_per_min_range: "up to 10000" },
+        accuracy: { standard: "ISO 10791-4 / JIS B 6338", notes: "Brochure tables vary by condition; store condition keys" }
+      },
+      {
+        capability_id: "CAP_YCM_TURNING_6AX_DUAL",
+        machine_id: "YCM_TURNING_6AX_DUAL",
+        unit_system: "METRIC",
+        axes: { count: 6, travel_mm: { X: 225, Y: 100, Z: 636, B: 690.5 } },
+        work_envelope: { max_workpiece_diameter_mm: 325, max_workpiece_length_mm: 560, max_machining_range_mm: "Swing over bed Ø830" },
+        spindle: { speed_max_rpm: 4000, power_kw: 25, torque_nm: 292, chuck_inch: 8 },
+        tooling: { turret_interface: "BMT65", stations: 16, live_tool_speed_rpm_range: "60 ~ 6000" },
+        feed: { rapid_m_per_min: { X: 16, Z: 40, Y: 6, B: 40 }, cutting_mm_per_min_range: "1 ~ 10000" },
+        accuracy: { positioning_mm: 0.008, repeatability_mm: 0.005, notes: "Without optical scale" }
+      }
+    ]
+  };
+
+  // ---- Required fields per tab (lightweight validation) ----
+  const required = {
+    processes: ["process_id", "name", "process_type"],
+    machines: ["machine_id", "brand", "model", "process_id", "source"],
+    capabilities: ["capability_id", "machine_id", "unit_system"]
+  };
+
+  const tabs = [
+    { key: "processes", label: "Processes.json" },
+    { key: "machines", label: "Machines.json" },
+    { key: "capabilities", label: "Capabilities.json" }
+  ];
+
+  // ---- State ----
+  const state = {
+    active: "processes",
+    data: {
+      processes: structuredClone(samples.processes),
+      machines: structuredClone(samples.machines),
+      capabilities: structuredClone(samples.capabilities)
+    }
+  };
+
+  // ---- UI refs ----
+  const tabsEl = document.getElementById("tabs");
+  const editor = document.getElementById("editor");
+  const statusDot = document.getElementById("statusDot");
+  const statusText = document.getElementById("statusText");
+  const activeName = document.getElementById("activeName");
+  const countVal = document.getElementById("countVal");
+  const missingVal = document.getElementById("missingVal");
+  const fieldsList = document.getElementById("fieldsList");
+  const errorList = document.getElementById("errorList");
+
+  // Buttons
+  const btnFormat = document.getElementById("btnFormat");
+  const btnValidate = document.getElementById("btnValidate");
+  const btnDownload = document.getElementById("btnDownload");
+  const btnLoad = document.getElementById("btnLoad");
+  const btnExportCypher = document.getElementById("btnExportCypher");
+  const fileInput = document.getElementById("fileInput");
+
+  // ---- Helpers ----
+  function setStatus(ok, msg) {
+    statusDot.classList.remove("ok","bad");
+    statusDot.classList.add(ok ? "ok" : "bad");
+    statusText.textContent = msg;
+  }
+  function pretty(obj) { return JSON.stringify(obj, null, 2); }
+  function tryParse(text) { return JSON.parse(text); }
+
+  function currentArray() {
+    const v = editor.value.trim();
+    const parsed = tryParse(v);
+    if (!Array.isArray(parsed)) throw new Error("根節點必須是 Array（例如：[ {...}, {...} ]）");
+    return parsed;
+  }
+
+  function summarize(arr) {
+    // count
+    countVal.textContent = String(arr.length);
+
+    // fields preview from first object
+    fieldsList.innerHTML = "";
+    const first = arr[0] || {};
+    Object.keys(first).slice(0, 12).forEach(k => {
+      const li = document.createElement("li");
+      li.textContent = k;
+      fieldsList.appendChild(li);
+    });
+    if (Object.keys(first).length > 12) {
+      const li = document.createElement("li");
+      li.textContent = "…";
+      fieldsList.appendChild(li);
+    }
+  }
+
+  function validateRequired(arr, key) {
+    const req = required[key];
+    let missing = 0;
+    const errs = [];
+    arr.forEach((o, idx) => {
+      req.forEach(r => {
+        if (o == null || typeof o !== "object" || !(r in o) || o[r] === null || o[r] === "") {
+          missing++;
+          errs.push(`第 ${idx+1} 筆缺少必填欄位：${r}`);
+        }
+      });
+    });
+    missingVal.textContent = String(missing);
+    return errs;
+  }
+
+  function renderErrors(errs) {
+    errorList.innerHTML = "";
+    if (!errs.length) {
+      const li = document.createElement("li");
+      li.textContent = "沒有偵測到必填欄位問題";
+      errorList.appendChild(li);
+      return;
+    }
+    errs.slice(0, 12).forEach(e => {
+      const li = document.createElement("li");
+      li.textContent = e;
+      errorList.appendChild(li);
+    });
+    if (errs.length > 12) {
+      const li = document.createElement("li");
+      li.textContent = `…還有 ${errs.length - 12} 筆`;
+      errorList.appendChild(li);
+    }
+  }
+
+  function syncFromEditor() {
+    const arr = currentArray();
+    state.data[state.active] = arr;
+    summarize(arr);
+    const errs = validateRequired(arr, state.active);
+    renderErrors(errs);
+    setStatus(true, `已載入：${state.active}（${arr.length} 筆）`);
+  }
+
+  function switchTab(key) {
+    // Save current if valid JSON
+    try {
+      const arr = currentArray();
+      state.data[state.active] = arr;
+    } catch (_) {
+      // ignore, user may be mid-edit
+    }
+    state.active = key;
+    editor.value = pretty(state.data[key]);
+    activeName.textContent = key;
+    // refresh summary
+    try {
+      syncFromEditor();
+    } catch (e) {
+      countVal.textContent = "-";
+      missingVal.textContent = "-";
+      fieldsList.innerHTML = "";
+      errorList.innerHTML = "";
+      setStatus(false, e.message);
+    }
+    // UI highlight
+    [...tabsEl.children].forEach(btn => btn.classList.toggle("active", btn.dataset.key === key));
+  }
+
+  function downloadText(filename, text) {
+    const blob = new Blob([text], { type: "application/json;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = filename;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  function exportCypher() {
+    // minimal Cypher generator (MERGE + SET). You can refine later.
+    const ps = state.data.processes || [];
+    const ms = state.data.machines || [];
+    const cs = state.data.capabilities || [];
+
+    const esc = (s) => String(s).replace(/\\/g,"\\\\").replace(/"/g,'\\"');
+
+    let out = "";
+    out += "// === Process ===\n";
+    ps.forEach(p => {
+      out += `MERGE (p:Process {process_id:"${esc(p.process_id)}"})\n`;
+      out += `SET p.name="${esc(p.name)}", p.process_type="${esc(p.process_type)}", p.description="${esc(p.description || "")}";\n\n`;
+    });
+
+    out += "// === Machine + relation ===\n";
+    ms.forEach(m => {
+      out += `MERGE (m:Machine {machine_id:"${esc(m.machine_id)}"})\n`;
+      out += `SET m.brand="${esc(m.brand)}", m.model="${esc(m.model)}", m.series="${esc(m.series || "")}", m.controller="${esc(m.controller || "")}",\n`;
+      out += `    m.source_name="${esc(m.source?.name || "")}", m.source_url="${esc(m.source?.url || "")}";\n`;
+      out += `MATCH (p:Process {process_id:"${esc(m.process_id)}"})\n`;
+      out += `MERGE (m)-[:USES_PROCESS]->(p);\n\n`;
+    });
+
+    out += "// === Capability + relation ===\n";
+    cs.forEach(c => {
+      out += `MERGE (c:Capability {capability_id:"${esc(c.capability_id)}"})\n`;
+      out += `SET c.machine_id="${esc(c.machine_id)}", c.unit_system="${esc(c.unit_system)}", c.axes_count=${Number(c.axes?.count ?? "null")};\n`;
+      // you can add more SET lines as you want (kept minimal to avoid null noise)
+      out += `MATCH (m:Machine {machine_id:"${esc(c.machine_id)}"})\n`;
+      out += `MERGE (m)-[:HAS_CAPABILITY]->(c);\n\n`;
+    });
+
+    return out;
+  }
+
+  // ---- Init tabs ----
+  tabs.forEach(t => {
+    const el = document.createElement("div");
+    el.className = "tab";
+    el.textContent = t.label;
+    el.dataset.key = t.key;
+    el.onclick = () => switchTab(t.key);
+    tabsEl.appendChild(el);
+  });
+
+  // ---- Events ----
+  editor.addEventListener("input", () => {
+    // live status only, avoid heavy parsing every keystroke
+    setStatus(true, "編輯中…（可按「檢查 JSON」）");
+  });
+
+  btnFormat.onclick = () => {
+    try {
+      const arr = currentArray();
+      editor.value = pretty(arr);
+      syncFromEditor();
+      setStatus(true, "已格式化並更新摘要");
+    } catch (e) {
+      setStatus(false, e.message);
+    }
+  };
+
+  btnValidate.onclick = () => {
+    try {
+      syncFromEditor();
+      setStatus(true, "JSON 合法，已完成必填欄位檢查");
+    } catch (e) {
+      setStatus(false, e.message);
+      renderErrors([e.message]);
+    }
+  };
+
+  btnDownload.onclick = () => {
+    try {
+      const arr = currentArray();
+      state.data[state.active] = arr;
+      downloadText(`${state.active}.json`, pretty(arr));
+      setStatus(true, `已下載 ${state.active}.json`);
+    } catch (e) {
+      setStatus(false, e.message);
+    }
+  };
+
+  btnLoad.onclick = () => fileInput.click();
+
+  fileInput.addEventListener("change", async (ev) => {
+    const f = ev.target.files?.[0];
+    if (!f) return;
+    const text = await f.text();
+    try {
+      const parsed = JSON.parse(text);
+      if (!Array.isArray(parsed)) throw new Error("載入失敗：JSON 根節點必須是 Array");
+      editor.value = pretty(parsed);
+      syncFromEditor();
+      setStatus(true, `已載入檔案：${f.name}`);
+    } catch (e) {
+      setStatus(false, e.message);
+      renderErrors([e.message]);
+    } finally {
+      fileInput.value = "";
+    }
+  });
+
+  btnExportCypher.onclick = () => {
+    try {
+      // ensure current tab saved
+      try { state.data[state.active] = currentArray(); } catch (_) {}
+      const cypher = exportCypher();
+      downloadText(`neo4j_import.cypher`, cypher);
+      setStatus(true, "已匯出 neo4j_import.cypher");
+    } catch (e) {
+      setStatus(false, e.message);
+    }
+  };
+
+  // ---- Start ----
+  switchTab("processes");
+</script>
+</body>
+</html>

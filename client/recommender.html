@@ -1,0 +1,321 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="utf-8">
+    <title>智能配合選配 | Smart Fit Recommender</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <style>
+        :root {
+            font-family: ui-sans-serif, system-ui, "Microsoft JhengHei", Arial;
+            --bg: #0b1220;
+            --card: #111827;
+            --text: #e6edf3;
+            --muted: #9ca3af;
+            --accent: #2563eb;
+        }
+
+        body {
+            margin: 0;
+            padding: 24px;
+            background: var(--bg);
+            color: var(--text);
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: var(--card);
+            padding: 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+            margin-bottom: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        h1 {
+            font-size: 24px;
+            margin: 0 0 8px;
+            background: linear-gradient(90deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        p {
+            color: var(--muted);
+            margin: 0 0 16px;
+            font-size: 14px;
+        }
+
+        .search-box {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        input {
+            flex: 1;
+            padding: 12px;
+            border-radius: 10px;
+            border: 1px solid #374151;
+            background: #1f2937;
+            color: white;
+            outline: none;
+        }
+
+        input:focus {
+            border-color: var(--accent);
+        }
+
+        button {
+            padding: 12px 24px;
+            border-radius: 10px;
+            border: none;
+            background: var(--accent);
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        button:hover {
+            filter: brightness(1.1);
+        }
+
+        .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .tag {
+            padding: 6px 12px;
+            border-radius: 20px;
+            background: rgba(255, 255, 255, 0.05);
+            font-size: 13px;
+            color: var(--muted);
+            cursor: pointer;
+            border: 1px solid transparent;
+            transition: 0.2s;
+        }
+
+        .tag:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .tag.active {
+            background: rgba(37, 99, 235, 0.2);
+            color: #60a5fa;
+            border-color: #2563eb;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            color: var(--muted);
+            border-bottom: 1px solid #374151;
+            font-weight: 500;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            vertical-align: top;
+        }
+
+        tr:last-child td {
+            border-bottom: none;
+        }
+
+        .fit-type {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .fit-RC {
+            background: rgba(34, 197, 94, 0.2);
+            color: #4ade80;
+        }
+
+        /* 留隙 - Green */
+        .fit-LT {
+            background: rgba(250, 204, 21, 0.2);
+            color: #facc15;
+        }
+
+        /* 過渡 - Yellow */
+        .fit-LN,
+        .fit-FN {
+            background: rgba(248, 113, 113, 0.2);
+            color: #f87171;
+        }
+
+        /* 過盈 - Red */
+
+        .code {
+            font-family: monospace;
+            font-size: 15px;
+            color: #e8f0fe;
+            font-weight: bold;
+            background: rgba(255, 255, 255, 0.1);
+            padding: 2px 6px;
+            border-radius: 4px;
+        }
+
+        .note {
+            font-size: 13px;
+            color: var(--muted);
+            margin-top: 4px;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 40px;
+            color: var(--muted);
+        }
+
+        .nav-link {
+            display: inline-block;
+            margin-bottom: 20px;
+            color: var(--muted);
+            text-decoration: none;
+            font-size: 13px;
+        }
+
+        .nav-link:hover {
+            color: white;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <a href="/" class="nav-link">← 返回首頁</a>
+
+        <div class="card">
+            <h1>智能配合選配精靈</h1>
+            <p>輸入功能需求（如：精確定位、高速、可拆卸），系統將推薦適合的配合代號。</p>
+
+            <div class="search-box">
+                <input type="text" id="keywords" placeholder="輸入關鍵字，以空白分隔..."
+                    onkeydown="if(event.key==='Enter') search()">
+                <button onclick="search()">搜尋推薦</button>
+            </div>
+
+            <div class="tags">
+                <div class="tag" onclick="addTag('定位')">定位</div>
+                <div class="tag" onclick="addTag('高速')">高速</div>
+                <div class="tag" onclick="addTag('可裝拆')">可裝拆</div>
+                <div class="tag" onclick="addTag('滑動')">滑動</div>
+                <div class="tag" onclick="addTag('重壓')">重壓</div>
+                <div class="tag" onclick="addTag('溫差大')">溫差大</div>
+                <div class="tag" onclick="addTag('轉速')">轉速</div>
+            </div>
+
+            <div id="results">
+                <div class="empty-state">請輸入關鍵字開始搜尋</div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function addTag(tag) {
+            const input = document.getElementById('keywords');
+            const current = input.value.trim();
+            if (!current.includes(tag)) {
+                input.value = current ? current + ' ' + tag : tag;
+            }
+            search();
+        }
+
+        async function search() {
+            const input = document.getElementById('keywords').value.trim();
+            if (!input) return;
+
+            // Split by space
+            const keywords = input.split(/\s+/);
+
+            const div = document.getElementById('results');
+            div.innerHTML = '<div class="empty-state">搜尋中...</div>';
+
+            try {
+                const res = await fetch('/api/recommend/smart_fit', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ keywords: keywords })
+                });
+                const data = await res.json();
+
+                if (!data.ok || !data.results.length) {
+                    div.innerHTML = '<div class="empty-state">❌ 找不到符合條件的配合，請嘗試減少關鍵字。</div>';
+                    return;
+                }
+
+                renderTable(data.results);
+            } catch (e) {
+                div.innerHTML = '<div class="empty-state">網路錯誤: ' + e + '</div>';
+            }
+        }
+
+        function renderTable(list) {
+            let html = `<table>
+      <thead>
+        <tr>
+          <th width="80">ANSI</th>
+          <th width="120">配合代號</th>
+          <th width="100">類型</th>
+          <th>功能與應用</th>
+        </tr>
+      </thead>
+      <tbody>`;
+
+            list.forEach(item => {
+                let typeClass = '';
+                if (item.type.includes('留隙')) typeClass = 'fit-RC';
+                else if (item.type.includes('過渡')) typeClass = 'fit-LT';
+                else typeClass = 'fit-LN'; // treated as interference
+
+                // Link to main analysis page
+                // We can make a link like: /?t=fit&size=25&hole=H7&shaft=g6 (need to implement param reading in index.html, but for now just showing text is fine)
+                const hole = item.hole;
+                const shaft = item.shaft;
+
+                html += `
+        <tr>
+            <td>${item.ansi}</td>
+            <td>
+                <span class="code">${hole}/${shaft}</span>
+            </td>
+            <td><span class="fit-type ${typeClass}">${item.type}</span></td>
+            <td>
+                <div style="font-weight:bold; color:#e6edf3;">${item.function}</div>
+                <div class="note">${item.note}</div>
+            </td>
+        </tr>`;
+            });
+
+            html += '</tbody></table>';
+            document.getElementById('results').innerHTML = html;
+        }
+    </script>
+
+</body>
+
+</html>

@@ -1,0 +1,831 @@
+/*
+========================================================================
+[樣式指南 (Style Guide)]
+
+此檔案控制網頁的視覺呈現（顏色、字體、間距）。
+
+建議修改區塊：
+1. Root & Body: 全域變數與背景色 (#0b1220 為深藍底色)
+2. Card: 卡片式設計的背景 (#111827) 與陰影
+3. Inputs/Buttons: 輸入框與按鈕的交互樣式
+4. Smart Engineering: 針對 "智慧工程" 分頁的特殊樣式 (如 .kb-highlight-box)
+
+配色邏輯 (Color Palette):
+- 背景: Slate/Gray 900+ (#0f172a, #111827)
+- 文字: Slate 200/400 (#e2e8f0, #94a3b8)
+- 點綴: Blue 500 (#3b82f6) / Emerald 500 (#10b981)
+========================================================================
+*/
+
+:root {
+    font-family: ui-sans-serif, system-ui, "Microsoft JhengHei", Arial;
+}
+
+body {
+    margin: 0;
+    padding: 16px;
+    background: #0b1220;
+    color: #e6edf3;
+}
+
+.container {
+    max-width: 1200px;
+    /* [調整介面寬度] 原本 900px，改為 1200px 讓畫面更寬敞 */
+    margin: 0 auto;
+}
+
+.card {
+    background: #111827;
+    padding: 24px;
+    border-radius: 16px;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .4);
+    margin-bottom: 20px;
+}
+
+.header-card {
+    padding: 16px 24px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.header-card h1 {
+    margin: 0;
+    font-size: 20px;
+    line-height: 1.2;
+}
+
+.header-card p {
+    margin: 0;
+    font-size: 13px;
+    color: #94a3b8;
+}
+
+h1 {
+    font-size: 24px;
+    margin: 0 0 8px;
+}
+
+h2 {
+    font-size: 18px;
+    margin: 0 0 12px;
+    color: #60a5fa;
+}
+
+p {
+    color: #9ca3af;
+    margin: 0 0 16px;
+    font-size: 14px;
+}
+
+.tabs {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.tab {
+    padding: 10px 20px;
+    border-radius: 8px;
+    background: #1f2937;
+    color: #9ca3af;
+    cursor: pointer;
+    border: none;
+    font-size: 14px;
+}
+
+.tab.active {
+    background: #2563eb;
+    color: #fff;
+}
+
+.tab-content {
+    display: none;
+}
+
+.tab-content.active {
+    display: block;
+}
+
+label {
+    display: block;
+    margin: 14px 0 6px;
+    color: #cbd5e1;
+    font-size: 14px;
+}
+
+input,
+select {
+    width: 100%;
+    padding: 10px 12px;
+    border-radius: 10px;
+    border: 1px solid #3b4152;
+    background: #0f172a;
+    color: #e6edf3;
+    box-sizing: border-box;
+}
+
+.row {
+    display: flex;
+    gap: 12px;
+}
+
+.row>div {
+    flex: 1;
+}
+
+button {
+    margin-top: 18px;
+    width: 100%;
+    padding: 12px;
+    border: 0;
+    border-radius: 10px;
+    background: #2563eb;
+    color: #fff;
+    font-weight: 600;
+    cursor: pointer;
+    font-size: 14px;
+}
+
+button:hover {
+    filter: brightness(1.1);
+}
+
+.result {
+    margin-top: 18px;
+    padding: 16px;
+    border-radius: 10px;
+    background: #0f172a;
+    border: 1px solid #293042;
+}
+
+.result-item {
+    margin: 8px 0;
+    padding: 8px;
+    background: #1a1f2e;
+    border-radius: 6px;
+}
+
+.result-label {
+    color: #60a5fa;
+    font-weight: 600;
+}
+
+.result-value {
+    color: #e6edf3;
+    margin-left: 8px;
+}
+
+.tip {
+    font-size: 12px;
+    color: #94a3b8;
+    margin-top: 12px;
+    line-height: 1.5;
+}
+
+.error {
+    color: #f87171;
+}
+
+.success {
+    color: #34d399;
+}
+
+/* [動態元素] 搜尋結果與互動區塊的樣式 */
+.smart-result-item {
+    border-left: 3px solid #60a5fa;
+}
+
+.smart-result-title {
+    font-weight: bold;
+    margin-bottom: 4px;
+    color: #e2e8f0;
+}
+
+.smart-result-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 14px;
+    color: #94a3b8;
+}
+
+.smart-result-note {
+    margin-top: 4px;
+    font-size: 12px;
+    color: #64748b;
+}
+
+.machine-result-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.machine-model {
+    font-weight: bold;
+    color: #e2e8f0;
+}
+
+.machine-info {
+    font-size: 12px;
+    color: #64748b;
+}
+
+.machine-val {
+    text-align: right;
+}
+
+.machine-val-num {
+    color: #34d399;
+    font-weight: bold;
+}
+
+.chat-msg {
+    margin-bottom: 12px;
+    padding: 10px 14px;
+    border-radius: 8px;
+    max-width: 80%;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.chat-msg-user {
+    background: #2563eb;
+    color: #fff;
+    margin-left: auto;
+}
+
+.chat-msg-ai {
+    background: #1e293b;
+    color: #e2e8f0;
+    margin-right: auto;
+}
+
+.chat-msg-error {
+    background: #7f1d1d;
+    color: #fca5a5;
+}
+
+.chat-loading {
+    font-style: italic;
+    color: #94a3b8;
+}
+
+/* [新樣式] 用於 RAG 聊天室與 Smart Fit 介面的分隔線與佈局 */
+.section-divider {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid #3b4152;
+}
+
+.section-title {
+    font-size: 16px;
+    color: #cbd5e1;
+    margin-bottom: 12px;
+}
+
+.chat-container {
+    height: 500px;
+    display: flex;
+    flex-direction: column;
+}
+
+.chat-history {
+    flex: 1;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #374151;
+    border-radius: 8px;
+    margin-bottom: 12px;
+    background: #111827;
+}
+
+.chat-controls {
+    display: flex;
+    gap: 8px;
+}
+
+.chat-btn {
+    width: 80px;
+    margin-top: 0;
+}
+
+.smart-result-item {
+    border-left: 3px solid #60a5fa;
+}
+
+.machine-result-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.hidden {
+    display: none;
+}
+
+.chat-placeholder {
+    color: #64748b;
+    font-size: 13px;
+    text-align: center;
+    margin-top: 20px;
+}
+
+.chat-input-field {
+    flex: 1;
+}
+
+/* [AI 助手推廣區] 引導使用者前往獨立 AI Agent 服務的區塊樣式 */
+.ai-agent-promo {
+    text-align: center;
+    padding: 40px;
+}
+
+.ai-agent-title {
+    margin-bottom: 20px;
+}
+
+.ai-agent-desc {
+    font-size: 16px;
+    margin-bottom: 30px;
+}
+
+.ai-agent-icon-box {
+    background: #1e293b;
+    padding: 20px;
+    border-radius: 12px;
+    display: inline-block;
+    margin-bottom: 30px;
+    border: 1px solid #3b4152;
+}
+
+.ai-agent-icon {
+    font-size: 40px;
+    margin-bottom: 10px;
+}
+
+.ai-agent-label {
+    color: #94a3b8;
+    font-size: 14px;
+}
+
+.ai-agent-link {
+    text-decoration: none;
+}
+
+.ai-agent-btn {
+    width: auto;
+    padding: 15px 40px;
+    font-size: 16px;
+    background: linear-gradient(135deg, #6366f1, #8b5cf6);
+}
+
+.ai-agent-subtext {
+    font-size: 12px;
+    color: #64748b;
+    margin-top: 20px;
+}
+
+/* [製程知識庫 (Process KB)] 用於 Step 2 機台媒合的特殊樣式 (標籤、KPI、列表) */
+.chip {
+    font-size: 12px;
+    padding: 6px 10px;
+    border-radius: 999px;
+    border: 1px solid rgba(255, 255, 255, .12);
+    background: rgba(255, 255, 255, .04);
+    cursor: pointer;
+    -webkit-user-select: none;
+    user-select: none;
+    color: #e9f1ff;
+}
+
+.chip.on {
+    border-color: rgba(31, 111, 235, .9);
+    background: rgba(31, 111, 235, .15);
+}
+
+.kpis {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+}
+
+.kpi {
+    background: rgba(255, 255, 255, .04);
+    border: 1px solid rgba(255, 255, 255, .08);
+    border-radius: 12px;
+    padding: 10px;
+}
+
+.kpi .t {
+    font-size: 12px;
+    color: #91a4c7;
+}
+
+.kpi .v {
+    font-size: 16px;
+    font-weight: 800;
+    margin-top: 4px;
+    color: #e9f1ff;
+}
+
+/* KB List Item Styles */
+.item {
+    border: 1px solid rgba(255, 255, 255, .10);
+    border-radius: 14px;
+    background: rgba(255, 255, 255, .03);
+    overflow: hidden;
+    margin-bottom: 10px;
+}
+
+.item .top {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+    padding: 10px 12px;
+    border-bottom: 1px solid rgba(255, 255, 255, .08);
+    justify-content: space-between;
+}
+
+.score {
+    font-weight: 800;
+}
+
+.score.ok {
+    color: #7ee787;
+}
+
+.score.bad {
+    color: #ff7b72;
+}
+
+.score.warn {
+    color: #ffd33d;
+}
+
+.item .mid {
+    padding: 10px 12px;
+    display: grid;
+    gap: 8px;
+}
+
+.kv {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    gap: 8px;
+    font-size: 12px;
+}
+
+.kv div:nth-child(odd) {
+    color: #91a4c7;
+}
+
+.tiny {
+    font-size: 11px;
+    color: rgba(233, 241, 255, .55);
+}
+
+details {
+    padding: 0 12px 12px;
+}
+
+details summary {
+    cursor: pointer;
+    color: #91a4c7;
+    font-size: 12px;
+    margin-top: 8px;
+}
+
+.reason {
+    margin-top: 8px;
+    font-size: 12px;
+    color: #91a4c7;
+    line-height: 1.5;
+}
+
+.reason .ok {
+    color: #7ee787;
+}
+
+.reason .bad {
+    color: #ff7b72;
+}
+
+.reason .warn {
+    color: #ffd33d;
+}
+
+@media (max-width: 960px) {
+    .wrap {
+        grid-template-columns: 1fr;
+    }
+
+    .kpis {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+/* [Process KB 重構樣式] 採用 Grid 佈局這這裡定義篩選器與結果的排版 */
+.kb-grid-wrapper {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+.kb-card-header {
+    font-weight: bold;
+    border-bottom: 1px solid #3b4152;
+    padding-bottom: 10px;
+    margin-bottom: 15px;
+}
+
+.kb-filter-grid {
+    display: grid;
+    gap: 10px;
+}
+
+.kb-scenario-box {
+    background: rgba(37, 99, 235, 0.1);
+    padding: 10px;
+    border-radius: 8px;
+    border: 1px solid rgba(37, 99, 235, 0.3);
+}
+
+.kb-scenario-label {
+    color: #60a5fa;
+    font-weight: bold;
+    display: block;
+    margin-bottom: 5px;
+}
+
+.kb-scenario-select {
+    border-color: #60a5fa;
+}
+
+.kb-separator {
+    height: 1px;
+    background: #3b4152;
+    margin: 10px 0;
+}
+
+.kb-inline-flex {
+    display: flex;
+    gap: 8px;
+}
+
+.kb-btns {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+}
+
+.kb-btn-reset {
+    background: #374151;
+}
+
+.kb-result-row {
+    margin-bottom: 8px;
+}
+
+.kb-margin-top-15 {
+    margin-top: 15px;
+}
+
+.kb-kpis-margin-bottom {
+    margin-bottom: 20px;
+}
+
+.kb-grid-layout {
+    display: grid;
+    grid-template-columns: 1fr;
+    gap: 20px;
+}
+
+/* [整合樣式] Smart Engineering 與 Process KB 的整合介面樣式 */
+.smart-input-row {
+    display: flex;
+    gap: 12px;
+}
+
+.smart-size-input-group {
+    display: flex;
+    align-items: center;
+    background: #334155;
+    border: 2px solid #475569;
+    border-radius: 8px;
+    padding-left: 12px;
+    flex: 0 0 auto;
+}
+
+.smart-label {
+    color: #cbd5e1;
+    font-size: 14px;
+    font-weight: 500;
+    white-space: nowrap;
+    margin-right: 4px;
+}
+
+/* Specific override for the input inside the group to remove border/bg */
+/* Specific override for the input inside the group to remove border/bg */
+.smart-size-input-group #smart-size {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    height: 100%;
+    width: 80px;
+    text-align: left;
+    padding: 0 12px 0 4px;
+    /* Reset padding: faint left, some right */
+    color: #fff;
+    font-size: 16px;
+    font-weight: 700;
+    outline: none;
+    /* remove default outline */
+}
+
+/* Ensure focus state doesn't re-apply background/border on the input itself */
+.smart-size-input-group #smart-size:focus {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    outline: none;
+}
+
+.smart-size-input-group:focus-within {
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+}
+
+.kb-highlight-box {
+    border-color: #34d399;
+    background: rgba(52, 211, 153, 0.1);
+}
+
+.kb-label-highlight {
+    color: #34d399;
+}
+
+.kb-tip-highlight {
+    color: #6ee7b7;
+    margin-top: 5px;
+}
+
+details>summary {
+    list-style: none;
+}
+
+details>summary::-webkit-details-marker {
+    display: none;
+}
+
+.kb-details-summary {
+    color: #94a3b8;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.kb-details-summary:hover {
+    color: #cbd5e1;
+}
+
+.kb-details-summary .arrow {
+    font-size: 10px;
+    transition: transform 0.2s;
+}
+
+details[open] .kb-details-summary .arrow {
+    transform: rotate(180deg);
+}
+
+.kb-input-group {
+    width: 100%;
+    display: flex;
+    gap: 8px;
+}
+
+.kb-input-third {
+    width: 33%;
+}
+
+.kb-input-half {
+    width: 50%;
+}
+
+.smart-bridge-btn {
+    margin-top: 8px;
+    padding: 8px 16px;
+    font-size: 13px;
+    background: #059669;
+    /* Emerald 600 */
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    border: none;
+    transition: background 0.2s;
+}
+
+.smart-bridge-btn:hover {
+    background: #047857;
+}
+
+/* [大型搜尋輸入框] 專為 Step 1 設計的高能見度輸入框 */
+/* Large Inputs for Main Search */
+/* Large Inputs for Main Search */
+#smart-keywords {
+    padding: 16px;
+    font-size: 16px;
+    height: 54px;
+    background: #334155;
+    /* Lighter Slate-700 for better visibility */
+    border: 2px solid #475569;
+    color: #fff;
+    border-radius: 8px;
+    transition: all 0.2s;
+}
+
+#smart-keywords::placeholder {
+    color: #cbd5e1;
+    /* Light Slate-300 for high contrast placeholder */
+    opacity: 1;
+}
+
+#smart-keywords:focus {
+    background: #1e293b;
+    border-color: #60a5fa;
+    box-shadow: 0 0 0 3px rgba(96, 165, 250, 0.2);
+    outline: none;
+}
+
+#smart-size {
+    text-align: center;
+}
+
+/* [下拉選單 UI 覆寫] 修正 Select2 在深色模式下的字體顏色 */
+.select2-container--default .select2-results__option {
+    color: #111827 !important;
+    font-weight: 500 !important;
+}
+
+/* 針對下拉選單整體外框，確保裡面的絕對定位不要跑版 */
+.select2-container--default .select2-selection--single,
+.select2-container--default .select2-selection--multiple {
+    position: relative !important;
+}
+
+/* 針對輸入框本身已選擇的文字 (單選與多選框) */
+.select2-container--default .select2-selection--multiple .select2-selection__choice,
+.select2-container--default .select2-selection--single .select2-selection__rendered {
+    background-color: #3b82f6 !important;
+    color: #ffffff !important;
+    font-weight: bold !important;
+    border: none !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice {
+    border-radius: 4px !important;
+    padding: 2px 2px 2px 8px !important;
+    margin-top: 8px !important;
+    margin-right: 5px !important;
+    display: inline-block !important;
+    /* 確保不會佔滿整行 */
+    float: left !important;
+    width: auto !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove {
+    color: #ef4444 !important;
+    /* 紅色的叉叉 (取消個別選項) */
+    font-size: 16px !important;
+    font-weight: bold !important;
+    float: right !important;
+    /* 直接往右浮動 */
+    margin-left: 6px !important;
+    padding-left: 6px !important;
+    border-left: 1px solid rgba(255, 255, 255, 0.4) !important;
+    border-right: none !important;
+    margin-right: 2px !important;
+    /* 取消先前的絕對定位 */
+    position: static !important;
+    left: auto !important;
+    top: auto !important;
+    transform: none !important;
+}
+
+.select2-container--default .select2-selection--multiple .select2-selection__choice__remove:hover {
+    background-color: transparent !important;
+    color: #b91c1c !important;
+    /* 滑鼠經過變深紅 */
+}
+
+/* 確保輸入框在未選擇時的輸入文字是亮的 */
+.select2-container--default .select2-search--inline .select2-search__field {
+    color: #ffffff !important;
+}

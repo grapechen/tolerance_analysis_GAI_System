@@ -1,0 +1,445 @@
+<!doctype html>
+<html lang="zh-Hant">
+
+<head>
+    <meta charset="utf-8">
+    <title>ISO 286 公差查詢系統 </title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="style.css">
+    <!-- 加入 Select2 樣式供多選關鍵字使用 -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+</head>
+
+<!-- 
+    ========================================================================
+    [頁面結構說明 (UI Structure)]
+    
+    此檔案定義了網頁的整體佈局與內容。
+    若您想修改文字、新增按鈕、調整排版，請編輯此檔案。
+
+    主要區塊：
+    1. Header (標題區): 顯示 Logo 與大標題
+    2. Tabs (分頁導覽): 控制不同功能的切換 (IT, 軸, 孔, 配合, 智慧工程...)
+    3. Tab Content (各分頁內容): 
+       - id="tab-it": IT 基本公差查詢
+       - id="tab-shaft": 軸公差查詢
+       - id="tab-hole": 孔公差查詢
+       - id="tab-fit": 傳統配合分析
+       - id="tab-recommend": ★智慧工程 (Smart Engineering) - 這是最核心的功能
+       - id="tab-chat": AI 顧問入口
+    
+    樣式引用：<link rel="stylesheet" href="style.css">
+    邏輯引用：<script src="main.js"></script>
+    ========================================================================
+-->
+
+<body>
+    <div class="container">
+        <div class="card header-card">
+            <h1> 公差查詢系統 </h1>
+            <p>查詢 IT 等級基本公差、軸公差、孔公差及、配合分析、製程與機台資料 </p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('it')">IT 基本公差</button>
+            <button class="tab" onclick="switchTab('shaft')">軸公差</button>
+            <button class="tab" onclick="switchTab('hole')">孔公差</button>
+            <button class="tab" onclick="switchTab('fit')">配合分析</button>
+            <button class="tab" onclick="switchTab('recommend')">製程與機台媒合</button>
+            <button class="tab" onclick="switchTab('chat')">AI 諮詢</button>
+        </div>
+
+        <!-- IT 基本公差查詢 -->
+        <div id="tab-it" class="tab-content active">
+            <div class="card">
+                <h2>IT 基本公差查詢</h2>
+                <label for="it-grade">IT 等級</label>
+                <input id="it-grade" placeholder="IT7" autocomplete="off">
+                <label for="it-size">名目尺寸 (mm)</label>
+                <input id="it-size" type="number" step="0.001" placeholder="25.000">
+                <button onclick="queryIT()">查詢</button>
+                <div id="it-result" class="hidden"></div>
+                <div class="tip">輸入 IT 等級（如 IT6、IT7）和名目尺寸，查詢對應的基本公差值</div>
+            </div>
+        </div>
+
+        <!-- 軸公差查詢 -->
+        <div id="tab-shaft" class="tab-content">
+            <div class="card">
+                <h2>軸公差查詢</h2>
+                <div class="row">
+                    <div>
+                        <label for="shaft-code">公差代號</label>
+                        <input id="shaft-code" placeholder="h" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="shaft-it">IT 等級</label>
+                        <input id="shaft-it" placeholder="7" autocomplete="off">
+                    </div>
+                </div>
+                <label for="shaft-size">名目尺寸 (mm)</label>
+                <input id="shaft-size" type="number" step="0.001" placeholder="25.000">
+                <button onclick="queryShaft()">查詢</button>
+                <div id="shaft-result" class="hidden"></div>
+                <div class="tip">輸入軸公差代號（如 h、g、f）、IT 等級和名目尺寸，查詢上下偏差</div>
+            </div>
+        </div>
+
+        <!-- 孔公差查詢 -->
+        <div id="tab-hole" class="tab-content">
+            <div class="card">
+                <h2>孔公差查詢</h2>
+                <div class="row">
+                    <div>
+                        <label for="hole-code">公差代號</label>
+                        <input id="hole-code" placeholder="H" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="hole-it">IT 等級</label>
+                        <input id="hole-it" placeholder="7" autocomplete="off">
+                    </div>
+                </div>
+                <label for="hole-size">名目尺寸 (mm)</label>
+                <input id="hole-size" type="number" step="0.001" placeholder="25.000">
+                <button onclick="queryHole()">查詢</button>
+                <div id="hole-result" class="hidden"></div>
+                <div class="tip">輸入孔公差代號（如 H、G、F）、IT 等級和名目尺寸，查詢上下偏差</div>
+            </div>
+        </div>
+
+        <!-- 配合分析 -->
+        <div id="tab-fit" class="tab-content">
+            <div class="card">
+                <h2>配合分析</h2>
+                <label for="fit-size">名目尺寸 (mm)</label>
+                <input id="fit-size" type="number" step="0.001" placeholder="25.000">
+                <div class="row">
+                    <div>
+                        <label for="fit-hole">孔公差（如 H7）</label>
+                        <input id="fit-hole" placeholder="H7" autocomplete="off">
+                    </div>
+                    <div>
+                        <label for="fit-shaft">軸公差（如 h6）</label>
+                        <input id="fit-shaft" placeholder="h6" autocomplete="off">
+                    </div>
+                </div>
+                <button onclick="analyzeFit()">分析配合</button>
+                <div id="fit-result" class="hidden"></div>
+                <div class="tip">輸入孔和軸的公差代號，分析配合類型（留隙配合、過盈配合或過渡配合）及配合公差</div>
+            </div>
+        </div>
+
+        <!-- 製程資料 -->
+        <div id="tab-recommend" class="tab-content">
+            <div class="card">
+                <h2>製程資料</h2>
+
+                <!-- [智慧工程與製程媒合] 這是整合功能的核心分頁 -->
+                <div class="section-divider">
+                    <h3 class="section-title">Step 1: 定義需求與配合 (Smart Fit)</h3>
+                    <div class="smart-input-container"
+                        style="margin-bottom: 15px; border-bottom: 1px dashed #334155; padding-bottom: 15px;">
+                        <label for="f_part_name">目標零件名稱 (Part Name)</label>
+                        <input id="f_part_name" placeholder="例如：主軸 Shaft A" style="width: 100%; margin-bottom: 10px;">
+                    </div>
+                    <!-- [輸入區] 包含關鍵字、直徑輸入與 Cp 下拉選單 -->
+                    <div class="smart-input-container">
+                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                            <label for="smart-keywords">功能需求關鍵字</label>
+                            <div style="font-size: 13px;">
+                                <label
+                                    style="cursor: pointer; color:#94a3b8; margin-right: 12px; display: inline-flex; align-items: center;">
+                                    <input type="radio" name="kw-mode" value="multiple" checked
+                                        onchange="toggleKeywordMode(true)" style="width: auto; margin: 0 6px 0 0;"> 允許多選
+                                    (預設)
+                                </label>
+                                <label
+                                    style="cursor: pointer; color:#94a3b8; display: inline-flex; align-items: center;">
+                                    <input type="radio" name="kw-mode" value="single"
+                                        onchange="toggleKeywordMode(false)" style="width: auto; margin: 0 6px 0 0;">
+                                    限制單選
+                                </label>
+                            </div>
+                        </div>
+                        <div class="row smart-input-row" style="align-items: center; gap: 10px;">
+                            <select id="smart-keywords" multiple="multiple"
+                                style="width: 100%; max-width: 400px; padding: 12px;" data-placeholder="選擇應用場景或功能...">
+                                <!-- 選項由 JavaScript 自動填寫 -->
+                            </select>
+                            <div class="smart-size-input-group">
+                                <span class="smart-label">加工直徑</span>
+                                <input id="smart-size" type="number" placeholder="mm" title="輸入尺寸以自動計算機台精度要求">
+                            </div>
+                        </div>
+
+                        <!-- Advanced Settings Row -->
+                        <div class="row smart-settings-row"
+                            style="margin-top: 10px; align-items: center; display: flex; gap: 30px;">
+                            <div class="smart-cp-group" style="display: flex; align-items: center; gap: 8px;">
+                                <label for="smart-cp"
+                                    style="color: #94a3b8; font-size: 14px; margin-bottom: 0; white-space: nowrap;">製程能力指標
+                                    (Cp):</label>
+                                <select id="smart-cp"
+                                    style="padding: 6px 10px; background: #334155; border: 1px solid #475569; color: white; border-radius: 6px; cursor: pointer; min-width: 140px;">
+                                    <option value="1.0">1.0 (基本)</option>
+                                    <option value="1.33">1.33 (一般)</option>
+                                    <option value="1.67">1.67 (嚴格)</option>
+                                    <option value="2.0">2.0 (六標準差)</option>
+                                    <option value="3.0" selected>3.0 (高精密 - 1/3原則)</option>
+                                    <option value="4.0">4.0 (超精密 - 1/4原則)</option>
+                                </select>
+                            </div>
+                            <button class="smart-search-btn" onclick="querySmartFit()">
+                                🔍 搜尋適合的配合 & 機台
+                            </button>
+                        </div>
+                    </div>
+                    <div id="smart-result" class="result hidden"></div>
+                    <div class="tip">輸入關鍵字與尺寸，系統將推薦配合代號，並自動計算所需精度來篩選機台。</div>
+                </div>
+
+                <!-- [Step 2 機台媒合] 根據上一步計算出的精度，自動帶入並篩選機台 -->
+                <div>
+                    <h3 class="section-title">Step 2: 製程與機台媒合 (Process Matching)</h3>
+
+                    <div class="wrap kb-grid-wrapper">
+                        <!-- [篩選條件卡片] 包含應用場景、公司、機台類型等篩選器 -->
+                        <div class="kb-filter-grid">
+                            <div class="row kb-scenario-box">
+                                <label class="kb-scenario-label">應用場景</label>
+                                <select id="f_scenario" class="kb-scenario-select" aria-label="應用場景">
+                                    <option value="GENERAL">通用加工 (General)</option>
+                                    <option value="MOLD">模具加工 (Mold & Die)</option>
+                                    <option value="AERO">航太零件 (Aerospace)</option>
+                                    <option value="MASS">量產加工 (Mass Production)</option>
+                                </select>
+                            </div>
+
+                            <div class="row">
+                                <label>公司</label>
+                                <select id="f_company" aria-label="選擇公司">
+                                    <option value="ALL">全部</option>
+                                </select>
+                            </div>
+
+                            <div class="row">
+                                <label>機台類型</label>
+                                <select id="f_process" aria-label="選擇機台類型">
+                                    <option value="ALL">全部 </option>
+                                    <option value="TURNING">數控車床 (CNC Lathe)</option>
+                                    <option value="CNC_MILLING">數控銑床 (CNC Milling Machine)</option>
+                                    <option value="VMC_MILLING">立式加工機 (Vertical Machining Center)</option>
+                                    <option value="HMC_MILLING">臥式加工機 (Horizontal Machining Center)</option>
+                                    <option value="FIVE_AXIS_MILLING">五軸加工機 (5-Axis Machining Center)</option>
+                                    <option value="MILL_TURN">車銑複合 (Mill-Turn)</option>
+                                    <option value="GRINDING">磨床 (Grinding Machine)</option>
+                                </select>
+                            </div>
+
+                            <!-- Consolidated inputs for compactness -->
+                            <div class="row">
+                                <div><label>最低軸數</label><input id="f_axes" type="number" min="0" step="1"
+                                        placeholder="3"></div>
+                            </div>
+
+                            <div class="sep kb-separator"></div>
+
+                            <!-- [動態精度輸入] 這些數值會由 Smart Fit (Step 1) 自動計算並填入，也可手動修改 -->
+                            <div class="kb-scenario-box kb-highlight-box">
+                                <div class="row kb-result-row">
+                                    <label class="kb-scenario-label kb-label-highlight">目標重現性 (Positioning
+                                        Repeatability)</label>
+                                    <input type="number" id="f_accuracy" step="0.001" placeholder="系統自動填入 (或手動輸入)">
+                                </div>
+                                <div class="row">
+                                    <label class="kb-scenario-label kb-label-highlight">目標定位精度 (Positioning
+                                        Accuracy)</label>
+                                    <input type="number" id="f_positioning" step="0.001" placeholder="系統自動填入 (或手動輸入)">
+                                </div>
+                                <div class="tip kb-tip-highlight">* 上述數值可由 Step 1 自動帶入</div>
+                            </div>
+
+                            <div class="sep kb-separator"></div>
+
+                            <!-- [進階篩選] 預設展開的詳細規格篩選 (行程、轉速...) -->
+                            <details open>
+                                <summary class="kb-details-summary">進階規格篩選 (行程、轉速、工件尺寸) <span class="arrow">▼</span>
+                                </summary>
+                                <div class="grid kb-filter-grid">
+                                    <div class="row grp-mill">
+                                        <label>最大加工行程 X/Y/Z (mm)</label>
+                                        <div class="inline kb-inline-flex kb-input-group">
+                                            <input id="f_x" placeholder="X" class="kb-input-third">
+                                            <input id="f_y" placeholder="Y" class="kb-input-third">
+                                            <input id="f_z" placeholder="Z" class="kb-input-third">
+                                        </div>
+                                    </div>
+                                    <div class="row">
+                                        <label>主軸規格 (轉速/馬力)</label>
+                                        <div class="inline kb-inline-flex kb-input-group">
+                                            <input id="f_rpm" placeholder="RPM" class="kb-input-half">
+                                            <input id="f_power" placeholder="kW" class="kb-input-half">
+                                        </div>
+                                    </div>
+                                    <div class="row grp-turn">
+                                        <label>車/铣規格 (棒材/直徑/長度)</label>
+                                        <div class="inline kb-inline-flex kb-input-group">
+                                            <input id="f_bar" placeholder="棒材送料能力" class="kb-input-third">
+                                            <input id="f_work_d" placeholder="最大加工直徑" class="kb-input-third">
+                                            <input id="f_work_l" placeholder="最大加工長度" class="kb-input-third">
+                                        </div>
+                                    </div>
+                                </div>
+                            </details>
+
+                            <div class="row kb-margin-top-15">
+                                <label>排序方式</label>
+                                <div class="inline kb-inline-flex" id="sort_btns">
+                                    <div class="chip on" data-sort="SCORE">綜合推薦</div>
+                                    <div class="chip" data-sort="CAP">規格符合度</div>
+                                    <div class="chip" data-sort="CONF">資料信賴度</div>
+                                </div>
+                                <input type="hidden" id="f_sort" value="SCORE">
+                            </div>
+
+                            <div class="btns kb-btns">
+                                <button class="primary" id="btn_run">開始篩選機台</button>
+                                <button id="btn_report" style="background: #059669; color: white; border: none;">📊
+                                    產生零件媒合報表</button>
+                                <button id="btn_reset" class="kb-btn-reset">重置條件</button>
+                            </div>
+                        </div>
+
+                        <!-- [結果顯示區] 用於顯示符合條件的機台卡片 -->
+                        <div class="mt-4">
+                            <div class="hd kb-card-header">機台推薦清單</div>
+                            <div class="kpis kb-kpis-margin-bottom">
+                                <div class="kpi">
+                                    <div class="t">符合</div>
+                                    <div class="v" id="k_ok">-</div>
+                                </div>
+                                <div class="kpi">
+                                    <div class="t">Top 1</div>
+                                    <div class="v" id="k_top">-</div>
+                                </div>
+                            </div>
+                            <div class="list" id="kb-result"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+
+
+        <!-- AI Chat Section -->
+        <div id="tab-chat" class="tab-content">
+            <div class="card ai-agent-promo">
+                <h2 class="ai-agent-title">AI 工程顧問 (GAI Agent)</h2>
+                <p class="ai-agent-desc">
+                    提供生成式 AI 代理，支援 RAG 知識庫與多模型切換 (Llama3, Gemma3 等)。
+                </p>
+
+                <a href="http://127.0.0.1:7011" target="_blank" rel="noopener" class="ai-agent-link">
+                    <button class="ai-agent-btn">
+                        前往 AI 智能顧問 →
+                    </button>
+                </a>
+
+                <p class="ai-agent-subtext">
+                    將會開啟新視窗 (Port 7011)
+                </p>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- 載入 jQuery 與 Select2 -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+    <script src="machines_data.js"></script>
+    <script src="main.js"></script>
+    <script src="process_kb.js"></script>
+    <script>
+        // Hook tab switch to init process KB logic if needed
+        const originalSwitchTab = window.switchTab;
+        window.switchTab = function (tabName) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+            const btn = document.querySelector(`button[onclick="switchTab('${tabName}')"]`);
+            if (btn) btn.classList.add('active');
+
+            const content = document.getElementById(`tab-${tabName}`);
+            if (content) content.classList.add('active');
+
+            // If switching to Smart Engineering (recommend), ensure KB is init
+            if (tabName === 'recommend') {
+                if (typeof initProcessKB === 'function') {
+                    initProcessKB();
+                }
+            }
+        }
+
+        // 初始化關鍵字下拉選單
+        $(document).ready(function () {
+            $('#smart-keywords').select2({
+                placeholder: "選擇應用場景或功能 (可打字搜尋)",
+                allowClear: false,  // 關閉全局清除叉叉
+                width: '100%'
+            });
+
+            // 從後端取得所有關鍵字
+            fetch('/api/keywords')
+                .then(res => res.json())
+                .then(data => {
+                    if (data.ok && data.keywords) {
+                        const select = $('#smart-keywords');
+                        select.append('<option value=""></option>'); // 預留一個空選項給單選框的 placeholder 使用
+                        data.keywords.forEach(kw => {
+                            const option = new Option(kw, kw, false, false);
+                            select.append(option);
+                        });
+                        select.trigger('change'); // 更新畫面
+                    }
+                })
+                .catch(err => console.error("Failed to fetch keywords", err));
+        });
+
+        // 處理單選/多選切換邏輯
+        function toggleKeywordMode(isMultiple) {
+            const select = $('#smart-keywords');
+            let currentVal = select.val();
+
+            // 銷毀舊的 Select2
+            select.select2('destroy');
+
+            // 切換屬性
+            if (isMultiple) {
+                select.prop('multiple', true);
+                if (currentVal && !Array.isArray(currentVal)) {
+                    currentVal = [currentVal];
+                }
+            } else {
+                select.prop('multiple', false);
+                if (Array.isArray(currentVal) && currentVal.length > 0) {
+                    currentVal = currentVal[0]; // 多選轉單選時，保留第一個選項
+                } else if (Array.isArray(currentVal)) {
+                    currentVal = '';
+                }
+            }
+
+            // 重新初始化
+            select.select2({
+                placeholder: "選擇應用場景或功能 (可打字搜尋)",
+                allowClear: true,
+                width: '100%'
+            });
+
+            // 寫回原本的值
+            select.val(currentVal).trigger('change');
+        }
+    </script>
+</body>
+
+</html>

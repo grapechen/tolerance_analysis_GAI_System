@@ -1,11 +1,17 @@
 import os
-import re
-import ollama
+import sys
+import networkx as nx
+try:
+    from sentence_transformers import SentenceTransformer
+except ImportError:
+    pass
+import faiss
+import numpy as np
 
-# 從我們先前寫好的腳本引入本地知識三元組提取器
-from triplets_extractor import get_knowledge_triplets, build_triplets_context
+sys.path.append(os.path.join(os.path.dirname(__file__), 'scripts'))
+from triplets_extractor import get_knowledge_triplets
 
-# 全域變數，暫存最新一筆的「純文字」機台媒合報表
+# 全域變數
 _latest_machine_report = ""
 
 def set_latest_report(report_text):
@@ -23,24 +29,20 @@ QA_PROMPT = """你是一位嚴謹的公差與機構製造業知識助理。
 
 [最高指導原則]：
 1. 請「完全依據」下方提供的 [知識領域三元組 Context] 回答問題。絕對不要加入任何外部知識、常識或舉例。
-2. 仔細閱讀 Context 中的句子，這是從知識圖譜中萃取出來的關聯。
+2. **所有由資料支持的論述，都必須標註來源出處**。請依照以下格式：
+   `"特徵面 1-P-1 具有個別公差 1-Par-1 [Data: Graph (1-P-1, 1-Par-1)]"`。
+   每個來源標註不可超過 5 項資料識別碼。
 3. 如果使用者問的問題在 Context 中找不到直接或間接的關聯，請直接回答：「在知識庫中找不到相關資料。」，絕對不要自己編造答案。
-4. 回答請保持簡潔專業，並以繁體中文回覆。
-5. **嚴禁補充說明 (Anti-Yapping)**：當使用者詢問產品結構、零件或特徵面時，請「只」輸出對應的清單。絕對禁止在清單之後補充任何 Markdown 表格、名詞定義、常識解釋或「小結」。
+4. 【歷史分離原則】歷史對話僅供你理解「代名詞」。如果最新問題與實體產品架構無關，且無法從 Context 獲得支持，你必須強制回答：「找不到相關資料。」
+5. 針對分析結果，請在心中給予一個 **Importance Score (0-100)** 評等。若某些推論的分數為 0，請直接將該部分論述刪除。
+6. 回答請保持簡潔專業，並以繁體中文回覆。嚴禁補充說明 (Anti-Yapping)：當只詢問清單時，絕對禁止補充 Markdown 表格或名詞定義。
 
-[✨進階結構指令✨]：
-請根據使用者的問題，決定輸出的「詳細程度」：
-1. **只問零件**：如果使用者問「包含哪些零件」，請只列出主要零件 (-)。絕對不要列出特徵面或公差。
-2. **問特徵面**：如果使用者明確要求「特徵面」，請在零件下方列出特徵面 (*)。**絕對不要加上任何公差括號**。
-3. **問公差/網路圖/細節**：如果使用者明確問「公差」或「公差網路圖」，請在特徵面後方加上公差：
-   - 個別參考公差用小括號：`(公差名稱)`
-   - 交互參考公差用中括號：`[公差名稱]`
-[✨診斷與檢查模式✨]：
-如果使用者是要「檢查」、「確認」或詢問某個零件/特徵/公差是否「缺少」、「漏掉」，請啟動【診斷模式】：
-1. 仔細比對使用者提到的項目與 Context 內的實際紀錄。
-2. 若使用者提到的項目在知識庫有找到，請明確回答「存在」或「正確」，並列出相關細節。
-3. 若使用者提到的項目在知識庫「找不到」，請明確回答「根據目前知識庫記載，確實缺少 / 未發現該特徵面或公差」。
-4. 診斷模式的回答請說明理由，此時**不需要**輸出 `---BOM_START---` 架構表，除非使用者同時要求畫出架構圖。
+【步驟 3：修正並給出最終正確答案 (Final Output)】
+根據你在 <AUDIT_REPORT> 中找出的所有錯誤，進行重整與修正。
+請用以下格式輸出你最終確認過、保證 100% 正確的結果。如果需要畫架構圖，請務必將 `---BOM_START---` 和 `---BOM_END---` 放在這區塊內：
+<FINAL_ANSWER>
+(你更正後完美無瑕的最終解答與架構圖...)
+</FINAL_ANSWER>
 
 [輸出格式規定]：
 - 如果使用者要求**產品架構圖**或**公差網路圖**，必須將結果包裹在 `---BOM_START---` 與 `---BOM_END---` 之間。
@@ -100,31 +102,197 @@ VERIFY_PROMPT = """你是一位極度嚴格的「公差與架構查核員」。
 
 [嚴格修正後的最終回答]:"""
 
-# 快取機制
-_triplets_context_cache = None
+# ------------------------------------------------------------------------
+# [KG-RAG 核心架構]
+# ------------------------------------------------------------------------
+_graph = None
+_communities = {}
+_embedder = None
+_faiss_index = None
+_edge_mapping = []
 _llm_cache = {}
 
-def get_graph_rag_response(question, model_name="llama3.1:8b", base_url="http://localhost:11434"):
+def init_knowledge_graph():
+    """初始化 NetworkX 圖譜與 FAISS 向量索引"""
+    global _graph, _communities, _embedder, _faiss_index, _edge_mapping
+    
+    if _graph is not None:
+        return
+        
+    print("⏳ 正在初始化本地知識庫 (建立 NetworkX 圖譜與向量索引)...")
+    _graph = nx.DiGraph()
+    triplets = get_knowledge_triplets('0213_export.csv')
+    
+    if not triplets:
+        print("[ERROR] 無法讀取本地知識庫。")
+        return
+        
+    # 1. 建立真實圖譜結構
+    for subject, relation, obj in triplets:
+        subject_part = subject.split('-')[0] if '-' in str(subject) else subject
+        obj_part = obj.split('-')[0] if '-' in str(obj) else obj
+        
+        _graph.add_node(subject, parent_part=subject_part)
+        _graph.add_node(obj, parent_part=obj_part)
+        _graph.add_edge(subject, obj, relation=relation)
+        
+    # 2. 建立社群摘要 (Community Summaries - 離線階段)
+    parts = set(nx.get_node_attributes(_graph, 'parent_part').values())
+    for part in parts:
+        subgraph_nodes = [n for n, attr in _graph.nodes(data=True) if attr.get('parent_part') == part]
+        subgraph = _graph.subgraph(subgraph_nodes)
+        
+        summary_lines = [f"【零件】 [{part}] 的層級與特徵資訊："]
+        for u, v, data in subgraph.edges(data=True):
+            # 轉換為容易理解的 Context
+            if data['relation'] in ['ns0__具有特徵面', 'ns0__包含特徵面', 'ns0__具有特徵']:
+                summary_lines.append(f"  └─ 具有特徵面 -> {v}")
+            elif data['relation'] == 'ns0__交互參考公差作用於':
+                summary_lines.append(f"  └─ [跨零件公差要求] 此公差交互作用於 -> {v} 特徵面")
+            else:
+                summary_lines.append(f"  - ({u}) --[{data['relation']}]--> ({v})")
+        _communities[part] = "\n".join(summary_lines)
+
+    # 3. 向量嵌入 (Vector Embedding) - 改用 Ollama
+    print("[WAIT] 嘗試透過 Ollama 載入語意模型 (nomic-embed-text) ...")
+    try:
+        import ollama
+        # 測試 Ollama 是否有此模型
+        try:
+            ollama.show('nomic-embed-text')
+            _embedder = 'ollama'  # 使用標記
+        except Exception:
+            print("[WARN] Ollama 未安裝 'nomic-embed-text'，嘗試拉取中...")
+            try:
+                ollama.pull('nomic-embed-text')
+                _embedder = 'ollama'
+            except Exception as e:
+                print(f"[ERROR] 無法拉取模型: {e}")
+                _embedder = None
+    except Exception as e:
+        print(f"[ERROR] Ollama 套件匯入錯誤或連線失敗: {e}")
+        _embedder = None
+
+    if _embedder != 'ollama':
+        try:
+            from sentence_transformers import SentenceTransformer
+            print("[WAIT] 退回使用 sentence-transformers 本地模型...")
+            _embedder = SentenceTransformer('shibing624/text2vec-base-chinese')
+        except Exception as e:
+            print(f"[WARN] 無法載入本地模型。錯誤: {e}")
+            _embedder = None
+    texts = []
+    _edge_mapping = []
+    for u, v, data in _graph.edges(data=True):
+        text = f"{u} 的 {data['relation']} 是 {v}"
+        texts.append(text)
+        _edge_mapping.append((u, v))
+        
+    print(f"[WAIT] 正在對 {len(texts)} 筆關聯進行向量化...")
+    embeddings_list = []
+    if _embedder == 'ollama':
+        import ollama
+        for txt in texts:
+            resp = ollama.embeddings(model='nomic-embed-text', prompt=txt)
+            embeddings_list.append(resp['embedding'])
+    elif _embedder is not None:
+        embeddings_list = _embedder.encode(texts).tolist()
+    else:
+        print("[ERROR] 無可用的向量化工具，關聯搜尋將不可用。")
+        return
+        
+    embeddings = np.array(embeddings_list, dtype=np.float32)
+    _faiss_index = faiss.IndexFlatL2(embeddings.shape[1])
+    _faiss_index.add(np.array(embeddings))
+    print(f"[SUCCESS] 知識圖譜載入完成！共提取 {len(triplets)} 條關聯。")
+
+def enhanced_graph_retrieval(question, is_global=False, top_k=6, k_hop=1):
+    """
+    基於問題動態檢索圖譜上下文。
+    """
+    if _graph is None:
+        init_knowledge_graph()
+        if _graph is None:
+            return "[ERROR] 知識圖譜初始化失敗。"
+        
+    if is_global:
+        # 回答全域結構查詢
+        return "\n\n".join(_communities.values())
+        
+    # Local Search
+    if _embedder is None or _faiss_index is None:
+        return "[ERROR] 語意模型初始化失敗，無法進行圖譜檢索。"
+
+    # 1. 向量檢索 (Vector Search)
+    if _embedder == 'ollama':
+        import ollama
+        resp = ollama.embeddings(model='nomic-embed-text', prompt=question)
+        query_emb = np.array([resp['embedding']], dtype=np.float32)
+    else:
+        query_emb = _embedder.encode([question])  # type: ignore
+        
+    D, indices = _faiss_index.search(query_emb, top_k)  # type: ignore
+    
+    # 2. 關鍵字助推器 (Keyword Booster) - 特別針對 Windows 上的中文子字串
+    # 如果使用者問 "上軸承"，我們也應該找出名為 "6-上軸承" 的節點
+    potential_nodes = set()
+    for node in _graph.nodes():
+        if str(node) in question or question in str(node):
+            potential_nodes.add(node)
+            
+    retrieved_subgraph = nx.DiGraph()
+    
+    # 加入向量檢索到的邊
+    for idx_list in indices:
+        for idx in idx_list:
+            if idx == -1 or idx >= len(_edge_mapping):
+                continue
+            u, v = _edge_mapping[idx]
+            potential_nodes.add(u)
+            potential_nodes.add(v)
+
+    # 3. 擴展節點 (k-hop expansion)
+    for node in potential_nodes:
+        if node not in _graph:
+            continue
+        neighbors = list(nx.single_source_shortest_path_length(_graph.to_undirected(), node, cutoff=k_hop).keys())  # type: ignore
+        for neighbor in neighbors:
+            if _graph.has_edge(node, neighbor):  # type: ignore
+                retrieved_subgraph.add_edge(node, neighbor, relation=_graph[node][neighbor]['relation'])  # type: ignore
+            if _graph.has_edge(neighbor, node):  # type: ignore
+                retrieved_subgraph.add_edge(neighbor, node, relation=_graph[neighbor][node]['relation'])  # type: ignore
+                    
+    if not retrieved_subgraph.edges():
+        return "在知識庫中找不到與「" + question + "」直接相關的圖譜資訊。"
+
+    context_lines = ["【以下是精準檢索出的相鄰圖譜關聯結構 (Tree Structure)】："]
+    for u, v, data in retrieved_subgraph.edges(data=True):
+        rel = data['relation']
+        if rel in ['ns0__具有特徵面', 'ns0__包含特徵面', 'ns0__具有特徵']:
+             context_lines.append(f"【零件】{u}\n  └─【特徵面】{v} [Data: Graph ({u}, {v})]")
+        elif rel in ['ns0__交互參考公差作用於']:
+             context_lines.append(f"【公差要求】{u}\n  └─ [跨零件/特徵面指向] 作用於 -> {v} [Data: Graph ({u}, {v})]")   
+        elif rel in ['ns0__個別參考公差作用於']:
+             context_lines.append(f"【特徵面】{v}\n  └─ [自身限制] 具有個別公差 -> {u} [Data: Graph ({u}, {v})]") 
+        else:
+             context_lines.append(f"({u}) --[{rel}]--> ({v}) [Data: Graph ({u}, {v})]")
+             
+    # 額外安全性：如果沒有抓到任何東西，回傳空字串讓 LLM 觸發找不到資料的回答
+    return "\n".join(context_lines)
+
+def get_graph_rag_response(question, model_name="llama3.1:8b", base_url="http://localhost:11434", history=None):
     """
     提供給 Web UI (ai_app.py) 呼叫的函式，支援動態切換模型與 URL
-    使用本地 CSV 取代 Neo4j
+    使用本地 CSV + NetworkX + FAISS 建立 Hybrid Topology RAG
     """
-    global _triplets_context_cache
     
     # 1. 載入並快取知識庫 Context
-    if _triplets_context_cache is None:
-        print("⏳ 正在初始化本地知識庫 (讀取 0213_export.csv)...")
-        # 取得當前檔案所在目錄的絕對路徑
-        current_dir = os.path.dirname(os.path.abspath(__file__))
-        csv_path = os.path.join(current_dir, 'data', '0213_export.csv')
-        
-        triplets = get_knowledge_triplets('0213_export.csv')
-        if not triplets:
-            return "❌ 無法讀取本地知識庫 (0213_export.csv)，請確認檔案存在且路徑正確。"
-        _triplets_context_cache = build_triplets_context(triplets)
-        print(f"✅ 知識庫載入完成！共提取 {len(triplets)} 條關聯。")
+    init_knowledge_graph()
+    if _graph is None:
+        return "[ERROR] 無法初始化知識圖譜。請檢查資料。"
 
     cache_key = f"{model_name}_{base_url}"
+    import ollama
     
     # 2. 初始化 LLM Client
     if cache_key not in _llm_cache:
@@ -133,57 +301,36 @@ def get_graph_rag_response(question, model_name="llama3.1:8b", base_url="http://
             client = ollama.Client(host=base_url)
             _llm_cache[cache_key] = client
         except Exception as e:
-            return f"❌ Ollama 連線失敗: {e}"
+            return f"[ERROR] Ollama 連線失敗: {e}"
             
     # 3. 呼叫模型推論
     try:
         client = _llm_cache[cache_key]
         
-        # --- Smart RAG 過濾器 ---
-        # 建立常見的機構公差與零件字典，若題目有出現就加入關鍵字
-        domain_dict = ["底座", "滑台", "螺桿", "導軌", "平台", "蝸輪", "蝸桿", "軸承", "軸", "交互參考", "平行度", "垂直度", "同心度", "圓柱度", "輪廓度", "距離", "位置", "特徵", "零件", "配合", "基準", "公差", "交互", "確認", "檢查", "缺少", "漏掉", "機台", "加工", "推薦", "精度", "定位", "重現", "製程", "車床", "銑床", "五軸", "立式", "臥式", "龍門", "搪銑", "鑽孔", "亞崴", "東台", "永進", "AWEA", "Tongtai", "YCM", "迴轉", "螺帽", "間隔", "固定座", "上板"]
-        keywords = [word for word in domain_dict if word in question]
+        # 判斷是否為「全域結構查詢」
+        global_intent_keywords = ["架構", "結構", "bom", "清單", "所有零件"]
+        is_global_query = any(kw.lower() in question.lower() for kw in global_intent_keywords)
         
-        # 若是英文或數字型號 (如 1-底座)
-        eng_num_keywords = re.findall(r'[a-zA-Z0-9]+', question)
-        keywords.extend(eng_num_keywords)
+        # 執行加強版的混合式圖譜搜尋 (Hybrid Topology RAG)
+        filtered_context = enhanced_graph_retrieval(question, is_global=is_global_query, top_k=6, k_hop=1)
         
-        # 移除太短的或重複的
-        keywords = list(set([k for k in keywords if len(k) >= 2]))
-        
-        all_lines = _triplets_context_cache.split('\n')
-        relevant_lines = []
-        
-        # 確保組合件本身一定會被包含
-        assembly_keywords = ["精密迴轉滑台", "滑台", "組合件"]
-        
-        for line in all_lines:
-            line_lower = line.lower()
-            if not line.strip():
-                continue
-            # 若有命中任何關鍵字，或包含組合件關鍵字，就留下來
-            if any(k.lower() in line_lower for k in keywords) or any(ak.lower() in line_lower for ak in assembly_keywords):
-                relevant_lines.append(line)
-        
-        # 如果過濾後什麼都沒找到，就把整份知識庫丟進去 (fallback)
-        filtered_context = "\n".join(relevant_lines)
-        if not relevant_lines:
-            # fallback: 把整份知識庫丟給 LLM，讓它自己從中找答案
-            # 這比回傳空字串 (導致「找不到」) 更有用
-            filtered_context = _triplets_context_cache
-            
-        # 💡 【核心修改】：將「動態機台報表」與 CSV 圖譜資訊完美合併
+        # 💡 【擴增】：將「動態機台報表」與圖譜資訊合併
         global _latest_machine_report
         if _latest_machine_report:
-            filtered_context = f"【🔥 近期使用者剛產生的機台媒合報表，請務必參考此表的規格與評分】：\n{_latest_machine_report}\n\n====================\n\n【圖譜既有公差知識】：\n{filtered_context}"
+            filtered_context = f"【🔥 近期使用者剛產生的機台媒合報表，請務必參考此表的規格與評分】：\n{_latest_machine_report}\n\n====================\n\n{filtered_context}"
             
-        print(f"🕵️ Smart RAG 過濾: 找到 {len(relevant_lines)} 條相關資料 (原 {len(all_lines)} 條) " + ("(包含機台報表注入)" if _latest_machine_report else ""))
+        # 加上對話歷史紀錄 (History)
+        if history:
+            history_text = "\n".join([f"{'User' if msg.get('role') == 'user' else 'Assistant'}: {msg.get('content')}" for msg in history])
+            filtered_context = f"【近期對話上下文 History】(使用者剛才與你的對話，可能包含他現在用代名詞指稱的對象)：\n{history_text}\n\n====================\n\n{filtered_context}"
+            
+        print(f"[SEARCH] KG-RAG 過濾: 使用 {'Global Community 摘要' if is_global_query else 'Vector Search + k-hop 圖譜相鄰擴展'}")
         
         final_prompt = QA_PROMPT.format(
             context=filtered_context, 
             question=question
         )
-        print(f"🤖 AI ({model_name}) 正在依據本地知識庫推論中【第一階段：生成草稿】...")
+        print(f"[AI] AI ({model_name}) 正在依據本地知識庫推論中【第一階段：生成草稿】...")
         
         response = client.generate(
             model=model_name,
@@ -207,7 +354,7 @@ def get_graph_rag_response(question, model_name="llama3.1:8b", base_url="http://
             
         return draft_result
     except Exception as e:
-        return f"❌ GraphRAG 推論過程發生錯誤: {e}"
+        return f"[ERROR] GraphRAG 推論過程發生錯誤: {e}"
 
 def chat_with_graph_rag():
     print("\n==================================")
@@ -221,9 +368,9 @@ def chat_with_graph_rag():
         if question.lower() in ['exit', 'quit']:
             break
             
-        print("\n🤖 查詢中... (請稍候)\n")
+        print("\n[AI] 查詢中... (請稍候)\n")
         response = get_graph_rag_response(question)
-        print(f"\n✅ AI 最終結論: \n{response}\n")
+        print(f"\n[SUCCESS] AI 最終結論: \n{response}\n")
         print("-" * 50)
 
 if __name__ == "__main__":

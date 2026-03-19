@@ -86,3 +86,12 @@ for idx, row in df.iterrows():
 with open("c:/Tolerance_Project/client/machines_data.js", "w", encoding="utf-8") as f:
     f.write("const machines = " + json.dumps(machines, ensure_ascii=False, indent=4) + ";\n\n")
     f.write("const capabilities = " + json.dumps(capabilities, ensure_ascii=False, indent=4) + ";\n")
+
+# Also output JSON for server API
+json_data = {
+    "ok": True,
+    "machines": machines,
+    "capabilities": capabilities
+}
+with open("c:/Tolerance_Project/server/data/machines_data.json", "w", encoding="utf-8") as f:
+    json.dump(json_data, f, ensure_ascii=False, indent=4)

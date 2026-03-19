@@ -829,3 +829,98 @@ details[open] .kb-details-summary .arrow {
 .select2-container--default .select2-search--inline .select2-search__field {
     color: #ffffff !important;
 }
+
+/* =====================================================
+   [從 inline style 提取的 CSS 規則]
+   原本散落在 index.html 的 style 屬性，統一定義於此
+   ===================================================== */
+
+/* Step 1: 零件名稱輸入區上邊框 */
+.smart-input-container--bordered {
+    margin-bottom: 15px;
+    border-bottom: 1px dashed #334155;
+    padding-bottom: 15px;
+}
+
+/* 零件名稱輸入框 - 全寬 */
+.input-full-width {
+    width: 100%;
+    margin-bottom: 10px;
+}
+
+/* 關鍵字選擇模式 row (多選/單選切換) */
+.kw-mode-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+}
+
+.kw-mode-label-group {
+    font-size: 13px;
+}
+
+.kw-mode-label {
+    cursor: pointer;
+    color: #94a3b8;
+    margin-right: 12px;
+    display: inline-flex;
+    align-items: center;
+    margin-bottom: 0;
+    margin-top: 0;
+}
+
+.kw-mode-label:last-child {
+    margin-right: 0;
+}
+
+.kw-mode-radio {
+    width: auto !important;
+    margin: 0 6px 0 0;
+}
+
+/* 關鍵字多選下拉 */
+.select-keywords {
+    width: 100%;
+    max-width: 400px;
+    padding: 12px;
+}
+
+/* Smart Settings Row (Cp 選單那一列) */
+.smart-settings-row {
+    margin-top: 10px;
+    align-items: center;
+    display: flex;
+    gap: 30px;
+}
+
+.smart-cp-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.smart-cp-label {
+    color: #94a3b8;
+    font-size: 14px;
+    margin-bottom: 0;
+    white-space: nowrap;
+}
+
+.smart-cp-select {
+    padding: 6px 10px;
+    background: #334155;
+    border: 1px solid #475569;
+    color: white;
+    border-radius: 6px;
+    cursor: pointer;
+    min-width: 140px;
+    width: auto;
+}
+
+/* 零件媒合報表按鈕 */
+.btn-report {
+    background: #059669;
+    color: white;
+    border: none;
+    margin-top: 0;
+}

@@ -3,14 +3,14 @@ import os
 
 def append_machine_knowledge():
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    machines_path = os.path.join(current_dir, 'data', 'machines.csv')
-    export_path = os.path.join(current_dir, 'data', '0213_export.csv')
+    machines_path = r'c:/Tolerance_Project/data/machines.csv'
+    export_path = r'c:/Tolerance_Project/server/data/0213_export.csv'
 
-    print(f"📂 讀取機台資料: {machines_path}")
+    print(f"Reading machines data: {machines_path}")
     try:
-        df_machines = pd.read_csv(machines_path)
+        df_machines = pd.read_csv(machines_path, encoding='utf-8-sig')
     except Exception as e:
-        print(f"❌ 讀取 machines.csv 失敗: {e}")
+        print(f"Error reading machines.csv: {e}")
         return
 
     new_rows = []
@@ -59,25 +59,19 @@ def append_machine_knowledge():
             new_rows.append({"n": n_str, "r": r_str, "m": m_str})
 
     if not new_rows:
-        print("⚠️ 沒有產生新的三元組。")
+        print("Warning: No new triplets generated.")
         return
 
     df_new = pd.DataFrame(new_rows)
-    print(f"✅ 成功轉換 {len(new_rows)} 條機台知識三元組！")
+    print(f"Success: Converted {len(new_rows)} machine knowledge triplets!")
 
-    print(f"📂 正在追加到: {export_path}")
+    print(f"Appending to: {export_path}")
     
-    # 直接使用 append 模式寫入 CSV (pandas mode='a')
     try:
-        df_new.to_csv(export_path, mode='a', header=False, index=False, encoding='cp950')
-        print(f"🎉 成功將機台知識匯入到知識圖譜中！")
+        df_new.to_csv(export_path, mode='a', header=False, index=False, encoding='utf-8-sig')
+        print(f"Success: Imported machine knowledge into knowledge graph!")
     except Exception as e:
-        # Fallback to UTF-8 sig if cp950 fails
-        try:
-            df_new.to_csv(export_path, mode='a', header=False, index=False, encoding='utf-8-sig')
-            print(f"🎉 成功使用 UTF-8 格式將機台知識匯入！")
-        except Exception as e2:
-            print(f"❌ 寫入失敗: {e2}")
+        print(f"Error: Write failed: {e}")
 
 if __name__ == "__main__":
     append_machine_knowledge()

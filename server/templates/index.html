@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ISO 286 AI 智能助手</title>
+  <link rel="stylesheet" href="/static/css/style.css">
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+</head>
+<body>
+
+  <div class="header">
+    <h1>
+      <div class="status-dot"></div>
+       AI 智能助手
+    </h1>
+    <div class="model-selector">
+      <label for="model-select" class="model-label">Model:</label>
+      <select id="model-select">
+        {% for model in models %}
+        <option value="{{ model }}" {% if model == current_model %}selected{% endif %}>
+          {{ model }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
+  <div class="chat-container" id="chat-history">
+    <!-- Welcome Message -->
+    <div class="message ai">
+      <div class="avatar">AI</div>
+      <div class="bubble">
+        你好！我是您的AI智能助手。<br>
+        您可以問我像是：<br>
+        • <strong>25mm H7</strong> (查詢單一公差)<br>
+        • <strong>分析 25mm H7/h6</strong> (進行配合分析)<br>
+        • <strong>精密迴轉滑台包含哪些零件？</strong> (畫出產品架構圖)<br>
+        請問有什麼我可以幫您的嗎？
+      </div>
+    </div>
+  </div>
+
+  <div class="input-area">
+    <input type="text" id="chat-input" placeholder="輸入您的問題..." autocomplete="off">
+    <button id="send-btn">發送</button>
+  </div>
+
+  <!-- Interactive BOM Modal -->
+  <div class="bom-modal-overlay" id="bom-modal-overlay">
+    <div class="bom-modal-content">
+      <button class="close-modal-btn" id="close-bom-modal">&times;</button>
+      <div id="bom-modal-container"></div>
+    </div>
+  </div>
+
+  <!-- Tolerance Path Editor Modal -->
+  <div class="editor-modal-overlay" id="editor-modal-overlay">
+    <div class="editor-modal-content">
+      <button class="close-modal-btn" id="close-editor-modal">&times;</button>
+      <div class="editor-header">✏️ 公差路徑編輯器 (加入平移/旋轉)</div>
+      <div class="editor-list" id="editor-list-container">
+        <!-- Rendered by JS -->
+      </div>
+      <div class="editor-actions">
+        <button class="btn-export" id="export-excel-btn">⬇️ 匯出為 Excel 分析檔</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="/static/js/bom_renderer.js"></script>
+  <script src="/static/js/app.js"></script>
+</body>
+</html>

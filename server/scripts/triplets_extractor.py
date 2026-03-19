@@ -23,12 +23,14 @@ def extract_relationship(rel_str):
 def get_knowledge_triplets(csv_filename='0213_export.csv'):
     """讀取 CSV 並回傳清理後的三元組列表"""
     current_dir = os.path.dirname(os.path.abspath(__file__))
-    csv_path = os.path.join(current_dir, 'data', csv_filename)
+    # triplets_extractor.py 在 server/scripts/，所以往上一層才是 server/data/
+    server_dir = os.path.dirname(current_dir)
+    csv_path = os.path.join(server_dir, 'data', csv_filename)
     
-    print(f"📂 正在讀取知識圖譜檔案: {csv_path}")
+    print(f"Reading knowledge graph file: {csv_path}")
     
     if not os.path.exists(csv_path):
-        print("❌ 找不到 CSV 檔案")
+        print("CSV file not found")
         return []
     
     df = None
@@ -36,13 +38,13 @@ def get_knowledge_triplets(csv_filename='0213_export.csv'):
     for enc in ['utf-8-sig', 'utf-8', 'big5', 'cp950', 'gbk']:
         try:
             df = pd.read_csv(csv_path, encoding=enc, on_bad_lines='skip')
-            print(f"✅ 成功解碼！(編碼格式: {enc})")
+            print(f"Success! (Encoding: {enc})")
             break
         except Exception:
             pass
             
     if df is None:
-        print("❌ 無法讀取 CSV 檔案，請確認檔案編碼格式！")
+        print("Could not read CSV file, please check encoding!")
         return []
 
     triplets = []
@@ -124,6 +126,8 @@ def build_triplets_context(triplets):
             context_lines.append(f"特徵面「{o}」具有個別參考公差「{s}」。")
         elif p == 'ns0__交互參考公差作用於':
             context_lines.append(f"「{s}」是作用於特徵面「{o}」的交互參考公差。")
+        elif p == 'ns0__具有特徵面' or p == 'ns0__包含特徵面' or p == 'ns0__具有特徵':
+            context_lines.append(f"零件「{s}」具有特徵面「{o}」。")
         elif p == 'ns0__適用':
             context_lines.append(f"「{s}」適用於「{o}」。")
         else:
@@ -134,11 +138,11 @@ def build_triplets_context(triplets):
 
 if __name__ == "__main__":
     triplets = get_knowledge_triplets()
-    print(f"\n📊 總共提取了 {len(triplets)} 個知識三元組")
-    print("\n🔍 前 10 個三元組範例：")
+    print(f"\nTotal extracted {len(triplets)} knowledge triplets")
+    print("\nTop 10 triplets example:")
     for t in triplets[:10]:
         print(f" - 主體: {t[0]:<15} | 關係: {t[1]:<20} | 客體: {t[2]}")
         
-    print("\n📝 轉為 LLM Context 範例 (前 5 句):")
+    print("\nLLM Context example (Top 5 lines):")
     context_str = build_triplets_context(triplets[:5])
     print(context_str)

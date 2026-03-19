@@ -235,7 +235,7 @@ def parse_user_query(query):
         # Single lookup
         return size, code1, it1, None, None
 
-def get_rag_response(user_input, model_name='llama3.1:8b'):
+def get_rag_response(user_input, model_name='llama3.1:8b', history=None):
     """
     Main entry point for Web App or CLI.
     """
@@ -390,13 +390,17 @@ Answer in Traditional Chinese (繁體中文).
     Answer in Traditional Chinese (繁體中文).
     """
 
+    # 建立對話紀錄陣列 (包含歷史訊息)
+    chat_messages = [{'role': 'system', 'content': SYSTEM_PROMPT}]
+    if history:
+        for msg in history:
+            chat_messages.append({'role': msg.get('role', 'user'), 'content': msg.get('content', '')})
+    chat_messages.append({'role': 'user', 'content': prompt})
+
     # 4. Generate Response (using Ollama)
     try:
         # Use the provided model_name
-        response = ollama.chat(model=model_name, messages=[
-            {'role': 'system', 'content': SYSTEM_PROMPT},
-            {'role': 'user', 'content': prompt},
-        ])
+        response = ollama.chat(model=model_name, messages=chat_messages)
         return format_gdt_symbols(response['message']['content'])
         
     except Exception as e:

@@ -11,7 +11,7 @@ class GDTLoader:
     def load(self):
         """Loads the JSON file and parses relevant nodes."""
         if not os.path.exists(self.json_path):
-            print(f"⚠️ GD&T Data file not found: {self.json_path}")
+            print(f"[WARN] GD&T Data file not found: {self.json_path}")
             return
 
         try:
@@ -71,10 +71,10 @@ class GDTLoader:
                 count += 1
             
             self.loaded = True
-            print(f"✅ GD&T Knowledge Graph loaded: {count} entries found.")
+            print(f"[SUCCESS] GD&T Knowledge Graph loaded: {count} entries found.")
 
         except Exception as e:
-            print(f"❌ Error loading GD&T data: {e}")
+            print(f"[ERROR] Error loading GD&T data: {e}")
 
     def search(self, query):
         """
@@ -89,7 +89,7 @@ class GDTLoader:
         
         # Extract meaningful terms from query (remove common words)
         common_words = {'什麼', '是', '的', '有', '關於', '請問', '告訴我', '解釋', '說明', '怎麼', '如何'}
-        query_terms = []
+        query_terms: list[str] = []
         
         # First try to extract technical terms by removing common question words
         cleaned_query = q
@@ -110,7 +110,7 @@ class GDTLoader:
         
         # Remove duplicates while preserving order
         seen = set()
-        unique_terms = []
+        unique_terms: list[str] = []
         for term in query_terms:
             if term not in seen:
                 seen.add(term)
@@ -123,7 +123,7 @@ class GDTLoader:
         
         for item in self.knowledge_base:
             match = False
-            match_score = 0
+            match_score: int = 0
             
             # 1. Symbol Match (highest priority)
             if item['symbol'] and item['symbol'] in q:

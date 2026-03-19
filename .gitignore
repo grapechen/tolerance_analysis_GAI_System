@@ -50,6 +50,10 @@ Thumbs.db
 test.xlsx
 ISO_286_1_test.xlsx
 
+# Node
+node_modules/
+
 # 不相關的目錄
 Ontology/
 Oracle_JDK-24/
+graphrag-main/

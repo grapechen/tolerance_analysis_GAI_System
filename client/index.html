@@ -137,33 +137,30 @@
                 <!-- [智慧工程與製程媒合] 這是整合功能的核心分頁 -->
                 <div class="section-divider">
                     <h3 class="section-title">Step 1: 定義需求與配合 (Smart Fit)</h3>
-                    <div class="smart-input-container"
-                        style="margin-bottom: 15px; border-bottom: 1px dashed #334155; padding-bottom: 15px;">
+                    <div class="smart-input-container smart-input-container--bordered">
                         <label for="f_part_name">目標零件名稱 (Part Name)</label>
-                        <input id="f_part_name" placeholder="例如：主軸 Shaft A" style="width: 100%; margin-bottom: 10px;">
+                        <input id="f_part_name" placeholder="例如：主軸 Shaft A" class="input-full-width">
                     </div>
                     <!-- [輸入區] 包含關鍵字、直徑輸入與 Cp 下拉選單 -->
                     <div class="smart-input-container">
-                        <div style="display: flex; justify-content: space-between; align-items: baseline;">
+                        <div class="kw-mode-row">
                             <label for="smart-keywords">功能需求關鍵字</label>
-                            <div style="font-size: 13px;">
-                                <label
-                                    style="cursor: pointer; color:#94a3b8; margin-right: 12px; display: inline-flex; align-items: center;">
+                            <div class="kw-mode-label-group">
+                                <label class="kw-mode-label">
                                     <input type="radio" name="kw-mode" value="multiple" checked
-                                        onchange="toggleKeywordMode(true)" style="width: auto; margin: 0 6px 0 0;"> 允許多選
+                                        onchange="toggleKeywordMode(true)" class="kw-mode-radio"> 允許多選
                                     (預設)
                                 </label>
-                                <label
-                                    style="cursor: pointer; color:#94a3b8; display: inline-flex; align-items: center;">
+                                <label class="kw-mode-label">
                                     <input type="radio" name="kw-mode" value="single"
-                                        onchange="toggleKeywordMode(false)" style="width: auto; margin: 0 6px 0 0;">
+                                        onchange="toggleKeywordMode(false)" class="kw-mode-radio">
                                     限制單選
                                 </label>
                             </div>
                         </div>
-                        <div class="row smart-input-row" style="align-items: center; gap: 10px;">
-                            <select id="smart-keywords" multiple="multiple"
-                                style="width: 100%; max-width: 400px; padding: 12px;" data-placeholder="選擇應用場景或功能...">
+                        <div class="row smart-input-row">
+                            <select id="smart-keywords" multiple="multiple" class="select-keywords"
+                                data-placeholder="選擇應用場景或功能...">
                                 <!-- 選項由 JavaScript 自動填寫 -->
                             </select>
                             <div class="smart-size-input-group">
@@ -173,14 +170,11 @@
                         </div>
 
                         <!-- Advanced Settings Row -->
-                        <div class="row smart-settings-row"
-                            style="margin-top: 10px; align-items: center; display: flex; gap: 30px;">
-                            <div class="smart-cp-group" style="display: flex; align-items: center; gap: 8px;">
-                                <label for="smart-cp"
-                                    style="color: #94a3b8; font-size: 14px; margin-bottom: 0; white-space: nowrap;">製程能力指標
+                        <div class="row smart-settings-row">
+                            <div class="smart-cp-group">
+                                <label for="smart-cp" class="smart-cp-label">製程能力指標
                                     (Cp):</label>
-                                <select id="smart-cp"
-                                    style="padding: 6px 10px; background: #334155; border: 1px solid #475569; color: white; border-radius: 6px; cursor: pointer; min-width: 140px;">
+                                <select id="smart-cp" class="smart-cp-select">
                                     <option value="1.0">1.0 (基本)</option>
                                     <option value="1.33">1.33 (一般)</option>
                                     <option value="1.67">1.67 (嚴格)</option>
@@ -304,7 +298,7 @@
 
                             <div class="btns kb-btns">
                                 <button class="primary" id="btn_run">開始篩選機台</button>
-                                <button id="btn_report" style="background: #059669; color: white; border: none;">📊
+                                <button id="btn_report" class="btn-report">📊
                                     產生零件媒合報表</button>
                                 <button id="btn_reset" class="kb-btn-reset">重置條件</button>
                             </div>
@@ -357,7 +351,7 @@
     <!-- 載入 jQuery 與 Select2 -->
     <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
-    <script src="machines_data.js"></script>
+
     <script src="main.js"></script>
     <script src="process_kb.js"></script>
     <script>

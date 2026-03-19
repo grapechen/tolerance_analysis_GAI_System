@@ -20,6 +20,29 @@
 const API_BASE = 'http://127.0.0.1:7010';
 const DB = window.TOLERANCE_DATA || { it_tolerance: [], shaft_tolerance: [], hole_tolerance: [] };
 
+// 全域變數供各模組存取
+window.machines = [];
+window.capabilities = [];
+
+document.addEventListener('DOMContentLoaded', async () => {
+    try {
+        const res = await fetch(getApiUrl('/api/machines'));
+        const data = await res.json();
+        if (data.machines) {
+            window.machines = data.machines;
+            window.capabilities = data.capabilities || [];
+            console.log(`✅ 成功載入 ${window.machines.length} 筆機台資料與 ${window.capabilities.length} 筆能力資料`);
+
+            // 如果目前頁面有 initProcessKB (例如 製程媒合頁面)，則初始化
+            if (typeof initProcessKB === 'function') {
+                initProcessKB();
+            }
+        }
+    } catch (e) {
+        console.error("❌ 無法載入機台資料庫:", e);
+    }
+});
+
 // [工具函式] URL 輔助函式：自動偵測是正式環境還是本地環境
 function getApiUrl(endpoint) {
     // If running on same origin (files served by Flask), use relative path

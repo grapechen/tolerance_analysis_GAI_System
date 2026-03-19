@@ -1,0 +1,41 @@
+{
+  "version": "0.2",
+  "language": "en",
+  "words": [
+    "ollama", "Ollama", "OLLAMA",
+    "dotenv",
+    "GDTFONT",
+    "Segoe", "Roboto",
+    "datalist",
+    "qwen", "ministral", "deepseek", "kimi", "nemotron",
+    "interactives",
+    "TOLS", "Tols",
+    "Inds",
+    "Flexbox",
+    "linejoin", "linecap",
+    "ondblclick",
+    "oninput", "onchange",
+    "faiss", "FAISS",
+    "embedder",
+    "shibing",
+    "ngrok", "Ngrok",
+    "OLLAMA",
+    "openxmlformats", "officedocument", "spreadsheetml",
+    "generativeai", "genai",
+    "pname",
+    "rdfs",
+    "networkx",
+    "numpy",
+    "pandas",
+    "sqlalchemy",
+    "gunicorn",
+    "nomic",
+    "pymysql", "openpyxl", "venv", "gethostname"
+  ],
+  "ignorePaths": [
+    "node_modules/**",
+    ".venv/**",
+    "*.csv",
+    "*.json"
+  ]
+}

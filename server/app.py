@@ -1,13 +1,13 @@
 import os
-import socket
 
+import socket
+import json
+import re
 from flask import Flask, jsonify, request, send_from_directory
 from flask_cors import CORS
-from tables import Session, ISOTolerance, ShaftTolerance, HoleTolerance
 from sqlalchemy import and_
-from middleware import rate_limit, api_limiter, sanitize_error_message
-from logger import app_logger
-from logger import app_logger
+from tables import Session, ISOTolerance, ShaftTolerance, HoleTolerance
+from middleware import rate_limit, api_limiter
 from logger import app_logger
 from recommendation import smart_fit, machine_check
 import rag_server
@@ -17,9 +17,9 @@ app.json.ensure_ascii = False
 CORS(app, resources={r'/*': {'origins': '*'}})
 
 local_ip = socket.gethostbyname(socket.gethostname())
-app_logger.info(f'ISO 286 基本查詢系統啟動')
+app_logger.info('ISO 286 基本查詢系統啟動')
 app_logger.info(f'LAN IP: {local_ip}')
-app_logger.info(f'Build: 2025-08-30')
+app_logger.info('Build: 2025-08-30')
 
 @app.get("/recommender")
 def recommender_page():
@@ -38,6 +38,23 @@ def serve_static(filename):
     base_dir = os.path.dirname(os.path.abspath(__file__))
     client_dir = os.path.join(base_dir, '../client')
     return send_from_directory(client_dir, filename)
+
+@app.route('/api/machines', methods=['GET'])
+def get_machines():
+    """回傳機台與能力資料給前端"""
+    base_dir = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_dir, 'data', 'machines_data.json')
+    if not os.path.exists(file_path):
+        app_logger.error(f"找不到機台資料檔案: {file_path}")
+        return jsonify({"ok": False, "msg": "找不到機台資料"}), 404
+        
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            data = json.load(f)
+        return jsonify(data)
+    except Exception as e:
+        app_logger.error(f"解析機台資料失敗: {e}")
+        return jsonify({"ok": False, "msg": f"解析資料失敗: {str(e)}"}), 500
 
 # Keep old endpoint for compatibility if needed, but redirect or reuse
 @app.get("/lookup/tolerance")
@@ -77,8 +94,10 @@ def recommend_it():
 
         def it_key(it_txt: str) -> int:
             k = it_txt.upper().replace("IT","")
-            try: return int(k)
-            except: return int(float(k))
+            try:
+                return int(k)
+            except ValueError:
+                return int(float(k))
 
         if prefer_floor:
             floor_n = it_key(prefer_floor)
@@ -235,17 +254,19 @@ def api_analyze_fit():
         return jsonify({"ok": False, "msg": "缺少或不合法的參數"}), 400
 
     # 解析孔和軸的代號與 IT 等級
-    import re
     hole_match = re.match(r'([A-Z]+)(\d+)', hole_str)
     shaft_match = re.match(r'([a-z]+)(\d+)', shaft_str)
     
     if not hole_match or not shaft_match:
         return jsonify({"ok": False, "msg": "公差格式錯誤（孔應為大寫如 H7，軸應為小寫如 h6）"}), 400
 
-    hole_code = hole_match.group(1)
-    hole_it = "IT" + hole_match.group(2)
-    shaft_code = shaft_match.group(1)
-    shaft_it = "IT" + shaft_match.group(2)
+    if hole_match and shaft_match:
+        hole_code = hole_match.group(1)
+        hole_it = "IT" + hole_match.group(2)
+        shaft_code = shaft_match.group(1)
+        shaft_it = "IT" + shaft_match.group(2)
+    else:
+        return jsonify({"ok": False, "msg": "無法解析公差等級"}), 400
 
     s = Session()
     try:
@@ -293,8 +314,8 @@ def api_analyze_fit():
             "hole": {"公差類型": hole_code + hole_it.replace("IT", ""), "上偏差(um)": hole_max, "下偏差(um)": hole_min},
             "shaft": {"公差類型": shaft_code + shaft_it.replace("IT", ""), "上偏差(um)": shaft_max, "下偏差(um)": shaft_min},
             "fit_type": fit_type,
-            "max_clearance_um": round(max_clearance, 3),
-            "min_clearance_um": round(min_clearance, 3),
+            "max_clearance_um": float(f"{max_clearance:.3f}"),
+            "min_clearance_um": float(f"{min_clearance:.3f}"),
             "note": "正值為餘隙，負值為過盈"
         })
     finally:
@@ -428,7 +449,6 @@ def api_matchmaking():
     shaft_str = best_fit.get("shaft", "")
 
     # 2. 公差配合詳細數值 (查 ISO SQL Table)
-    import re
     s = Session()
     fit_details = {}
     try:
@@ -459,15 +479,17 @@ def api_matchmaking():
                 min_clearance = h_min - s_max
 
                 fit_type = "過渡配合"
-                if min_clearance >= 0: fit_type = "留隙配合"
-                elif max_clearance <= 0: fit_type = "過盈配合"
+                if min_clearance >= 0:
+                    fit_type = "留隙配合"
+                elif max_clearance <= 0:
+                    fit_type = "過盈配合"
 
                 fit_details = {
                     "fit_type": fit_type,
                     "hole": {"code": hole_str, "upper_um": h_max, "lower_um": h_min},
                     "shaft": {"code": shaft_str, "upper_um": s_max, "lower_um": s_min},
-                    "max_clearance_um": round(max_clearance, 3),
-                    "min_clearance_um": round(min_clearance, 3)
+                    "max_clearance_um": float(f"{max_clearance:.3f}"),
+                    "min_clearance_um": float(f"{min_clearance:.3f}")
                 }
     finally:
         s.close()

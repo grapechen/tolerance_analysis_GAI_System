@@ -36,7 +36,7 @@ function processTypeFromProcessId(pid) {
     return processes.find(p => p.process_id === pid)?.process_type || "UNKNOWN";
 }
 function getCap(machine_id) {
-    return capabilities.find(c => c.machine_id === machine_id) || null;
+    return window.capabilities.find(c => c.machine_id === machine_id) || null;
 }
 function parseRpm(v) {
     if (v == null) return null;
@@ -367,7 +367,7 @@ function initProcessKB() {
 
 function exportMatchingReport() {
     const q = readQuery();
-    const candidates = machines.map(m => {
+    const candidates = window.machines.map(m => {
         const cap = getCap(m.machine_id);
         const ev = scoreMachine(m, cap, q);
         return { m, cap, ...ev };
@@ -441,7 +441,7 @@ function readQuery() {
 
 function renderKB() {
     const q = readQuery();
-    const candidates = machines.map(m => {
+    const candidates = window.machines.map(m => {
         const cap = getCap(m.machine_id);
         const ev = scoreMachine(m, cap, q);
         return { m, cap, ...ev };

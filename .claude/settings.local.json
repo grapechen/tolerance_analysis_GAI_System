@@ -1,0 +1,9 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(ls -la /c/Tolerance_Project/server/*.py)",
+      "Bash(find /c/Tolerance_Project/tests -type f -name *.py)",
+      "Bash(python3 -c \":*)"
+    ]
+  }
+}

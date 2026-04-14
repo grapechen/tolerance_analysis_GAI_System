@@ -358,7 +358,7 @@ def build_geometry_feature_tree(engine):
             f'半徑 R={r:.3f} (直徑 Ø{diam:.3f})  '
             f'[{face_list_str(ids)}]'
         )
-        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids})
+        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids, 'nominal_size': None, 'it_grade': None})
 
     for key, ids in sorted(planes.items(), key=lambda x: (-x[0][2], -x[0][1], -x[0][0])):
         count = len(ids)
@@ -369,7 +369,7 @@ def build_geometry_feature_tree(engine):
             f'法向 ({nx_str})  '
             f'[{face_list_str(ids)}]'
         )
-        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids})
+        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids, 'nominal_size': None, 'it_grade': None})
 
     for ang_deg, ids in sorted(cones.items()):
         count = len(ids)
@@ -379,7 +379,7 @@ def build_geometry_feature_tree(engine):
             f'半角={ang_deg}°  '
             f'[{face_list_str(ids)}]'
         )
-        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids})
+        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids, 'nominal_size': None, 'it_grade': None})
 
     for (major_r, minor_r), ids in sorted(tori.items()):
         label = (
@@ -387,7 +387,7 @@ def build_geometry_feature_tree(engine):
             f'R大={major_r:.3f}  R小={minor_r:.3f}  '
             f'[{face_list_str(ids)}]'
         )
-        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids})
+        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids, 'nominal_size': None, 'it_grade': None})
 
     for r, ids in sorted(spheres.items()):
         label = (
@@ -395,17 +395,19 @@ def build_geometry_feature_tree(engine):
             f'半徑 R={r:.3f}  '
             f'[{face_list_str(ids)}]'
         )
-        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids})
+        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids, 'nominal_size': None, 'it_grade': None})
 
     for type_name, ids in others.items():
         label = f'◼️ {type_name}  [{face_list_str(ids)}]'
-        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids})
+        pmi_rows.append({'label': label, 'semantic_id': None, 'face_ids': ids, 'nominal_size': None, 'it_grade': None})
 
     all_ids = list(engine.step_id_to_face.keys())
     pmi_rows.insert(0, {
         'label':       f'🔵 SOLID 全部  ({len(all_ids)} 個面)',
         'semantic_id': None,
         'face_ids':    all_ids,
+        'nominal_size': None,
+        'it_grade': None,
     })
 
     cyl_count = sum(len(v) for v in cylinders.values())

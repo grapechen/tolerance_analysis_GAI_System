@@ -437,6 +437,14 @@ function uploadStepFile(file) {
       window._stepSessionId = data.session_id;
       console.log(`✅ Session 建立: ${data.session_id}`);
 
+      // 清除舊的 PMI 清單和 3D 幾何（新 session 開始）
+      if (typeof PmiPanel !== 'undefined') {
+        PmiPanel.clear();
+      }
+      if (typeof StepViewer !== 'undefined') {
+        StepViewer.clearGeometry();
+      }
+
       // 提示用户下一步
       alert(`✅ STEP 檔案已上傳。\n請上傳 XLSX 檔案，然後點擊「比對 & 解析 PMI」。`);
 

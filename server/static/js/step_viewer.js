@@ -347,10 +347,22 @@ const StepViewer = (() => {
         renderer.render(scene, camera);
     }
 
+    /**
+     * 清除已加載的幾何（新 session 時調用）
+     */
+    function clearGeometry() {
+        if (baseGeometryMesh) {
+            scene.remove(baseGeometryMesh);
+            baseGeometryMesh = null;
+        }
+        currentSession = null;
+    }
+
     // 暴露公共 API
     return {
         init,
         loadAllGeometry,
+        clearGeometry,
         highlightPmiRow,
         syncHighlights,
         clearHighlights,

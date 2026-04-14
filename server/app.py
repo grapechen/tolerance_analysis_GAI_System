@@ -11,6 +11,8 @@ from middleware import rate_limit, api_limiter
 from logger import app_logger
 from recommendation import smart_fit, machine_check
 import rag_server
+import rag_engine
+import requests
 
 app = Flask(__name__)
 app.json.ensure_ascii = False
@@ -406,10 +408,21 @@ def api_chat():
     if not user_input:
         return jsonify({"ok": False, "msg": "請輸入訊息"}), 400
 
-    # 使用 rag_server 處理
+    # 使用 rag_engine 處理，傳入路徑與分析 Context
     try:
-        reply = rag_server.get_rag_response(user_input)
-        return jsonify({"ok": True, "reply": reply})
+        current_path = p.get("current_path")
+        current_analysis = p.get("current_analysis")
+        history = p.get("history", [])
+        model = p.get("model", "llama3.1:8b")
+        
+        reply, intent = rag_engine.ask_rag_engine(
+            user_input, 
+            model_name=model, 
+            history=history,
+            current_path=current_path,
+            current_analysis=current_analysis
+        )
+        return jsonify({"ok": True, "reply": reply, "intent": intent})
     except Exception as e:
         app_logger.error(f"Chat Error: {e}")
         return jsonify({"ok": False, "msg": str(e)}), 500
@@ -503,6 +516,35 @@ def api_matchmaking():
         "note": best_fit.get("note", ""),
         "type": best_fit.get("type", "")
     }
+
+    # --- [新增] 自動同步至 AI 聊天助手 (ai_app.py) ---
+    try:
+        # 構建給 AI 的機台說明 (含原因)
+        machine_list_text = []
+        for i, m in enumerate(machine_res.get('machines', [])[:10], 1):
+            reason = m.get('recommend_reason', '符合精度要求')
+            machine_list_text.append(f"  {i}. {m.get('model')} ({m.get('company')}): {reason}")
+            
+        report_lines = [
+            f"【最新零件媒合報表】",
+            f"- 輸入直徑: {diameter} mm",
+            f"- 關鍵字(功能): {', '.join(keywords)}",
+            f"- 建議配合: {hole_str}/{shaft_str} ({fit_details.get('fit_type', '未知')})",
+            f"  * 孔 {hole_str}: +{fit_details.get('hole',{}).get('upper_um')} / +{fit_details.get('hole',{}).get('lower_um')} um",
+            f"  * 軸 {shaft_str}: {fit_details.get('shaft',{}).get('upper_um')} / {fit_details.get('shaft',{}).get('lower_um')} um",
+            f"- 配合特性: 間隙 {fit_details.get('max_clearance_um')} ~ {fit_details.get('min_clearance_um')} um",
+            f"- 適合應用: {application_scenario.get('function')} ({application_scenario.get('type')})",
+            f"- 推薦機台 (Top 10):",
+            *machine_list_text
+        ]
+        report_text = "\n".join(report_lines)
+        
+        # 同步報表主機 (ai_app.py 在 7011 埠)
+        sync_url = "http://localhost:7011/api/sync_report"
+        requests.post(sync_url, json={"reportText": report_text}, timeout=2)
+        print(f"[SUCCESS] 報表已自動同步至 AI 聊天助手 (長度: {len(report_text)})")
+    except Exception as e:
+        print(f"[WARN] 報表同步到 AI 助手失敗: {e}")
 
     return jsonify({
         "ok": True,

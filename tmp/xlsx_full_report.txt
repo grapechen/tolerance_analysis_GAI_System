@@ -1,0 +1,626 @@
+所有分頁: ['Summary', 'Header', 'Graphic PMI Coverage', 'Semantic PMI Summary', 'Semantic PMI Coverage', 'datum', 'datum_feature', 'datum_reference_compartment', 'datum_system', 'dimensional_characteristic_repr', 'dimensional_size', 'parallelism_tolerance', 'plus_minus_tolerance', 'shape_dimension_representation', 'tolerance_value', 'annotation_plane', 'camera_model_d3', 'colour_rgb', 'curve_style', 'draughting_callout', 'draughting_model', 'draughting_model_item_associati', 'draughting_pre_defined_curve_fo', 'invisibility', 'mechanical_design_and_draughtin', 'presentation_style_assignment', 'styled_item', 'tessellated_annotation_occurren', 'view_volume', 'advanced_brep_shape_representat', 'geometric_representation_contex', 'mapped_item', 'mechanical_design_geometric_pre', 'representation_map', 'shape_definition_representation', 'shape_representation', 'shape_representation_relationsh', 'geometric_item_specific_usage', 'shape_aspect', 'shape_aspect_relationship', 'application_context', 'application_protocol_definition', 'id_attribute', 'product', 'product_context', 'product_definition', 'product_definition_context', 'product_definition_formation_wi', 'product_definition_shape', 'product_related_product_categor', 'conversion_based_unit_and_plane', 'dimensional_exponents', 'length_measure_with_unit', 'length_measure_with_unit_and_me', 'length_unit_and_si_unit', 'plane_angle_measure_with_unit', 'plane_angle_unit_and_si_unit', 'si_unit_and_solid_angle_unit', 'uncertainty_measure_with_unit', 'value_format_type_qualifier']
+
+===== 分頁: Summary (共 92 筆) =====
+                                                                                                     STEP Directory    C:\Users\tony\Downloads
+0                                                                                                         STEP File                  軸承座-3.STP
+1                                                                                                        Excel File             軸承座-3-sfa.xlsx
+2                                                                                                       Application             SolidWorks MBD
+3                                                                                                         Timestamp  2026-03-09T16:00:12+08:00
+4                                                                                                    Total Entities                       1765
+5                                                                                                            Schema                    AP242e1
+6                                                                                                   Dimension Units                         MM
+7                                                                                                               NaN                        NaN
+8                                                                                                            Entity                      Count
+9                                                                                                             datum                          1
+10                                                                                    datum_feature  [Semantic PMI]                          1
+11                                                                      datum_reference_compartment  [Semantic PMI]                          1
+12                                                                                     datum_system  [Semantic PMI]                          1
+13                                                        dimensional_characteristic_representation  [Semantic PMI]                          4
+14                                                                                                 dimensional_size                          4
+15                                                                            parallelism_tolerance  [Semantic PMI]                          1
+16                                                                                             plus_minus_tolerance                          2
+17                                                                                   shape_dimension_representation                          4
+18                                                                                                  tolerance_value                          2
+19                                                                                                 annotation_plane                          2
+20                                                                                                  camera_model_d3                          1
+21                                                                                                       colour_rgb                          1
+22                                                                                                      curve_style                          1
+23                                                                                               draughting_callout                          6
+24                                                                                                 draughting_model                          2
+25                                                                                draughting_model_item_association                         12
+26                                                                                draughting_pre_defined_curve_font                          1
+27                                                                                                     invisibility                          1
+28                                                                    mechanical_design_and_draughting_relationship                          1
+29                                                                                    presentation_style_assignment                          2
+30                                                                                                      styled_item                          1
+31                                                                 tessellated_annotation_occurrence  [Graphic PMI]                          6
+32                                                                                                      view_volume                          1
+33                                                                               advanced_brep_shape_representation                          1
+34  (geometric_representation_context)\n   (global_uncertainty_assigned_context)\n   (global_unit_assigned_context)                          1
+35                                                                                                      mapped_item                          1
+36                                                          mechanical_design_geometric_presentation_representation                          1
+37                                                                                               representation_map                          1
+38                                                                                  shape_definition_representation                          1
+39                                                                                             shape_representation                          1
+40                                                                                shape_representation_relationship                          1
+41                                                                                    geometric_item_specific_usage                          7
+42                                                                                                     shape_aspect                          6
+43                                                                                        shape_aspect_relationship                          1
+44                                                                                              application_context                          1
+45                                                                                  application_protocol_definition                          1
+46                                                                                                     id_attribute                          6
+47                                                                                                          product                          1
+48                                                                                                  product_context                          1
+49                                                                                               product_definition                          1
+50                                                                                       product_definition_context                          1
+51                                                               product_definition_formation_with_specified_source                          1
+52                                                                                         product_definition_shape                          1
+53                                                                                 product_related_product_category                          1
+54                                                                   (conversion_based_unit)\n   (plane_angle_unit)                          1
+55                                                                                            dimensional_exponents                          1
+56                                                                                         length_measure_with_unit                          1
+57                 (length_measure_with_unit)\n   (measure_representation_item)\n   (qualified_representation_item)                          8
+58                                                                                      (length_unit)\n   (si_unit)                          2
+59                                                                                    plane_angle_measure_with_unit                          1
+60                                                                                 (plane_angle_unit)\n   (si_unit)                          1
+61                                                                                 (si_unit)\n   (solid_angle_unit)                          1
+62                                                                                    uncertainty_measure_with_unit                          1
+63                                                                                      value_format_type_qualifier                          2
+64                                                                                                              NaN                        NaN
+65                                                                                                              NaN                        NaN
+66                                                                                  Entity types not processed (22)                        NaN
+67                                                                                                    advanced_face                         51
+68                                                                                               axis2_placement_3d                        121
+69                                                                                                  cartesian_point                        245
+70                                                                                                           circle                         64
+71                                                                                                     closed_shell                          1
+72                                                                                 complex_triangulated_surface_set                         57
+73                                                                                                  conical_surface                         22
+74                                                                                                 coordinates_list                         92
+75                                                                                              cylindrical_surface                         22
+76                                                                                                        direction                        286
+77                                                                                                       edge_curve                        108
+78                                                                                                        edge_loop                         73
+79                                                                                                       face_bound                         73
+80                                                                                                             line                         44
+81                                                                                              manifold_solid_brep                          1
+82                                                                                                    oriented_edge                        216
+83                                                                                                       planar_box                          1
+84                                                                                                            plane                          9
+85                                                                                            tessellated_curve_set                         35
+86                                                                                        tessellated_geometric_set                          6
+87                                                                                                           vector                         44
+88                                                                                                     vertex_point                         79
+89                                                                                                              NaN                        NaN
+90                                                                          NIST STEP File Analyzer and Viewer 5.41                        NaN
+91                                                                                     Mon Mar 09 16:00:59 CST 2026                        NaN
+==================================================
+
+===== 分頁: Header (共 10 筆) =====
+                      Name                                                                   軸承座-3
+0            FileDirectory                                                C:\Users\tony\Downloads\
+1          FileDescription                                                     HOOPS Exchange Step
+2  FileImplementationLevel                                                                     2;1
+3            FileTimeStamp                                               2026-03-09T16:00:12+08:00
+4               FileAuthor                                                                    tony
+5         FileOrganization                                                                     NaN
+6  FilePreprocessorVersion                                                   HOOPS Exchange 2020.1
+7    FileOriginatingSystem                                                          SOLIDWORKS MBD
+8        FileAuthorisation                                                                     NaN
+9               SchemaName  AP242_MANAGED_MODEL_BASED_3D_ENGINEERING_MIM_LF {1 0 10303 442 1 1 4 }
+==================================================
+
+===== 分頁: Graphic PMI Coverage (共 37 筆) =====
+       軸承座-3.STP\n  (2026-03-09T16:00:12+08:00) Unnamed: 1
+0                                           NaN        NaN
+1                             Graphic PMI Names      Count
+2                                    angularity        NaN
+3                               circular runout        NaN
+4                                   circularity        NaN
+5                                    coaxiality        NaN
+6                                 concentricity        NaN
+7                                  cylindricity        NaN
+8                                      flatness        NaN
+9                                   parallelism          1
+10                             perpendicularity        NaN
+11                                     position        NaN
+12                              profile of line        NaN
+13                           profile of surface        NaN
+14                                    roundness        NaN
+15                                 straightness        NaN
+16                                     symmetry        NaN
+17                                 total runout        NaN
+18                            general tolerance        NaN
+19                             linear dimension        NaN
+20                             radial dimension        NaN
+21                           diameter dimension          4
+22                            angular dimension        NaN
+23                           ordinate dimension        NaN
+24                              curve dimension        NaN
+25                            general dimension        NaN
+26                                        datum          1
+27                                 datum target        NaN
+28                                         note        NaN
+29                                        label        NaN
+30                            surface roughness        NaN
+31                                  weld symbol        NaN
+32                                 general note        NaN
+33                                          NaN        NaN
+34                                          NaN        NaN
+35                                          NaN        NaN
+36  See Help > Analyzer > PMI Coverage Analysis        NaN
+==================================================
+
+===== 分頁: Semantic PMI Summary (共 8 筆) =====
+  Unnamed: 0   軸承座-3.STP\n  (2026-03-09T16:00:12+08:00) See CAx-IF Recommended Practice for Representation and Presentation of PMI (AP242)
+0        NaN                                        NaN                                                                                NaN
+1         ID                                     Entity                                                                       Semantic PMI
+2       1760                               datum_system                                                                                  A
+3       1728  dimensional_characteristic_representation                                             ⌀275.00  0\n                     -0.03
+4       1737  dimensional_characteristic_representation                                                                            ⌀270.00
+5       1742  dimensional_characteristic_representation                                       ⌀185.00  +0.002\n                     -0.007
+6       1752  dimensional_characteristic_representation                                                                            ⌀338.00
+7       1762                      parallelism_tolerance                                                                       ⫽ | 0.02 | A
+==================================================
+
+===== 分頁: Semantic PMI Coverage (共 13 筆) =====
+                                                                             軸承座-3.STP\n  (2026-03-09T16:00:12+08:00) Unnamed: 1
+0                                                                                                                 NaN        NaN
+1                                                        PMI Element\n  (See Help > Analyzer > PMI Coverage Analysis)      Count
+2                                                                                            parallelism_tolerance  ⫽          1
+3                                                                                            dimensional size (5.1.5)          4
+4                                                                                           dimension precision (5.4)          4
+5                                                                                     non-bilateral tolerance (5.2.3)          2
+6                                                                                                  diameter ⌀ (5.1.5)          4
+7                                                                                                         datum (6.5)          1
+8                                                                                              datum features (6.5.1)          1
+9                                                                                                datum system (6.9.7)          1
+10                                                                                                  saved views (9.4)          1
+11                                                                                                                NaN        NaN
+12  Section numbers above refer to the CAx-IF Recommended Practice for Representation and Presentation of PMI (AP242)        NaN
+==================================================
+
+===== 分頁: datum (共 3 筆) =====
+  datum  (1) Unnamed: 1   Unnamed: 2                   Unnamed: 3            Unnamed: 4      Unnamed: 5
+0        NaN        NaN          NaN                          NaN                   NaN             NaN
+1         ID       name  description                     of_shape  product_definitional  identification
+2       1755    12@9(A)          NaN  product_definition_shape 23                 False               A
+==================================================
+
+===== 分頁: datum_feature (共 3 筆) =====
+                                                         datum_feature  (1)    Unnamed: 1   Unnamed: 2                   Unnamed: 3            Unnamed: 4         Unnamed: 5                                                      Unnamed: 6
+0  See CAx-IF Rec. Prac. for Representation and Presentation of PMI (AP242)           NaN          NaN                          NaN                   NaN       Semantic PMI                                                             NaN
+1                                                                        ID          name  description                     of_shape  product_definitional  Datum\n(Sec. 6.5)                                 Associated Geometry\n(Sec. 6.5)
+2                                                                      1754  基準12@基準面9(A)      12@9(A)  product_definition_shape 23                  True                  A  (1) plane 1647\n(1) advanced_face 1656\n(1) datum_feature 1754
+==================================================
+
+===== 分頁: datum_reference_compartment (共 3 筆) =====
+                                           datum_reference_compartment  (1) Unnamed: 1   Unnamed: 2                   Unnamed: 3            Unnamed: 4  Unnamed: 5 Unnamed: 6                        Unnamed: 7
+0  See CAx-IF Rec. Prac. for Representation and Presentation of PMI (AP242)        NaN          NaN                          NaN                   NaN         NaN        NaN                      Semantic PMI
+1                                                                        ID       name  description                     of_shape  product_definitional        base  modifiers  compartment\n(Sec. 6.9.7, 6.9.8)
+2                                                                      1759        NaN          NaN  product_definition_shape 23                 False  datum 1755        NaN                                 A
+==================================================
+
+===== 分頁: datum_system (共 3 筆) =====
+                                                          datum_system  (1) Unnamed: 1   Unnamed: 2                   Unnamed: 3            Unnamed: 4                            Unnamed: 5                                  Unnamed: 6
+0  See CAx-IF Rec. Prac. for Representation and Presentation of PMI (AP242)        NaN          NaN                          NaN                   NaN                                   NaN                                Semantic PMI
+1                                                                        ID       name  description                     of_shape  product_definitional                          constituents  Datum Reference Frame\n(Sec. 6.9.7, 6.9.8)
+2                                                                      1760        NaN          NaN  product_definition_shape 23                 False  (1) datum_reference_compartment 1759                                           A
+==================================================
+
+===== 分頁: dimensional_characteristic_repr (共 6 筆) =====
+                             dimensional_characteristic_representation  (4)             Unnamed: 1                           Unnamed: 2                                    Unnamed: 3                           Unnamed: 4                  Unnamed: 5                              Unnamed: 6                          Unnamed: 7                   Unnamed: 8                                                                   Unnamed: 9
+0  See CAx-IF Rec. Prac. for Representation and Presentation of PMI (AP242)                    NaN                                  NaN                                  Semantic PMI                                  NaN                         NaN                                     NaN                                 NaN                          NaN                                                                          NaN
+1                                                                        ID              dimension                       representation                        Dimensional\nTolerance  dimension name\n(Sec. 5.1.1, 5.1.5)  length/angle\n(Sec. 5.2.1)  length/angle name\n(Sec. 5.2.1, 5.2.4)  length/angle precision\n(Sec. 5.4)  +/- tolerance\n(Sec. 5.2.3)                                     Associated Geometry\n(Sec. 5.1.1, 5.1.5)
+2                                                                      1728  dimensional_size 1723  shape_dimension_representation 1727        ⌀275.00  0\n                     -0.03                             diameter                       275.0                           nominal value                             NR2 3.2                    -0.03 0.0  (1) cylindrical_surface 1505\n(1) advanced_face 1535\n(1) shape_aspect 1700
+3                                                                      1737  dimensional_size 1734  shape_dimension_representation 1736                                       ⌀270.00                             diameter                       270.0                           nominal value                             NR2 3.2                          NaN  (1) cylindrical_surface 1540\n(1) advanced_face 1552\n(1) shape_aspect 1704
+4                                                                      1742  dimensional_size 1739  shape_dimension_representation 1741  ⌀185.00  +0.002\n                     -0.007                             diameter                       185.0                           nominal value                             NR2 3.2                 -0.007 0.002  (1) cylindrical_surface 1318\n(1) advanced_face 1339\n(1) shape_aspect 1708
+5                                                                      1752  dimensional_size 1749  shape_dimension_representation 1751                                       ⌀338.00                             diameter                       338.0                           nominal value                             NR2 3.2                          NaN  (1) cylindrical_surface 1628\n(1) advanced_face 1642\n(1) shape_aspect 1712
+==================================================
+
+===== 分頁: dimensional_size (共 6 筆) =====
+  dimensional_size  (4)         Unnamed: 1 Unnamed: 2
+0                   NaN                NaN        NaN
+1                    ID         applies_to       name
+2                  1723  shape_aspect 1700   diameter
+3                  1734  shape_aspect 1704   diameter
+4                  1739  shape_aspect 1708   diameter
+5                  1749  shape_aspect 1712   diameter
+==================================================
+
+===== 分頁: parallelism_tolerance (共 3 筆) =====
+                                                 parallelism_tolerance  (1) Unnamed: 1   Unnamed: 2                            Unnamed: 3               Unnamed: 4             Unnamed: 5        Unnamed: 6                                                     Unnamed: 7
+0  See CAx-IF Rec. Prac. for Representation and Presentation of PMI (AP242)        NaN          NaN                                   NaN                      NaN                    NaN      Semantic PMI                                                            NaN
+1                                                                        ID       name  description                             magnitude  toleranced_shape_aspect           datum_system  GD&T\nAnnotation                                Toleranced Geometry\n(column E)
+2                                                                      1762  平行1@基準面12          NaN  0.02 (length_measure_with_unit 1761)        shape_aspect 1720  (1) datum_system 1760      ⫽ | 0.02 | A  (1) plane 1467\n(1) advanced_face 1483\n(1) shape_aspect 1720
+==================================================
+
+===== 分頁: plus_minus_tolerance (共 4 筆) =====
+  plus_minus_tolerance  (2)            Unnamed: 1             Unnamed: 2
+0                       NaN                   NaN                    NaN
+1                        ID                 range   toleranced_dimension
+2                      1732  tolerance_value 1731  dimensional_size 1723
+3                      1747  tolerance_value 1746  dimensional_size 1739
+==================================================
+
+===== 分頁: shape_dimension_representation (共 6 筆) =====
+  shape_dimension_representation  (4) Unnamed: 1                                                                                                Unnamed: 2                                                                                                  Unnamed: 3
+0                                 NaN        NaN                                                                                                       NaN                                                                                                         NaN
+1                                  ID       name                                                                                                     items                                                                                            context_of_items
+2                                1727        NaN  275.0  (1) (length_measure_with_unit) (measure_representation_item) (qualified_representation_item) 1726  (geometric_representation_context) (global_uncertainty_assigned_context) (global_unit_assigned_context) 10
+3                                1736        NaN  270.0  (1) (length_measure_with_unit) (measure_representation_item) (qualified_representation_item) 1735  (geometric_representation_context) (global_uncertainty_assigned_context) (global_unit_assigned_context) 10
+4                                1741        NaN  185.0  (1) (length_measure_with_unit) (measure_representation_item) (qualified_representation_item) 1740  (geometric_representation_context) (global_uncertainty_assigned_context) (global_unit_assigned_context) 10
+5                                1751        NaN  338.0  (1) (length_measure_with_unit) (measure_representation_item) (qualified_representation_item) 1750  (geometric_representation_context) (global_uncertainty_assigned_context) (global_unit_assigned_context) 10
+==================================================
+
+===== 分頁: tolerance_value (共 4 筆) =====
+  tolerance_value  (2)                                                                                              Unnamed: 1                                                                                             Unnamed: 2
+0                  NaN                                                                                                     NaN                                                                                                    NaN
+1                   ID                                                                                             lower_bound                                                                                            upper_bound
+2                 1731   -0.03 ((length_measure_with_unit) (measure_representation_item) (qualified_representation_item) 1730)    0.0 ((length_measure_with_unit) (measure_representation_item) (qualified_representation_item) 1729)
+3                 1746  -0.007 ((length_measure_with_unit) (measure_representation_item) (qualified_representation_item) 1745)  0.002 ((length_measure_with_unit) (measure_representation_item) (qualified_representation_item) 1744)
+==================================================
+
+===== 分頁: annotation_plane (共 4 筆) =====
+  annotation_plane  (2) Unnamed: 1                             Unnamed: 2 Unnamed: 3                            Unnamed: 4
+0                   NaN        NaN                                    NaN        NaN                                   NaN
+1                    ID       name                                 styles       item                              elements
+2                   168        *上視  (1) presentation_style_assignment 169  plane 174  (4) draughting_callout 70 95 144 167
+3                   239        *前視  (1) presentation_style_assignment 169  plane 244        (2) draughting_callout 191 238
+==================================================
+
+===== 分頁: camera_model_d3 (共 3 筆) =====
+  camera_model_d3  (1) Unnamed: 1               Unnamed: 2             Unnamed: 3
+0                  NaN        NaN                      NaN                    NaN
+1                   ID       name    view_reference_system  perspective_of_volume
+2                 1765    目前的模型視角  axis2_placement_3d 1769       view_volume 1774
+==================================================
+
+===== 分頁: colour_rgb (共 3 筆) =====
+  colour_rgb  (1) Unnamed: 1 Unnamed: 2 Unnamed: 3 Unnamed: 4
+0             NaN        NaN        NaN        NaN        NaN
+1              ID       name        red      green       blue
+2              28        NaN   0.247059   0.611765   0.603922
+==================================================
+
+===== 分頁: curve_style (共 3 筆) =====
+  curve_style  (1) Unnamed: 1                            Unnamed: 2   Unnamed: 3     Unnamed: 4
+0              NaN        NaN                                   NaN          NaN            NaN
+1               ID       name                            curve_font  curve_width   curve_colour
+2               30        NaN  draughting_pre_defined_curve_font 29          0.1  colour_rgb 28
+==================================================
+
+===== 分頁: draughting_callout (共 8 筆) =====
+  draughting_callout  (6)    Unnamed: 1                                 Unnamed: 2
+0                     NaN           NaN                                        NaN
+1                      ID          name                                   contents
+2                      70  直徑1@填料1(275)   (1) tessellated_annotation_occurrence 26
+3                      95  直徑1@圓柱3(270)   (1) tessellated_annotation_occurrence 71
+4                     144  直徑3@圓柱5(185)   (1) tessellated_annotation_occurrence 96
+5                     167  半徑1@圓柱6(338)  (1) tessellated_annotation_occurrence 145
+6                     191  基準12@基準面9(A)  (1) tessellated_annotation_occurrence 175
+7                     238     平行1@基準面12  (1) tessellated_annotation_occurrence 192
+==================================================
+
+===== 分頁: draughting_model (共 4 筆) =====
+  draughting_model  (2) Unnamed: 1                                                               Unnamed: 2                                                                                                  Unnamed: 3
+0                   NaN        NaN                                                                      NaN                                                                                                         NaN
+1                    ID       name                                                                    items                                                                                            context_of_items
+2                    11        NaN                      (2) annotation_plane 168 239   (1) mapped_item 1691  (geometric_representation_context) (global_uncertainty_assigned_context) (global_unit_assigned_context) 10
+3                  1777    目前的模型視角  (1) camera_model_d3 1765   (6) draughting_callout 191 238 70 95 144 167  (geometric_representation_context) (global_uncertainty_assigned_context) (global_unit_assigned_context) 10
+==================================================
+
+===== 分頁: draughting_model_item_associati (共 14 筆) =====
+   draughting_model_item_association  (12)                               Unnamed: 1   Unnamed: 2                  Unnamed: 3           Unnamed: 4              Unnamed: 5
+0                                      NaN                                      NaN          NaN                         NaN                  NaN                     NaN
+1                                       ID                                     name  description                  definition  used_representation         identified_item
+2                                     1702                                      NaN          NaN           shape_aspect 1700  draughting_model 11   draughting_callout 70
+3                                     1706                                      NaN          NaN           shape_aspect 1704  draughting_model 11   draughting_callout 95
+4                                     1710                                      NaN          NaN           shape_aspect 1708  draughting_model 11  draughting_callout 144
+5                                     1714                                      NaN          NaN           shape_aspect 1712  draughting_model 11  draughting_callout 167
+6                                     1718                                      NaN          NaN           shape_aspect 1716  draughting_model 11  draughting_callout 191
+7                                     1722                                      NaN          NaN           shape_aspect 1720  draughting_model 11  draughting_callout 238
+8                                     1733  PMI representation to presentation link          NaN       dimensional_size 1723  draughting_model 11   draughting_callout 70
+9                                     1738  PMI representation to presentation link          NaN       dimensional_size 1734  draughting_model 11   draughting_callout 95
+10                                    1748  PMI representation to presentation link          NaN       dimensional_size 1739  draughting_model 11  draughting_callout 144
+11                                    1753  PMI representation to presentation link          NaN       dimensional_size 1749  draughting_model 11  draughting_callout 167
+12                                    1758  PMI representation to presentation link          NaN          datum_feature 1754  draughting_model 11  draughting_callout 191
+13                                    1763  PMI representation to presentation link          NaN  parallelism_tolerance 1762  draughting_model 11  draughting_callout 238
+==================================================
+
+===== 分頁: draughting_pre_defined_curve_fo (共 3 筆) =====
+  draughting_pre_defined_curve_font  (1)  Unnamed: 1
+0                                    NaN         NaN
+1                                     ID        name
+2                                     29  continuous
+==================================================
+
+===== 分頁: invisibility (共 3 筆) =====
+  invisibility  (1)                                    Unnamed: 1
+0               NaN                                           NaN
+1                ID                               invisible_items
+2              1764  (6) draughting_callout 70 95 144 167 191 238
+==================================================
+
+===== 分頁: mechanical_design_and_draughtin (共 3 筆) =====
+  mechanical_design_and_draughting_relationship  (1) Unnamed: 1   Unnamed: 2             Unnamed: 3           Unnamed: 4
+0                                                NaN        NaN          NaN                    NaN                  NaN
+1                                                 ID       name  description                  rep_1                rep_2
+2                                               1778    目前的模型視角          NaN  draughting_model 1777  draughting_model 11
+==================================================
+
+===== 分頁: presentation_style_assignment (共 4 筆) =====
+  presentation_style_assignment  (2)          Unnamed: 1
+0                                NaN                 NaN
+1                                 ID              styles
+2                                 31  (1) curve_style 30
+3                                169                 NaN
+==================================================
+
+===== 分頁: styled_item (共 3 筆) =====
+  styled_item  (1) Unnamed: 1                             Unnamed: 2                Unnamed: 3
+0              NaN        NaN                                    NaN                       NaN
+1               ID       name                                 styles                      item
+2              245        NaN  (1) presentation_style_assignment 169  manifold_solid_brep 1677
+==================================================
+
+===== 分頁: tessellated_annotation_occurren (共 8 筆) =====
+                                     tessellated_annotation_occurrence  (6)    Unnamed: 1                            Unnamed: 2                     Unnamed: 3          Unnamed: 4                                                                                                                                                    Unnamed: 5                      Unnamed: 6                          Unnamed: 7                 Unnamed: 8                                                                   Unnamed: 9                          Unnamed: 10                                                                      Unnamed: 11
+0  See CAx-IF Rec. Prac. for Representation and Presentation of PMI (AP242)           NaN                                   NaN                            NaN         Graphic PMI                                                                                                                                                           NaN                             NaN                                 NaN                        NaN                                                                          NaN                                  NaN                                                                              NaN
+1                                                                        ID          name                                styles                           item    name\n(Sec. 8.4)                                                                                                                                          children\n(Sec. 8.2)  presentation style\n(Sec. 8.5)                   color\n(Sec. 8.5)          plane\n(Sec. 9.1)                                            Associated Geometry\n(Sec. 9.3.1)  Associated Semantic PMI\n(Sec. 7.3)                                                          Saved Views\n(Sec. 9.4)
+2                                                                        26  直徑1@填料1(275)  (1) presentation_style_assignment 31   tessellated_geometric_set 27  diameter dimension                                    (16) complex_triangulated_surface_set 33 41 43 45 47 49 51 53 55 57 59 61 63 65 67 69   (3) tessellated_curve_set 34 36 38                  curve_style 30  colour_rgb 28  (0.247 0.612 0.604)  annotation_plane 168\n(*)  (1) cylindrical_surface 1505\n(1) advanced_face 1535\n(1) shape_aspect 1700                dimensional_size 1723  camera_model_d3 1765 (&#x76EE;&#x524D;&#x7684;&#x6A21;&#x578B;&#x8996;&#x89D2;)
+3                                                                        71  直徑1@圓柱3(270)  (1) presentation_style_assignment 31   tessellated_geometric_set 72  diameter dimension                                                             (7) complex_triangulated_surface_set 74 84 86 88 90 92 94   (4) tessellated_curve_set 75 77 79 81                  curve_style 30  colour_rgb 28  (0.247 0.612 0.604)  annotation_plane 168\n(*)  (1) cylindrical_surface 1540\n(1) advanced_face 1552\n(1) shape_aspect 1704                dimensional_size 1734  camera_model_d3 1765 (&#x76EE;&#x524D;&#x7684;&#x6A21;&#x578B;&#x8996;&#x89D2;)
+4                                                                        96  直徑3@圓柱5(185)  (1) presentation_style_assignment 31   tessellated_geometric_set 97  diameter dimension  (19) complex_triangulated_surface_set 99 109 111 113 115 117 119 121 123 125 127 129 131 133 135 137 139 141 143   (4) tessellated_curve_set 100 102 104 106                  curve_style 30  colour_rgb 28  (0.247 0.612 0.604)  annotation_plane 168\n(*)  (1) cylindrical_surface 1318\n(1) advanced_face 1339\n(1) shape_aspect 1708                dimensional_size 1739  camera_model_d3 1765 (&#x76EE;&#x524D;&#x7684;&#x6A21;&#x578B;&#x8996;&#x89D2;)
+5                                                                       145  半徑1@圓柱6(338)  (1) presentation_style_assignment 31  tessellated_geometric_set 146  diameter dimension                                                      (7) complex_triangulated_surface_set 148 156 158 160 162 164 166   (3) tessellated_curve_set 149 151 153                  curve_style 30  colour_rgb 28  (0.247 0.612 0.604)  annotation_plane 168\n(*)  (1) cylindrical_surface 1628\n(1) advanced_face 1642\n(1) shape_aspect 1712                dimensional_size 1749  camera_model_d3 1765 (&#x76EE;&#x524D;&#x7684;&#x6A21;&#x578B;&#x8996;&#x89D2;)
+6                                                                       175  基準12@基準面9(A)  (1) presentation_style_assignment 31  tessellated_geometric_set 176               datum                                                                  (2) complex_triangulated_surface_set 180 190   (5) tessellated_curve_set 177 181 183 185 187                  curve_style 30  colour_rgb 28  (0.247 0.612 0.604)  annotation_plane 239\n(*)                (1) plane 1647\n(1) advanced_face 1656\n(1) shape_aspect 1716                   datum_feature 1754  camera_model_d3 1765 (&#x76EE;&#x524D;&#x7684;&#x6A21;&#x578B;&#x8996;&#x89D2;)
+7                                                                       192     平行1@基準面12  (1) presentation_style_assignment 31  tessellated_geometric_set 193         parallelism     (6) complex_triangulated_surface_set 195 229 231 233 235 237   (16) tessellated_curve_set 196 198 200 202 204 206 208 210 212 214 216 218 220 222 224 226                  curve_style 30  colour_rgb 28  (0.247 0.612 0.604)  annotation_plane 239\n(*)                (1) plane 1467\n(1) advanced_face 1483\n(1) shape_aspect 1720           parallelism_tolerance 1762  camera_model_d3 1765 (&#x76EE;&#x524D;&#x7684;&#x6A21;&#x578B;&#x8996;&#x89D2;)
+==================================================
+
+===== 分頁: view_volume (共 3 筆) =====
+  view_volume  (1)       Unnamed: 1            Unnamed: 2           Unnamed: 3            Unnamed: 4            Unnamed: 5           Unnamed: 6           Unnamed: 7                  Unnamed: 8       Unnamed: 9
+0              NaN              NaN                   NaN                  NaN                   NaN                   NaN                  NaN                  NaN                         NaN              NaN
+1               ID  projection_type      projection_point  view_plane_distance  front_plane_distance  front_plane_clipping  back_plane_distance  back_plane_clipping  view_volume_sides_clipping      view_window
+2             1774         parallel  cartesian_point 1775          2076.004639                     0                 False                    0                False                       False  planar_box 1776
+==================================================
+
+===== 分頁: advanced_brep_shape_representat (共 3 筆) =====
+  advanced_brep_shape_representation  (1) Unnamed: 1                    Unnamed: 2                                                                                                  Unnamed: 3
+0                                     NaN        NaN                           NaN                                                                                                         NaN
+1                                      ID       name                         items                                                                                            context_of_items
+2                                      17         預設  (1) manifold_solid_brep 1677  (geometric_representation_context) (global_uncertainty_assigned_context) (global_unit_assigned_context) 10
+==================================================
+
+===== 分頁: geometric_representation_contex (共 3 筆) =====
+  (geometric_representation_context)(global_uncertainty_assigned_context)(global_unit_assigned_context)  (1)          Unnamed: 1    Unnamed: 2                  Unnamed: 3                           Unnamed: 4                                                                                                             Unnamed: 5
+0                                                                                                        NaN                 NaN           NaN                         NaN                                  NaN                                                                                                                    NaN
+1                                                                                                         ID  context_identifier  context_type  coordinate_space_dimension                          uncertainty                                                                                                                  units
+2                                                                                                         10                 NaN           NaN                           3  (1) uncertainty_measure_with_unit 9  (1) (conversion_based_unit) (plane_angle_unit) 5   (1) (length_unit) (si_unit) 8   (1) (si_unit) (solid_angle_unit) 7
+==================================================
+
+===== 分頁: mapped_item (共 3 筆) =====
+  mapped_item  (1) Unnamed: 1               Unnamed: 2               Unnamed: 3
+0              NaN        NaN                      NaN                      NaN
+1               ID       name           mapping_source           mapping_target
+2             1691        NaN  representation_map 1690  axis2_placement_3d 1689
+==================================================
+
+===== 分頁: mechanical_design_geometric_pre (共 3 筆) =====
+  mechanical_design_geometric_presentation_representation  (1) Unnamed: 1           Unnamed: 2                                                                                                  Unnamed: 3
+0                                                          NaN        NaN                  NaN                                                                                                         NaN
+1                                                           ID       name                items                                                                                            context_of_items
+2                                                            1        NaN  (1) styled_item 245  (geometric_representation_context) (global_uncertainty_assigned_context) (global_unit_assigned_context) 10
+==================================================
+
+===== 分頁: representation_map (共 3 筆) =====
+  representation_map  (1)               Unnamed: 1               Unnamed: 2
+0                     NaN                      NaN                      NaN
+1                      ID           mapping_origin    mapped_representation
+2                    1690  axis2_placement_3d 1689  shape_representation 16
+==================================================
+
+===== 分頁: shape_definition_representation (共 3 筆) =====
+  shape_definition_representation  (1)                   Unnamed: 1               Unnamed: 2
+0                                  NaN                          NaN                      NaN
+1                                   ID                   definition      used_representation
+2                                 1698  product_definition_shape 23  shape_representation 16
+==================================================
+
+===== 分頁: shape_representation (共 3 筆) =====
+  shape_representation  (1) Unnamed: 1                 Unnamed: 2                                                                                                  Unnamed: 3
+0                       NaN        NaN                        NaN                                                                                                         NaN
+1                        ID       name                      items                                                                                            context_of_items
+2                        16         預設  (1) axis2_placement_3d 15  (geometric_representation_context) (global_uncertainty_assigned_context) (global_unit_assigned_context) 10
+==================================================
+
+===== 分頁: shape_representation_relationsh (共 3 筆) =====
+  shape_representation_relationship  (1) Unnamed: 1   Unnamed: 2               Unnamed: 3                             Unnamed: 4
+0                                    NaN        NaN          NaN                      NaN                                    NaN
+1                                     ID       name  description                    rep_1                                  rep_2
+2                                   1685        NaN          NaN  shape_representation 16  advanced_brep_shape_representation 17
+==================================================
+
+===== 分頁: geometric_item_specific_usage (共 9 筆) =====
+  geometric_item_specific_usage  (7) Unnamed: 1   Unnamed: 2          Unnamed: 3                             Unnamed: 4          Unnamed: 5
+0                                NaN        NaN          NaN                 NaN                                    NaN                 NaN
+1                                 ID       name  description          definition                    used_representation     identified_item
+2                               1701        NaN     1@1(275)   shape_aspect 1700  advanced_brep_shape_representation 17  advanced_face 1535
+3                               1705        NaN     1@3(270)   shape_aspect 1704  advanced_brep_shape_representation 17  advanced_face 1552
+4                               1709        NaN     3@5(185)   shape_aspect 1708  advanced_brep_shape_representation 17  advanced_face 1339
+5                               1713        NaN     1@6(338)   shape_aspect 1712  advanced_brep_shape_representation 17  advanced_face 1642
+6                               1717        NaN      12@9(A)   shape_aspect 1716  advanced_brep_shape_representation 17  advanced_face 1656
+7                               1721        NaN         1@12   shape_aspect 1720  advanced_brep_shape_representation 17  advanced_face 1483
+8                               1756        NaN          PMI  datum_feature 1754  advanced_brep_shape_representation 17  advanced_face 1656
+==================================================
+
+===== 分頁: shape_aspect (共 8 筆) =====
+  shape_aspect  (6)    Unnamed: 1   Unnamed: 2                   Unnamed: 3            Unnamed: 4
+0               NaN           NaN          NaN                          NaN                   NaN
+1                ID          name  description                     of_shape  product_definitional
+2              1700  直徑1@填料1(275)          NaN  product_definition_shape 23                  True
+3              1704  直徑1@圓柱3(270)          NaN  product_definition_shape 23                  True
+4              1708  直徑3@圓柱5(185)          NaN  product_definition_shape 23                  True
+5              1712  半徑1@圓柱6(338)          NaN  product_definition_shape 23                  True
+6              1716  基準12@基準面9(A)          NaN  product_definition_shape 23                  True
+7              1720     平行1@基準面12          NaN  product_definition_shape 23                  True
+==================================================
+
+===== 分頁: shape_aspect_relationship (共 3 筆) =====
+  shape_aspect_relationship  (1) Unnamed: 1   Unnamed: 2             Unnamed: 3            Unnamed: 4
+0                            NaN        NaN          NaN                    NaN                   NaN
+1                             ID       name  description  relating_shape_aspect  related_shape_aspect
+2                           1757    12@9(A)          NaN     datum_feature 1754            datum 1755
+==================================================
+
+===== 分頁: application_context (共 3 筆) =====
+  application_context  (1)                          Unnamed: 1
+0                      NaN                                 NaN
+1                       ID                         application
+2                     1692  Managed model based 3d engineering
+==================================================
+
+===== 分頁: application_protocol_definition (共 3 筆) =====
+  application_protocol_definition  (1)              Unnamed: 1                                 Unnamed: 2                 Unnamed: 3                Unnamed: 4
+0                                  NaN                     NaN                                        NaN                        NaN                       NaN
+1                                   ID                  status  application_interpreted_model_schema_name  application_protocol_year               application
+2                                 1693  international standard   ap242_managed_model_based_3d_engineering                       2013  application_context 1692
+==================================================
+
+===== 分頁: id_attribute (共 8 筆) =====
+  id_attribute  (6)       Unnamed: 1         Unnamed: 2
+0               NaN              NaN                NaN
+1                ID  attribute_value    identified_item
+2              1699         SA #1700  shape_aspect 1700
+3              1703         SA #1704  shape_aspect 1704
+4              1707         SA #1708  shape_aspect 1708
+5              1711         SA #1712  shape_aspect 1712
+6              1715         SA #1716  shape_aspect 1716
+7              1719         SA #1720  shape_aspect 1720
+==================================================
+
+===== 分頁: product (共 3 筆) =====
+  product  (1) Unnamed: 1 Unnamed: 2   Unnamed: 3                Unnamed: 4
+0          NaN        NaN        NaN          NaN                       NaN
+1           ID         id       name  description        frame_of_reference
+2           24         預設         預設          NaN  (1) product_context 1694
+==================================================
+
+===== 分頁: product_context (共 3 筆) =====
+  product_context  (1) Unnamed: 1                Unnamed: 2       Unnamed: 3
+0                  NaN        NaN                       NaN              NaN
+1                   ID       name        frame_of_reference  discipline_type
+2                 1694        NaN  application_context 1692       mechanical
+==================================================
+
+===== 分頁: product_definition (共 3 筆) =====
+  product_definition  (1) Unnamed: 1   Unnamed: 2                                               Unnamed: 3                       Unnamed: 4
+0                     NaN        NaN          NaN                                                      NaN                              NaN
+1                      ID         id  description                                                formation               frame_of_reference
+2                      25     design          NaN  product_definition_formation_with_specified_source 1697  product_definition_context 1695
+==================================================
+
+===== 分頁: product_definition_context (共 3 筆) =====
+  product_definition_context  (1)       Unnamed: 1                Unnamed: 2        Unnamed: 3
+0                             NaN              NaN                       NaN               NaN
+1                              ID             name        frame_of_reference  life_cycle_stage
+2                            1695  part definition  application_context 1692            design
+==================================================
+
+===== 分頁: product_definition_formation_wi (共 3 筆) =====
+  product_definition_formation_with_specified_source  (1) Unnamed: 1   Unnamed: 2  Unnamed: 3   Unnamed: 4
+0                                                     NaN        NaN          NaN         NaN          NaN
+1                                                      ID         id  description  of_product  make_or_buy
+2                                                    1697        NaN          NaN  product 24    not_known
+==================================================
+
+===== 分頁: product_definition_shape (共 3 筆) =====
+  product_definition_shape  (1) Unnamed: 1   Unnamed: 2             Unnamed: 3
+0                           NaN        NaN          NaN                    NaN
+1                            ID       name  description             definition
+2                            23        NaN          NaN  product_definition 25
+==================================================
+
+===== 分頁: product_related_product_categor (共 3 筆) =====
+  product_related_product_category  (1) Unnamed: 1   Unnamed: 2      Unnamed: 3
+0                                   NaN        NaN          NaN             NaN
+1                                    ID       name  description        products
+2                                  1696       part          NaN  (1) product 24
+==================================================
+
+===== 分頁: conversion_based_unit_and_plane (共 3 筆) =====
+  (conversion_based_unit)(plane_angle_unit)  (1)               Unnamed: 1 Unnamed: 2                                      Unnamed: 3
+0                                            NaN                      NaN        NaN                                             NaN
+1                                             ID               dimensions       name                               conversion_factor
+2                                              5  dimensional_exponents 6     DEGREE  0.0174532925 (plane_angle_measure_with_unit 4)
+==================================================
+
+===== 分頁: dimensional_exponents (共 3 筆) =====
+  dimensional_exponents  (1)       Unnamed: 1     Unnamed: 2     Unnamed: 3                 Unnamed: 4                          Unnamed: 5                    Unnamed: 6                   Unnamed: 7
+0                        NaN              NaN            NaN            NaN                        NaN                                 NaN                           NaN                          NaN
+1                         ID  length_exponent  mass_exponent  time_exponent  electric_current_exponent  thermodynamic_temperature_exponent  amount_of_substance_exponent  luminous_intensity_exponent
+2                          6                0              0              0                          0                                   0                             0                            0
+==================================================
+
+===== 分頁: length_measure_with_unit (共 3 筆) =====
+  length_measure_with_unit  (1)       Unnamed: 1                    Unnamed: 2
+0                           NaN              NaN                           NaN
+1                            ID  value_component                unit_component
+2                          1761             0.02  (length_unit) (si_unit) 1724
+==================================================
+
+===== 分頁: length_measure_with_unit_and_me (共 10 筆) =====
+  (length_measure_with_unit)(measure_representation_item)(qualified_representation_item)  (8)       Unnamed: 1                    Unnamed: 2     Unnamed: 3                            Unnamed: 4
+0                                                                                         NaN              NaN                           NaN            NaN                                   NaN
+1                                                                                          ID  value_component                unit_component           name                            qualifiers
+2                                                                                        1726              275  (length_unit) (si_unit) 1724  nominal value  (1) value_format_type_qualifier 1725
+3                                                                                        1729                0  (length_unit) (si_unit) 1724            NaN  (1) value_format_type_qualifier 1725
+4                                                                                        1730            -0.03  (length_unit) (si_unit) 1724            NaN  (1) value_format_type_qualifier 1725
+5                                                                                        1735              270  (length_unit) (si_unit) 1724  nominal value  (1) value_format_type_qualifier 1725
+6                                                                                        1740              185  (length_unit) (si_unit) 1724  nominal value  (1) value_format_type_qualifier 1725
+7                                                                                        1744            0.002  (length_unit) (si_unit) 1724            NaN  (1) value_format_type_qualifier 1743
+8                                                                                        1745           -0.007  (length_unit) (si_unit) 1724            NaN  (1) value_format_type_qualifier 1743
+9                                                                                        1750              338  (length_unit) (si_unit) 1724  nominal value  (1) value_format_type_qualifier 1725
+==================================================
+
+===== 分頁: length_unit_and_si_unit (共 4 筆) =====
+  (length_unit)(si_unit)  (2)  Unnamed: 1 Unnamed: 2 Unnamed: 3
+0                         NaN         NaN        NaN        NaN
+1                          ID  dimensions     prefix       name
+2                           8         NaN      milli      metre
+3                        1724         NaN      milli      metre
+==================================================
+
+===== 分頁: plane_angle_measure_with_unit (共 3 筆) =====
+  plane_angle_measure_with_unit  (1)       Unnamed: 1                      Unnamed: 2
+0                                NaN              NaN                             NaN
+1                                 ID  value_component                  unit_component
+2                                  4         0.017453  (plane_angle_unit) (si_unit) 3
+==================================================
+
+===== 分頁: plane_angle_unit_and_si_unit (共 3 筆) =====
+  (plane_angle_unit)(si_unit)  (1)  Unnamed: 1 Unnamed: 2 Unnamed: 3
+0                              NaN         NaN        NaN        NaN
+1                               ID  dimensions     prefix       name
+2                                3         NaN        NaN     radian
+==================================================
+
+===== 分頁: si_unit_and_solid_angle_unit (共 3 筆) =====
+  (si_unit)(solid_angle_unit)  (1)  Unnamed: 1 Unnamed: 2 Unnamed: 3
+0                              NaN         NaN        NaN        NaN
+1                               ID  dimensions     prefix       name
+2                                7         NaN        NaN  steradian
+==================================================
+
+===== 分頁: uncertainty_measure_with_unit (共 3 筆) =====
+  uncertainty_measure_with_unit  (1)       Unnamed: 1                 Unnamed: 2               Unnamed: 3                          Unnamed: 4
+0                                NaN              NaN                        NaN                      NaN                                 NaN
+1                                 ID  value_component             unit_component                     name                         description
+2                                  9            0.001  (length_unit) (si_unit) 8  DISTANCE_ACCURACY_VALUE  Maximum Tolerance applied to model
+==================================================
+
+===== 分頁: value_format_type_qualifier (共 4 筆) =====
+  value_format_type_qualifier  (2)   Unnamed: 1
+0                              NaN          NaN
+1                               ID  format_type
+2                             1725      NR2 3.2
+3                             1743      NR2 1.3
+==================================================

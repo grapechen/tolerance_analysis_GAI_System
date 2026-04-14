@@ -19,6 +19,7 @@ from scripts.dsl_builder import build_full_dsl
 # STEP PMI 服務 (Phase 1 整合)
 from step_service import (
     route_upload_step,
+    route_upload_xlsx,
     route_parse_pmi,
     route_get_geometry,
     route_get_pmi_list,
@@ -720,6 +721,7 @@ def save_allocation_to_excel():
 # STEP PMI 路由註冊 (Phase 1 整合)
 # ═══════════════════════════════════════════════════════════
 app.add_url_rule('/api/step/upload',      'step_upload',     route_upload_step,     methods=['POST'])
+app.add_url_rule('/api/step/upload_xlsx', 'step_upload_xlsx',route_upload_xlsx,     methods=['POST'])
 app.add_url_rule('/api/step/parse_pmi',   'step_parse_pmi',  route_parse_pmi,       methods=['POST'])
 app.add_url_rule('/api/step/geometry',    'step_geometry',   route_get_geometry,    methods=['GET'])
 app.add_url_rule('/api/step/pmi_list',    'step_pmi_list',   route_get_pmi_list,    methods=['GET'])

@@ -57,3 +57,28 @@ node_modules/
 Ontology/
 Oracle_JDK-24/
 graphrag-main/
+.hypothesis/
+.ruff_cache/
+.pytest_cache/
+.kiro/
+.claude/
+.agent/
+openspec/
+electron/
+ppt/
+others/
+docs/
+
+# 專案特定大檔案或一次性腳本
+project_structure.txt
+sys_exec.txt
+server/sys_exec.txt
+server/data/edge_map.pkl
+server/data/records (3).json
+server/ai_app_recovered*.py
+fix_csv_encoding.py
+read_excel.py
+convert_machines.py
+test_api.py
+cleanup.bat
+PURGE_PROJECT.bat

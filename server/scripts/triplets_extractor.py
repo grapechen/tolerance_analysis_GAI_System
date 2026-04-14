@@ -139,13 +139,45 @@ def build_triplets_context(triplets):
             
     return "\n".join(context_lines)
 
+def get_mating_constraints(csv_filename='ontology_export.csv'):
+    """
+    從 CSV 中提取具有 'ns0__有組裝接觸' 關係的配對，
+    用於前端自動畫出綠色的接觸連線。
+    """
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    server_dir = os.path.dirname(current_dir)
+    csv_path = os.path.join(server_dir, 'data', csv_filename)
+    
+    if not os.path.exists(csv_path):
+        return []
+    
+    df = None
+    for enc in ['utf-8-sig', 'utf-8', 'big5', 'cp950']:
+        try:
+            df = pd.read_csv(csv_path, encoding=enc, on_bad_lines='skip')
+            break
+        except:
+            pass
+            
+    if df is None or not {'n', 'r', 'm'}.issubset(df.columns):
+        return []
+
+    constraints = []
+    for _, row in df.iterrows():
+        r_str = str(row['r'])
+        if 'ns0__有組裝接觸' in r_str:
+            subject = extract_display_name(str(row['n']))
+            obj = extract_display_name(str(row['m']))
+            if subject and obj:
+                constraints.append([subject, obj])
+                
+    return constraints
+
 if __name__ == "__main__":
     triplets = get_knowledge_triplets()
     print(f"\nTotal extracted {len(triplets)} knowledge triplets")
-    print("\nTop 10 triplets example:")
-    for t in triplets[:10]:
-        print(f" - 主體: {t[0]:<15} | 關係: {t[1]:<20} | 客體: {t[2]}")
-        
-    print("\nLLM Context example (Top 5 lines):")
-    context_str = build_triplets_context(triplets[:5])
-    print(context_str)
+    
+    mating = get_mating_constraints()
+    print(f"Total extracted {len(mating)} mating constraints")
+    if mating:
+        print("Example mating pair:", mating[0])

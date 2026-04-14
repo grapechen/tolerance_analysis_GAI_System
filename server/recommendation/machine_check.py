@@ -80,7 +80,7 @@ def find_capable_machines(diameter, safety_factor=1.0, keywords=None):
                     
                     # 1. 精度過濾 & 2. 行程過濾 (直徑不能大於最小的那軸行程)
                     if repeat_val <= target_repeat and diameter <= min(x_travel, y_travel):
-                        machine_data = {
+                        machine_temp = {
                             "model": row.get('型號', 'Unknown'),
                             "company": row.get('公司', 'Unknown'),
                             "type": row.get('屬性', ''),
@@ -94,18 +94,42 @@ def find_capable_machines(diameter, safety_factor=1.0, keywords=None):
 
                         # 3. 如果有傳入 keywords，針對應用場景做加分
                         score = 0
+                        scenario_text = str(machine_temp['scenario']) + str(machine_temp['type'])
                         if keywords:
-                            scenario_text = str(machine_data['scenario']) + str(machine_data['type'])
                             score = sum(1 for k in keywords if k in scenario_text)
 
-                        machine_data["match_score"] = score
-                        capable_machines.append(machine_data)
+                        # --- [新增] 自動生成推薦理由 ---
+                        reasons = []
+                        if repeat_val <= target_repeat:
+                            diff_pct = ((target_repeat - repeat_val) / target_repeat) * 100
+                            if diff_pct > 30:
+                                reasons.append(f"加工精度極佳，優於目標要求約 {diff_pct:.0f}% 以上。")
+                            else:
+                                reasons.append(f"重現精度達 {repeat_val}mm，充分符合 IT7 ({tol_g7_mm}mm) 等級需求。")
+                        
+                        min_stroke = min(x_travel, y_travel)
+                        if min_stroke >= diameter * 1.5:
+                            reasons.append(f"加工行程充沛 (Axis Min: {min_stroke}mm)，可處理直徑 {diameter}mm 工件。")
+                        
+                        if score > 0 and keywords:
+                            matched_keywords = [k for k in keywords if k in scenario_text]
+                            reasons.append(f"功能匹配度高，具備與您要求的「{', '.join(matched_keywords)}」相關之加工能力。")
+                        
+                        if not reasons:
+                            reasons.append("符合該公差等級之加工規範與行程要求。")
+                        
+                        machine_temp["recommend_reason"] = " ".join(reasons)
+                        machine_temp["match_score"] = score
+                        capable_machines.append(machine_temp)
 
                 except ValueError:
                     continue # Skip invalid rows
                     
         # 依照 match_score 降冪排序，再依照精度升冪排序
         capable_machines.sort(key=lambda x: (-x.get('match_score', 0), x['repeatability_mm']))
+
+        # [新增] 只取前 10 名
+        capable_machines = capable_machines[:10]
 
     except Exception as e:
         print(f"Error processing machines CSV: {e}")

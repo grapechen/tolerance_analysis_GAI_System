@@ -3,114 +3,382 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ISO 286 AI 智能助手</title>
-  <link rel="stylesheet" href="/static/css/style.css">
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/dompurify/3.0.6/purify.min.js"></script>
+  <title>{% if lang == 'en' %}ISO 286 AI Intelligent Assistant{% else %}ISO 286 AI 智能助手{% endif %}</title>
+  
+  <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+  <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <!-- Three.js & OrbitControls for 3D Scatter View -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+
+  <!-- STEP PMI 3D Viewer (Phase 2 Integration) -->
+  <script src="{{ url_for('static', filename='js/step_viewer.js') }}" defer></script>
+  <script src="{{ url_for('static', filename='js/pmi_panel.js') }}" defer></script>
+
+  <!-- 進度條實時顯示 (新增) -->
+  <script src="{{ url_for('static', filename='js/progress_bar.js') }}" defer></script>
 </head>
 <body>
 
+  <div class="header">
+    <h1>
+       {% if lang == 'en' %}AI Intelligent Assistant{% else %}AI 智能助手{% endif %}
+    </h1>
+    <div class="model-selector">
+      <label for="model-select" class="model-label">Model:</label>
+      <select id="model-select">
+        {% for model in models %}
+        {% set model_lower = model.lower() %}
+        {% set is_cloud = (
+          '-cloud' in model_lower or ':cloud' in model_lower or
+          model_lower.startswith('gpt-oss') or model_lower.startswith('qwen3-vl') or
+          model_lower.startswith('qwen3-v1') or model_lower.startswith('ministral-3') or
+          model_lower.startswith('qwen3-coder') or model_lower.startswith('glm-5') or
+          model_lower.startswith('glm-4') or model_lower.startswith('deepseek') or
+          model_lower.startswith('minimax') or model_lower.startswith('gemini-3') or
+          model_lower.startswith('kimi') or model_lower.startswith('qwen3.5') or
+          model_lower.startswith('nemotron')
+        ) %}
+        <option value="{{ model }}" {% if model == current_model %}selected{% endif %} {% if is_cloud %}data-cloud="true"{% endif %}>
+          {% if is_cloud %}☁️ {% endif %}{{ model }}
+        </option>
+        {% endfor %}
+      </select>
+    </div>
+  </div>
+
   <div class="app-layout">
+    <!-- 左側面版：圖表繪製區 -->
+    <div class="left-panel">
+      <!-- 繪圖容器 -->
+      <div id="graph-container">
+         <div class="graph-empty-state">
+           {% if lang == 'en' %}The structural diagram will be displayed here...{% else %}結構圖表將在此顯示...{% endif %}
+         </div>
+      </div>
 
-    <!-- ========== Left Panel: 控制與視覺化區 ========== -->
-    <aside class="left-panel">
-
-      <!-- Top 區間 1: 4 個功能按鈕 -->
+      <!-- 左側快速按鈕區 -->
       <div class="left-btn-grid">
-        <button class="panel-btn" id="btn-parts" data-action="parts">零件</button>
-        <button class="panel-btn" id="btn-features" data-action="features">特徵面</button>
-        <button class="panel-btn" id="btn-network" data-action="network">公差網路</button>
-        <button class="panel-btn" id="btn-contact" data-action="contact">組裝接觸</button>
+        <button class="panel-btn" data-action="parts"> {% if lang == 'en' %}BOM Tree{% else %}產品架構圖{% endif %}</button>
+        <button class="panel-btn" data-action="features"> {% if lang == 'en' %}Features{% else %}特徵結構圖{% endif %}</button>
+        <button class="panel-btn" data-action="network"> {% if lang == 'en' %}Tolerance Net{% else %}公差網路圖{% endif %}</button>
+        <button class="panel-btn" data-action="contact"> {% if lang == 'en' %}Assembly Contact{% else %}組裝接觸圖{% endif %}</button>
+        <button class="panel-btn" style="grid-column: span 2;" data-action="step_viewer"> {% if lang == 'en' %}STEP 3D Viewer{% else %}STEP 3D 檢視器{% endif %}</button>
+        <button class="panel-btn edit-path-btn" data-action="edit_path"> {% if lang == 'en' %}Edit Path{% else %}編輯公差路徑{% endif %}</button>
+        <button class="panel-btn analysis-btn" data-action="analysis"> {% if lang == 'en' %}Analysis{% else %}公差分析{% endif %}</button>
+        <button class="panel-btn allocation-btn" data-action="allocation"> {% if lang == 'en' %}Allocation{% else %}公差調配{% endif %}</button>
       </div>
+    </div>
 
-      <!-- Top 區間 2: 公差分析按鈕 -->
-      <div class="left-btn-analysis">
-        <button class="panel-btn analysis-btn" id="btn-analysis" data-action="analysis">公差分析</button>
-      </div>
+    <!-- 拖曳分隔線 -->
+    <div id="panel-resizer"></div>
 
-      <!-- Middle 區間: 圖表容器 -->
-      <div class="graph-container" id="graph-container">
-        <div class="graph-placeholder">
-          <span class="graph-placeholder-icon">📊</span>
-          <p>點擊上方按鈕或透過對話觸發圖表渲染</p>
-        </div>
-      </div>
-
-      <!-- Bottom 區間: 語言模型選單 -->
-      <div class="left-model-selector">
-        <label for="model-select" class="model-label">Model:</label>
-        <select id="model-select">
-          {% for model in models %}
-          <option value="{{ model }}" {% if model == current_model %}selected{% endif %}>
-            {{ model }}
-          </option>
-          {% endfor %}
-        </select>
-      </div>
-
-    </aside>
-
-    <!-- ========== Resizer: 可拖曳分隔線 ========== -->
-    <div class="panel-resizer" id="panel-resizer"></div>
-
-    <!-- ========== Right Panel: AI 問答對話區 ========== -->
-    <main class="right-panel">
-
-      <!-- Header -->
-      <div class="chat-header">
-        <h1>
-          <div class="status-dot"></div>
-          AI 智能技術助理
-        </h1>
-      </div>
-
-      <!-- Chat History -->
+    <!-- 右側面版：對話紀錄與輸入 -->
+    <div class="right-panel">
       <div class="chat-container" id="chat-history">
         <div class="message ai">
           <div class="avatar">AI</div>
           <div class="bubble">
+            {% if lang == 'en' %}
+            Hello! I am your AI intelligent assistant.<br>
+            You can ask me things like:<br>
+            • <strong>25mm H7</strong> (Single tolerance query)<br>
+            • <strong>Analyze 25mm H7/h6</strong> (Fit analysis)<br>
+            • <strong>What parts does the precision slide contain?</strong> (Product structure diagram)<br>
+            Is there anything I can help you with?
+            {% else %}
             你好！我是您的AI智能助手。<br>
             您可以問我像是：<br>
             • <strong>25mm H7</strong> (查詢單一公差)<br>
             • <strong>分析 25mm H7/h6</strong> (進行配合分析)<br>
             • <strong>精密迴轉滑台包含哪些零件？</strong> (畫出產品架構圖)<br>
             請問有什麼我可以幫您的嗎？
+            {% endif %}
           </div>
         </div>
       </div>
 
-      <!-- Input Area -->
       <div class="input-area">
-        <input type="text" id="chat-input" placeholder="輸入您的問題..." autocomplete="off">
-        <button id="send-btn">發送</button>
+        <input type="text" id="chat-input" placeholder="{% if lang == 'en' %}Enter your question...{% else %}輸入您的問題...{% endif %}" autocomplete="off">
+        <button onclick="sendMessage()" id="send-btn">{% if lang == 'en' %}Send{% else %}發送{% endif %}</button>
+      </div>
+    </div>
+
+    <!-- STEP 3D Viewer Resizer -->
+    <div id="step-viewer-resizer" style="display:none; width:6px; background:#64748b; cursor:col-resize; user-select:none; transition:background 0.2s;" title="左右拖动调整宽度"></div>
+
+    <!-- STEP 3D Viewer Panel (Phase 2 Integration) - 亮色風格類似 Tkinter 應用 -->
+    <div id="step-viewer-panel" style="display:none; flex-direction:column; width:520px; min-width:380px; max-width:900px; border-left:2px solid #cbd5e1; background:#f8fafc; color:#334155; overflow:hidden;">
+      <!-- 標題列 -->
+      <div style="padding:10px 14px; background:#eceff1; display:flex; align-items:center; justify-content:space-between; border-bottom:1px solid #cbd5e1;">
+        <span style="font-weight:bold; font-size:14px; color:#1a202c;">🔩 STEP 3D 聯動檢視器</span>
+        <button onclick="closeStepViewerPanel()" style="border:none; background:none; cursor:pointer; font-size:22px; color:#666; line-height:1;">&times;</button>
       </div>
 
-    </main>
+      <!-- 工具列 - 第一列 -->
+      <div style="padding:8px 10px; background:#eceff1; display:flex; align-items:center; gap:6px; border-bottom:1px solid #cbd5e1; flex-wrap:wrap;">
+        <label style="cursor:pointer; padding:5px 11px; background:#bbdefb; color:#1a202c; border:none; border-radius:4px; font-size:12px; font-weight:bold; white-space:nowrap; user-select:none;">
+          📥 載入 STP
+          <input type="file" id="step-file-input" accept=".stp,.STP,.step,.STEP" style="display:none;" onchange="uploadStepFile(this.files[0])">
+        </label>
+        <label style="cursor:pointer; padding:5px 11px; background:#c8e6c9; color:#1a202c; border:none; border-radius:4px; font-size:12px; font-weight:bold; white-space:nowrap; user-select:none;">
+          📊 載入 XLSX
+          <input type="file" id="xlsx-file-input" accept=".xlsx,.xls" style="display:none;" onchange="uploadXlsxFile(this.files[0])">
+        </label>
+        <button onclick="parsePMI()" style="padding:5px 11px; background:#ffe082; color:#1a202c; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;">🔄 比對 & 解析 PMI</button>
+        <button onclick="exportStepCSV()" style="padding:5px 11px; background:#cfd8dc; color:#1a202c; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;">💾 導出 CSV</button>
+      </div>
+
+      <!-- 工具列 - 第二列 -->
+      <div style="padding:6px 10px; background:#eceff1; display:flex; align-items:center; gap:6px; border-bottom:1px solid #cbd5e1; flex-wrap:wrap;">
+        <button onclick="runAssemblyContactAnalysis()" style="padding:5px 11px; background:#f3e5f5; color:#1a202c; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;">🔩 組合件分析</button>
+        <button onclick="location.href='#'" style="padding:5px 11px; background:#e8f5e9; color:#1a202c; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;">📋 零件樹</button>
+        <span style="font-size:11px; color:#666; margin-left:auto;">載入組合件 STP，偵測零件間接觸面</span>
+      </div>
+
+      <!-- 狀態列 -->
+      <div style="padding:6px 10px; background:#fff9c4; border-bottom:1px solid #cbd5e1; font-size:11px; color:#f57f17; font-weight:normal;">
+        📌 請先載入 STP 與 XLSX 檔案
+      </div>
+
+      <!-- 批次操作按鈕 -->
+      <div style="padding:6px 10px; background:#fafafa; display:flex; gap:6px; border-bottom:1px solid #cbd5e1;">
+        <button onclick="PmiPanel && PmiPanel.selectAll()" style="padding:4px 10px; background:#e0e0e0; color:#333; border:none; border-radius:3px; cursor:pointer; font-size:12px;">☑ 全選</button>
+        <button onclick="PmiPanel && PmiPanel.clearAll()" style="padding:4px 10px; background:#e0e0e0; color:#333; border:none; border-radius:3px; cursor:pointer; font-size:12px;">☐ 全清</button>
+      </div>
+
+      <!-- 色票說明 -->
+      <div style="padding:6px 10px; background:#fafafa; border-bottom:1px solid #cbd5e1; display:flex; gap:12px; flex-wrap:wrap; font-size:11px;">
+        <span style="display:flex; align-items:center; gap:4px;">
+          <span style="color:#10b981; font-weight:bold; font-size:14px;">■</span>
+          <span>基準/純幾何特徵面</span>
+        </span>
+        <span style="display:flex; align-items:center; gap:4px;">
+          <span style="color:#a121f0; font-weight:bold; font-size:14px;">■</span>
+          <span>交互參考公差之特徵面</span>
+        </span>
+        <span style="display:flex; align-items:center; gap:4px;">
+          <span style="color:#ffa500; font-weight:bold; font-size:14px;">■</span>
+          <span>個別參考公差之特徵面</span>
+        </span>
+        <span style="display:flex; align-items:center; gap:4px;">
+          <span style="color:#000000; font-weight:bold; font-size:14px;">■</span>
+          <span>PMI 標註線</span>
+        </span>
+      </div>
+
+      <!-- 3D 畫布 -->
+      <div id="step-viewer-container" style="flex:1; min-height:300px; background:#ffffff; border-bottom:1px solid #cbd5e1;"></div>
+
+      <!-- PMI 清單標題 -->
+      <div style="padding:8px 10px; background:#f5f5f5; border-bottom:1px solid #cbd5e1; font-size:12px; color:#333; font-weight:bold;">PMI 標註清單（勾選並點擊高亮）</div>
+
+      <!-- PMI 清單 -->
+      <div id="pmi-list-container" style="height:200px; overflow-y:auto; background:#ffffff; padding:4px 6px; font-size:12px;"></div>
+    </div>
 
   </div>
 
-  <!-- Interactive BOM Modal -->
-  <div class="bom-modal-overlay" id="bom-modal-overlay">
+  <div class="bom-modal-overlay" id="bom-modal-overlay" onclick="if(event.target === this) closeBomModal()">
     <div class="bom-modal-content">
-      <button class="close-modal-btn" id="close-bom-modal">&times;</button>
+      <button class="close-modal-btn" onclick="closeBomModal()">&times;</button>
       <div id="bom-modal-container"></div>
     </div>
   </div>
 
-  <!-- Tolerance Path Editor Modal -->
-  <div class="editor-modal-overlay" id="editor-modal-overlay">
+  <div class="editor-modal-overlay" id="editor-modal-overlay" onclick="if(event.target === this) closeEditorModal()">
     <div class="editor-modal-content">
-      <button class="close-modal-btn" id="close-editor-modal">&times;</button>
-      <div class="editor-header">✏️ 公差路徑編輯器 (加入平移/旋轉)</div>
+      <button class="close-modal-btn" onclick="closeEditorModal()">&times;</button>
+      <div class="editor-header">✏️ {% if lang == 'en' %}Tolerance Path Editor (Add Translation/Rotation){% else %}公差路徑編輯器 (加入平移/旋轉){% endif %}</div>
       <div class="editor-list" id="editor-list-container">
-        <!-- Rendered by JS -->
       </div>
+      
       <div class="editor-actions">
-        <button class="btn-export" id="export-excel-btn">⬇️ 匯出為 Excel 分析檔</button>
+        <button class="btn-export" onclick="document.getElementById('excel-upload-input').click()">📁 {% if lang == 'en' %}Import Excel{% else %}匯入 Excel{% endif %}</button>
+        <input type="file" id="excel-upload-input" accept=".xlsx" onchange="uploadExcelPath(this)" title="Excel File Upload">
+        <button class="btn-export" onclick="exportCSV()">⬇️ {% if lang == 'en' %}Export as CSV{% else %}匯出為 CSV 分析檔{% endif %}</button>
+        <button type="button" class="btn-export" onclick="exportToLeftPanel()">👁️ {% if lang == 'en' %}Display in Panel{% else %}顯示在左側面板{% endif %}</button>
       </div>
     </div>
   </div>
 
-  <script src="/static/js/bom_renderer.js"></script>
-  <script src="/static/js/app.js"></script>
+  <div class="analysis-modal-overlay" id="analysis-modal-overlay" onclick="if(event.target === this) closeAnalysisModal()">
+    <div class="analysis-modal-content">
+      <button class="close-modal-btn" onclick="closeAnalysisModal()">&times;</button>
+      <div class="editor-header">📈 {% if lang == 'en' %}Tolerance Analysis Setup{% else %}公差分析參數設定{% endif %}</div>
+      
+      <div class="analysis-settings-grid">
+        <div class="setting-item">
+          <label for="mc-samples">📊 {% if lang == 'en' %}Samples{% else %}取樣數量{% endif %}</label>
+          <input type="number" id="mc-samples" value="10000" step="1000" min="100" title="取樣數量/Sample Count" placeholder="10000">
+        </div>
+        <div class="setting-item">
+          <label for="mc-sigma">📏 {% if lang == 'en' %}Sigma{% else %}標準差{% endif %}</label>
+          <select id="mc-sigma" title="標準差/Sigma">
+            <option value="2">2-sigma</option>
+            <option value="3" selected>3-sigma</option>
+            <option value="4">4-sigma</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label for="mc-dist">📉 {% if lang == 'en' %}Distribution{% else %}分布模式{% endif %}</label>
+          <select id="mc-dist" title="分布模式/Distribution" onchange="document.getElementById('mc-sigma').disabled = this.value === '0';">
+            <option value="0">{% if lang == 'en' %}Uniform{% else %}均勻分布{% endif %}</option>
+            <option value="1" selected>{% if lang == 'en' %}Normal{% else %}常態分佈{% endif %}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="editor-actions">
+        <div class="action-status-group">
+          <button type="button" class="btn-analyze" id="btn-deep-analyze" onclick="runDeepAnalysis()">📊 {% if lang == 'en' %}Run Tolerance Analysis{% else %}執行公差分析{% endif %}</button>
+          <div id="analysis-status-box" class="status-box uncompleted">{% if lang == 'en' %}Uncompleted{% else %}未完成{% endif %}</div>
+        </div>
+      </div>
+      
+      <div id="analyze-progress-wrap" class="analyze-progress-wrap hidden-by-default">
+        <div class="analyze-progress-header">
+          <h3 id="analyze-progress-title">{% if lang == 'en' %}Tolerance Analysis Projecting...{% else %}公差分析執行中...{% endif %}</h3>
+          <span id="analyze-progress-percent">0%</span>
+        </div>
+        <div class="analyze-progress-track">
+          <div id="analyze-progress-bar" class="analyze-progress-bar"></div>
+        </div>
+        <div id="analyze-progress-label" class="progress-status-label"></div>
+        <div class="horse-track-container" id="horse-track-container">
+          <div class="horse-finish-line"></div>
+          <div class="horse-rider-wrapper" id="horse-rider-wrapper">
+            <img src="/static/assets/horse_rider.png" 
+                 class="horse-rider-img" 
+                 id="horse-rider-img" 
+                 alt="{% if lang == 'en' %}Professor on horse{% else %}教授正在快馬加鞭{% endif %}"
+                 title="{% if lang == 'en' %}Galloping Professor{% else %}正在狂奔的教授{% endif %}" />
+            <div class="horse-dust"></div>
+          </div>
+          <div class="horse-ground"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="allocation-modal-overlay" id="allocation-modal-overlay" onclick="if(event.target === this) closeAllocationModal()">
+    <div class="allocation-modal-content">
+      <button class="close-modal-btn" onclick="closeAllocationModal()">&times;</button>
+      <div class="editor-header">⚖️ {% if lang == 'en' %}Tolerance Allocation Setup{% else %}公差調配參數設定{% endif %}</div>
+
+      <!-- 模式切換 -->
+      <div style="display:flex; gap:8px; margin-bottom:12px;">
+        <button type="button" id="alloc-mode-auto" class="axis-btn active" onclick="setAllocMode('auto')">
+          🎯 {% if lang == 'en' %}Auto Allocation{% else %}自動調配{% endif %}
+        </button>
+        <button type="button" id="alloc-mode-compare" class="axis-btn" onclick="setAllocMode('compare')">
+          ⚖️ {% if lang == 'en' %}Manual Matching (Comparison){% else %}手動匹配 (單機版比對){% endif %}
+        </button>
+      </div>
+
+      <!-- 自動調配參數 -->
+      <div id="alloc-auto-params" class="analysis-settings-grid">
+        <div class="setting-item">
+          <label for="alloc-target">🎯 {% if lang == 'en' %}Target RSS{% else %}目標 RSS 誤差{% endif %}</label>
+          <input type="number" id="alloc-target" value="0.05" step="0.005" min="0.001" title="目標總誤差/Target" placeholder="0.05">
+        </div>
+        <div class="setting-item">
+          <label for="alloc-axis">📐 {% if lang == 'en' %}Axis{% else %}調配軸向{% endif %}</label>
+          <select id="alloc-axis" title="調配軸向">
+            <option value="X">X</option>
+            <option value="Y">Y</option>
+            <option value="Z" selected>Z</option>
+            <option value="aX">Rx</option>
+            <option value="aY">Ry</option>
+            <option value="aZ">Rz</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label for="alloc-weight">⚖️ {% if lang == 'en' %}Allocation Strategy{% else %}調配策略（四象限）{% endif %}</label>
+          <select id="alloc-weight" title="調配策略/Strategy">
+            <option value="precision" selected>{% if lang == 'en' %}Precision Focus (Tighten Q1){% else %}精度考量（主攻 Q1 關鍵項）{% endif %}</option>
+            <option value="cost">{% if lang == 'en' %}Cost Focus (Loosen Q4){% else %}成本考量（考慮 Q4 放寬）{% endif %}</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- 手動比對說明 -->
+      <div id="alloc-compare-hint" style="display:none; padding:8px 12px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; font-size:0.85rem; color:#0369a1; margin-bottom:8px;">
+        {% if lang == 'en' %}
+          Manually edit tolerance values in the editor, run Tolerance Analysis, then click below to compare with the baseline (first analysis).
+        {% else %}
+          請在路徑編輯器中手動修改公差值，執行公差分析後，點擊下方按鈕與基準（首次分析）進行比對。
+        {% endif %}
+      </div>
+
+      <div class="editor-actions">
+        <div class="action-status-group">
+          <button type="button" class="btn-analyze" id="btn-run-allocation" onclick="runAllocation()">⚖️ {% if lang == 'en' %}Run Allocation{% else %}執行公差調配{% endif %}</button>
+          <div id="allocation-status-box" class="status-box uncompleted">{% if lang == 'en' %}Uncompleted{% else %}未完成{% endif %}</div>
+        </div>
+      </div>
+
+      <!-- 結果顯示區 -->
+      <div id="allocation-result-area" style="display:none; margin-top:12px;"></div>
+
+      <div id="allocation-progress-wrap" class="analyze-progress-wrap hidden-by-default">
+        <div id="allocation-progress-label" class="progress-status-label"></div>
+        <div class="analyze-progress-header">
+          <h3 id="allocation-progress-title">{% if lang == 'en' %}Allocating...{% else %}公差調配計算中...{% endif %}</h3>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script id="mating-constraints-data" type="application/json">
+    {{ (mating_constraints if mating_constraints else []) | tojson | safe }}
+  </script>
+
+  <script>
+    window.CURRENT_LANG = "{{ lang }}";
+    const matingDataEl = document.getElementById('mating-constraints-data');
+    window.matingConstraints = JSON.parse(matingDataEl.textContent);
+  </script>
+
+  <!-- 專業公差分析儀表板模板 (Dashboard Template) - 將被移至左側面板 -->
+  <template id="dashboard-layout-template">
+    <div class="dashboard-layout" style="height: 100%; border-radius: 0;">
+      <!-- 左側標籤導覽 -->
+      <div class="dashboard-sidebar">
+        <div class="sidebar-header">📊 {% if lang == 'en' %}Analytics{% else %}分析報告{% endif %}</div>
+        <button class="side-tab active" onclick="switchDashboardTab('summary')">📝 {% if lang == 'en' %}Summary{% else %}統計摘要{% endif %}</button>
+        <button class="side-tab" onclick="switchDashboardTab('dist')">📉 {% if lang == 'en' %}Distribution{% else %}誤差分佈{% endif %}</button>
+        <button class="side-tab" onclick="switchDashboardTab('sens')">📏 {% if lang == 'en' %}Sensitivity{% else %}敏感度{% endif %}</button>
+        <button class="side-tab" onclick="switchDashboardTab('cont')">💰 {% if lang == 'en' %}Contribution{% else %}貢獻度{% endif %}</button>
+        <button class="side-tab" onclick="switchDashboardTab('3d')">🌐 {% if lang == 'en' %}3D Scatter{% else %}3D 散點圖{% endif %}</button>
+      </div>
+
+      <!-- 右側主內容區 -->
+      <div class="dashboard-main">
+        <div class="dashboard-toolbar">
+          <div id="dashboard-title" class="dashboard-title">{% if lang == 'en' %}Analysis Summary{% else %}公差分析摘要{% endif %}</div>
+          <div class="axis-filter" id="axis-filter-wrap">
+            <button class="axis-btn active" onclick="filterAxis('X')">X</button>
+            <button class="axis-btn" onclick="filterAxis('Y')">Y</button>
+            <button class="axis-btn" onclick="filterAxis('Z')">Z</button>
+            <button class="axis-btn" onclick="filterAxis('aX')">Rx</button>
+            <button class="axis-btn" onclick="filterAxis('aY')">Ry</button>
+            <button class="axis-btn" onclick="filterAxis('aZ')">Rz</button>
+          </div>
+        </div>
+        
+        <div class="dashboard-body" id="dashboard-body">
+          <div id="chart-container" class="chart-container"></div>
+          <div id="summary-content" class="summary-content"></div>
+        </div>
+      </div>
+    </div>
+  </template>
+
+  <script src="{{ url_for('static', filename='js/bom_render.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+
+
+
 </body>
 </html>

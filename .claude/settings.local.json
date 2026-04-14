@@ -6,7 +6,13 @@
       "Bash(python3 -c \":*)",
       "Bash(pip show:*)",
       "Bash(curl -s http://localhost:11434)",
-      "Bash(python -c \"import ollama; c = ollama.Client\\(host=''http://localhost:11434''\\); print\\(c._client.base_url\\)\")"
+      "Bash(python -c \"import ollama; c = ollama.Client\\(host=''http://localhost:11434''\\); print\\(c._client.base_url\\)\")",
+      "Read(//c/Users/User/.claude/projects/c--Tolerance-Project/memory/**)",
+      "Read(//c/Users/User/.gemini/antigravity/brain/de666a05-e2ff-4a4e-aa84-80eac998516d/**)",
+      "Bash(find c:/Tolerance_Project -name SensitivityContribution*.py -o -name ExcelData*.py)"
+    ],
+    "additionalDirectories": [
+      "c:\\Tolerance_Project"
     ]
   }
 }

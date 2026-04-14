@@ -1,7 +1,13 @@
 {
   "permissions": {
     "allow": [
-      "Bash(start c:/Tolerance_Project/README.md)"
+      "Bash(start c:/Tolerance_Project/README.md)",
+      "Bash(where conda:*)",
+      "Bash(.venv/Scripts/pip install:*)",
+      "Bash(.venv/Scripts/pip search:*)",
+      "Bash(.venv/Scripts/python -c \"import OCC\")",
+      "Bash(.venv/Scripts/python -c \"from OCP.STEPCAFControl import STEPCAFControl_Reader; print\\('OCP import successful'\\)\")",
+      "Bash(.venv/Scripts/pip list:*)"
     ]
   }
 }

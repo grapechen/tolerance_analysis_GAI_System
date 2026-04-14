@@ -501,11 +501,14 @@ async function checkMachine() {
             machines.forEach(m => {
                 html += `
                     <div class="result-item machine-result-row">
-                        <div>
+                        <div style="flex: 1;">
                             <div class="machine-model">${m.model}</div>
                             <div class="machine-info">${m.company} | ${m.type}</div>
+                            <div class="machine-reason" style="margin-top: 5px; color: #fbbf24; font-size: 13px; line-height: 1.4;">
+                                💡 ${m.recommend_reason || '符合精度與加工規範'}
+                            </div>
                         </div>
-                        <div class="machine-val">
+                        <div class="machine-val" style="min-width: 100px; text-align: right;">
                             <div class="machine-val-num">${m.repeatability_mm} mm</div>
                             <div class="machine-info">重現精度</div>
                         </div>

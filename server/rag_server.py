@@ -235,7 +235,7 @@ def parse_user_query(query):
         # Single lookup
         return size, code1, it1, None, None
 
-def get_rag_response(user_input, model_name='llama3.1:8b', history=None):
+def get_rag_response(user_input, model_name='llama3.1:8b', history=None, lang="zh-TW"):
     """
     Main entry point for Web App or CLI.
     """

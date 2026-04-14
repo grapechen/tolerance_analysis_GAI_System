@@ -66,13 +66,12 @@ def _create_session_dir(session_id):
 # ═══════════════════════════════════════════════════════════
 
 def route_upload_step():
-    """上傳 STEP + XLSX 檔案，建立新 session"""
+    """上傳 STEP 檔案，建立新 session（不立即解析）"""
     try:
         if 'stp_file' not in request.files:
             return jsonify({"ok": False, "error": "缺少 stp_file 欄位"}), 400
 
         stp_file = request.files['stp_file']
-        xlsx_file = request.files.get('xlsx_file', None)
 
         if not stp_file or stp_file.filename == '':
             return jsonify({"ok": False, "error": "STP 檔案無效"}), 400
@@ -86,22 +85,14 @@ def route_upload_step():
         stp_path = os.path.join(session_dir, stp_filename)
         stp_file.save(stp_path)
 
-        # 儲存 XLSX 檔案（如有）
-        xlsx_filename = None
-        xlsx_path = None
-        if xlsx_file and xlsx_file.filename:
-            xlsx_filename = xlsx_file.filename
-            xlsx_path = os.path.join(session_dir, xlsx_filename)
-            xlsx_file.save(xlsx_path)
-
-        # 寫入 MySQL
+        # 寫入 MySQL（此時還沒有 XLSX）
         db_session = Session()
         pmi_session_obj = PmiSession(
             session_id=session_id,
             stp_filename=stp_filename,
             stp_path=stp_path,
-            xlsx_filename=xlsx_filename,
-            xlsx_path=xlsx_path,
+            xlsx_filename=None,
+            xlsx_path=None,
             status='pending'
         )
         db_session.add(pmi_session_obj)
@@ -112,11 +103,62 @@ def route_upload_step():
             "ok": True,
             "session_id": session_id,
             "stp_filename": stp_filename,
-            "xlsx_filename": xlsx_filename or None
+            "message": "✅ STEP 檔案已上傳。請上傳 XLSX 檔案，然後點擊「比對 & 解析 PMI」。"
         }), 200
 
     except Exception as e:
         print(f"❌ 上傳錯誤：{e}")
+        return jsonify({"ok": False, "error": str(e)}), 500
+
+
+# ═══════════════════════════════════════════════════════════
+# 路由 1b: POST /api/step/upload_xlsx
+# 將 XLSX 上傳到已存在的 session（用於兩步上傳流程）
+# ═══════════════════════════════════════════════════════════
+
+def route_upload_xlsx():
+    """上傳 XLSX 檔案到已存在的 session"""
+    try:
+        if 'xlsx_file' not in request.files:
+            return jsonify({"ok": False, "error": "缺少 xlsx_file 欄位"}), 400
+
+        xlsx_file = request.files['xlsx_file']
+        session_id = request.form.get('session_id')
+
+        if not session_id:
+            return jsonify({"ok": False, "error": "缺少 session_id"}), 400
+
+        if not xlsx_file or xlsx_file.filename == '':
+            return jsonify({"ok": False, "error": "XLSX 檔案無效"}), 400
+
+        # 從 DB 取得 session
+        db_session = Session()
+        pmi_session_obj = db_session.query(PmiSession).filter_by(session_id=session_id).first()
+        if not pmi_session_obj:
+            db_session.close()
+            return jsonify({"ok": False, "error": "Session 不存在"}), 404
+
+        session_dir = os.path.dirname(pmi_session_obj.stp_path)
+
+        # 儲存 XLSX 檔案
+        xlsx_filename = xlsx_file.filename
+        xlsx_path = os.path.join(session_dir, xlsx_filename)
+        xlsx_file.save(xlsx_path)
+
+        # 更新 session
+        pmi_session_obj.xlsx_filename = xlsx_filename
+        pmi_session_obj.xlsx_path = xlsx_path
+        db_session.commit()
+        db_session.close()
+
+        return jsonify({
+            "ok": True,
+            "session_id": session_id,
+            "xlsx_filename": xlsx_filename
+        }), 200
+
+    except Exception as e:
+        print(f"❌ XLSX 上傳錯誤：{e}")
         return jsonify({"ok": False, "error": str(e)}), 500
 
 

@@ -188,35 +188,47 @@ def route_parse_pmi():
         stp_path = pmi_session_obj.stp_path
         xlsx_path = pmi_session_obj.xlsx_path
 
-        # 1. 載入 STEP 幾何
-        progress.update(1, 6, "📂 正在加載 STEP 文件...")
-        engine_obj = StepXcafEngine()
-        engine_obj.load(stp_path)
-
-        # 2. 解析 XLSX（若有）
-        progress.update(2, 6, "📊 正在解析 Excel...")
+        # ─────────────────────────────────────────────────
+        # 步驟 1: 解析 XLSX（**先於 STEP 載入**，與原始代碼一致）
+        # ─────────────────────────────────────────────────
+        progress.update(1, 6, "📊 正在解析 Excel...")
         face_pmi_map = {}
         pmi_rows = []
         if xlsx_path and os.path.exists(xlsx_path):
             face_pmi_map, pmi_rows = parse_sfa_excel(xlsx_path)
 
-        # 3. 備援：幾何特徵樹
-        progress.update(3, 6, "🌳 正在建構幾何特徵樹...")
-        if not pmi_rows:
-            pmi_rows = build_geometry_feature_tree(engine_obj)
+        # ─────────────────────────────────────────────────
+        # 步驟 2: XCAF 載入（face map）
+        # ─────────────────────────────────────────────────
+        progress.update(2, 6, "📂 正在加載 STEP 文件...")
+        engine_obj = StepXcafEngine()
+        engine_obj.load(stp_path)
 
-        # 4. 載入 ASSOCIATION 鏈（semantic_id → tao_id）
-        progress.update(4, 6, "🔗 正在加載 ASSOCIATION...")
+        # ─────────────────────────────────────────────────
+        # 步驟 3: CSV ASSOCIATION 鏈
+        # ─────────────────────────────────────────────────
+        progress.update(3, 6, "🔗 正在加載 ASSOCIATION...")
         semantic_to_tao = {}
         tao_to_data = {}
         if xlsx_path and os.path.exists(xlsx_path):
             semantic_to_tao = load_sfa_association(xlsx_path)
 
-        # 5. 解析 tessellated 標註（全局掃描）
+        # ─────────────────────────────────────────────────
+        # 步驟 3b: 備援 - 幾何特徵樹（只在沒有 PMI 時調用）
+        # ─────────────────────────────────────────────────
+        progress.update(4, 6, "🌳 正在建構幾何特徵樹...")
+        if not pmi_rows:
+            pmi_rows = build_geometry_feature_tree(engine_obj)
+
+        # ─────────────────────────────────────────────────
+        # 步驟 4: 全局 tessellated 標註解析
+        # ─────────────────────────────────────────────────
         progress.update(5, 6, "🔺 正在解析 Tessellated 標註...")
         if xlsx_path:
             tao_to_data, step_sem_to_tao = parse_tessellated_annotations(stp_path, scan_all=True)
-            semantic_to_tao.update(step_sem_to_tao)
+            # ── Step 4a：STEP 直接鏈結（最高優先）──
+            if step_sem_to_tao:
+                semantic_to_tao.update(step_sem_to_tao)
 
         # 6. 寫入 pmi_item 資料表
         progress.update(6, 6, f"💾 正在寫入 {len(pmi_rows)} 個 PMI 項目...")

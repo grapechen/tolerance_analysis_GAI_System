@@ -285,7 +285,7 @@ def route_parse_pmi():
 # ═══════════════════════════════════════════════════════════
 
 def route_get_geometry():
-    """依 face_ids 回傳三角網格 JSON"""
+    """依 face_ids 回傳三角網格 JSON（支持 * 通配符加載所有面）"""
     try:
         session_id = request.args.get('session_id')
         face_ids_str = request.args.get('face_ids', '')
@@ -297,13 +297,18 @@ def route_get_geometry():
         if session_id not in _step_sessions:
             return jsonify({"ok": False, "error": "Session 不存在或已過期"}), 404
 
-        # 初始化進度追蹤
-        progress = ProgressTracker(session_id, "tessellate")
-        progress.update(1, 2, f"🔺 正在三角化 {len(face_ids_str.split(','))} 個面...")
-
         sess = _step_sessions[session_id]
         engine_obj = sess['engine']
-        face_ids = face_ids_str.split(',')
+
+        # 支持 * 通配符：加載所有面
+        if face_ids_str == '*':
+            face_ids = list(engine_obj.step_id_to_face.keys())
+        else:
+            face_ids = face_ids_str.split(',')
+
+        # 初始化進度追蹤
+        progress = ProgressTracker(session_id, "tessellate")
+        progress.update(1, 2, f"🔺 正在三角化 {len(face_ids)} 個面...")
 
         # 三角化
         geom = tessellate_face_by_step_ids(engine_obj, face_ids, deflection)

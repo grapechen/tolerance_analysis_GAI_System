@@ -4,7 +4,7 @@ import os
 def append_machine_knowledge():
     current_dir = os.path.dirname(os.path.abspath(__file__))
     machines_path = r'c:/Tolerance_Project/data/machines.csv'
-    export_path = r'c:/Tolerance_Project/server/data/0213_export.csv'
+    export_path = r'c:/Tolerance_Project/server/data/ontology_export.csv'
 
     print(f"Reading machines data: {machines_path}")
     try:

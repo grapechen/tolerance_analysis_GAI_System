@@ -1,6 +1,6 @@
 import re
 
-with open('server/data/0213_export.csv', 'r', encoding='big5', errors='ignore') as f:
+with open('server/data/ontology_export.csv', 'r', encoding='big5', errors='ignore') as f:
     content = f.read()
 
 # count relations

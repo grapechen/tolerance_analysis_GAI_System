@@ -3,7 +3,10 @@
     "allow": [
       "Bash(ls -la /c/Tolerance_Project/server/*.py)",
       "Bash(find /c/Tolerance_Project/tests -type f -name *.py)",
-      "Bash(python3 -c \":*)"
+      "Bash(python3 -c \":*)",
+      "Bash(pip show:*)",
+      "Bash(curl -s http://localhost:11434)",
+      "Bash(python -c \"import ollama; c = ollama.Client\\(host=''http://localhost:11434''\\); print\\(c._client.base_url\\)\")"
     ]
   }
 }

@@ -1,10 +1,10 @@
 import re
 
 try:
-    with open('server/data/0213_export.csv', 'r', encoding='utf-8') as f:
+    with open('server/data/ontology_export.csv', 'r', encoding='utf-8') as f:
         content = f.read()
 except UnicodeDecodeError:
-    with open('server/data/0213_export.csv', 'r', encoding='utf-8-sig', errors='ignore') as f:
+    with open('server/data/ontology_export.csv', 'r', encoding='utf-8-sig', errors='ignore') as f:
         content = f.read()
 
 # Let's find anything looking like an entity name, usually in Japanese/Chinese/English ending before a quote or slash

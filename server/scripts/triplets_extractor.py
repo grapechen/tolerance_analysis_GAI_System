@@ -3,12 +3,15 @@ import re
 import os
 
 def extract_display_name(node_str):
-    """從 Neo4j 匯出的節點字串中提取 display 屬性值"""
+    """從 Neo4j 匯出的節點字串中提取 display 或 uri 屬性值"""
     if not isinstance(node_str, str):
         return str(node_str)
-    
-    # 找尋 display: 後面的字串，直到遇到逗號或右大括號
+
+    # 優先找 display:，其次找 uri:
     match = re.search(r'display:\s*([^,}]+)', node_str)
+    if match:
+        return match.group(1).strip()
+    match = re.search(r'uri:\s*([^,}]+)', node_str)
     if match:
         return match.group(1).strip()
     return node_str
@@ -20,7 +23,7 @@ def extract_relationship(rel_str):
     # 移除中括號與冒號，例如 [:rdfs__subClassOf] -> rdfs__subClassOf
     return rel_str.strip('[]:')
 
-def get_knowledge_triplets(csv_filename='0213_export.csv'):
+def get_knowledge_triplets(csv_filename='ontology_export.csv'):
     """讀取 CSV 並回傳清理後的三元組列表"""
     current_dir = os.path.dirname(os.path.abspath(__file__))
     # triplets_extractor.py 在 server/scripts/，所以往上一層才是 server/data/

@@ -68,11 +68,20 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
             hidden_prompt = user_msg + "\n\n" + dsl_rules.strip()
 
     model_lower = model_name.lower()
-    
+
+    # 雲端 Ollama 模型（:cloud 後綴）無法用於本機 GraphRAG，直接回傳提示
+    is_ollama_cloud = ":cloud" in model_lower
+    if is_ollama_cloud:
+        return (
+            "⚠️ 您選擇的是雲端模型（:cloud），需要 Ollama 帳號認證才能使用。\n"
+            "請切換為本機模型（例如 `llama3.1:8b` 或 `gemma3:4b`）後再試。",
+            bom_intent
+        )
+
     # 取得 RAG Context
     from graph_rag import enhanced_graph_retrieval, QA_PROMPT
     import graph_rag
-        
+
     # --- 路徑 1: 走 Gemini 原生 API ---
     if "gemini" in model_lower:
         if genai is None:

@@ -2,8 +2,8 @@ import csv
 import re
 
 # 定義輸入與輸出檔案
-INPUT_FILE = 'server/data/0213_export.csv'
-OUTPUT_FILE = 'server/data/0213_export_cleaned.csv'
+INPUT_FILE = 'server/data/ontology_export.csv'
+OUTPUT_FILE = 'server/data/ontology_export_cleaned.csv'
 
 # 要刪除的 Meta-nodes 關鍵字 (對應建議 1)
 # 這些是 OWL/RDF 本體的架構節點，對 RAG 實質問答無幫助

@@ -8,7 +8,7 @@ def extract_display_name(node_str):
     if match: return match.group(1).strip().strip("'\"")
     return node_str
 
-csv_path = 'server/data/0213_export.csv'
+csv_path = 'server/data/ontology_export.csv'
 df = None
 for enc in ['utf-8-sig', 'utf-8', 'big5', 'cp950', 'gbk']:
     try:

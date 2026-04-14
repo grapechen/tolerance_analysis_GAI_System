@@ -9,7 +9,7 @@ def extract_display_name(node_str):
     return match.group(1).strip() if match else node_str
 
 def check_db():
-    csv_path = 'server/data/0213_export.csv'
+    csv_path = 'server/data/ontology_export.csv'
     
     df = None
     for enc in ['utf-8-sig', 'big5', 'cp950', 'utf-8']:

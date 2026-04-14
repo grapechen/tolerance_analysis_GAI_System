@@ -13,15 +13,15 @@
   --text-color: #f1f5f9;
   --input-bg: #334155;
   --border-color: #475569;
+  --left-panel-bg: #162032;
 }
 body {
   font-family: 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
   background-color: var(--bg-color);
   color: var(--text-color);
   margin: 0;
-  display: flex;
-  flex-direction: column;
   height: 100vh;
+  overflow: hidden;
 }
 
 /* 幾何公差符號樣式 */
@@ -30,38 +30,185 @@ body {
   font-size: 1.1em;
   font-weight: normal;
 }
-.header {
-  padding: 15px 20px;
-  background-color: var(--chat-bg);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
-}
-.header h1 { margin: 0; font-size: 1.2rem; display: flex; align-items: center; gap: 10px; }
-.status-dot { width: 10px; height: 10px; background-color: #22c55e; border-radius: 50%; display: inline-block; }
 
-.model-selector {
+/* ========== App Layout: 左右雙欄 ========== */
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100%;
+}
+
+/* ========== Left Panel ========== */
+.left-panel {
+  width: 37%;
+  min-width: 250px;
+  background-color: var(--left-panel-bg);
+  border-right: none;
+  display: flex;
+  flex-direction: column;
+  padding: 14px;
+  gap: 10px;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+/* ========== Resizer: 可拖曳分隔線 ========== */
+.panel-resizer {
+  width: 6px;
+  cursor: col-resize;
+  background-color: var(--border-color);
+  flex-shrink: 0;
+  position: relative;
+  transition: background-color 0.15s;
+}
+.panel-resizer:hover,
+.panel-resizer.dragging {
+  background-color: var(--user-msg-bg);
+}
+.panel-resizer::after {
+  content: '···';
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%) rotate(90deg);
+  color: #94a3b8;
+  font-size: 12px;
+  letter-spacing: 2px;
+  pointer-events: none;
+}
+
+/* Top 區間 1: 功能按鈕 2x2 Grid */
+.left-btn-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  flex-shrink: 0;
+}
+
+.panel-btn {
+  padding: 10px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+  background-color: var(--ai-msg-bg);
+  color: var(--text-color);
+  font-weight: 600;
+  font-size: 0.9rem;
+  cursor: pointer;
+  transition: background-color 0.2s, border-color 0.2s, box-shadow 0.2s;
+}
+.panel-btn:hover {
+  background-color: #3b4f6b;
+  border-color: #64748b;
+}
+.panel-btn.active {
+  background-color: var(--user-msg-bg);
+  border-color: var(--user-msg-bg);
+  box-shadow: 0 0 8px rgba(59, 130, 246, 0.4);
+}
+
+/* Top 區間 2: 公差分析滿寬按鈕 */
+.left-btn-analysis {
+  flex-shrink: 0;
+}
+.analysis-btn {
+  width: 100%;
+  background-color: #7c3aed;
+  border-color: #7c3aed;
+  font-size: 0.95rem;
+  padding: 11px 12px;
+}
+.analysis-btn:hover {
+  background-color: #6d28d9;
+  border-color: #6d28d9;
+}
+
+/* Middle 區間: 圖表容器 */
+.graph-container {
+  flex: 1;
+  min-height: 0;
+  background-color: #1a2740;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  overflow: auto;
+  position: relative;
+}
+
+.graph-placeholder {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: 100%;
+  color: #64748b;
+  text-align: center;
   gap: 8px;
 }
+.graph-placeholder-icon {
+  font-size: 2.5rem;
+}
+.graph-placeholder p {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+/* Bottom 區間: 語言模型選單 */
+.left-model-selector {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding-top: 6px;
+  border-top: 1px solid var(--border-color);
+}
 .model-label {
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   color: #94a3b8;
+  white-space: nowrap;
 }
 select {
+  flex: 1;
   padding: 6px 12px;
   border-radius: 6px;
   background-color: var(--input-bg);
   color: white;
   border: 1px solid var(--border-color);
   outline: none;
-  font-size: 0.9rem;
-  min-width: 180px;
+  font-size: 0.85rem;
+  min-width: 0;
 }
 select option[data-cloud="true"] {
   background-color: #1e3a5f;
   font-weight: bold;
+}
+
+/* ========== Right Panel ========== */
+.right-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.chat-header {
+  padding: 15px 20px;
+  background-color: var(--chat-bg);
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: 0 2px 4px rgba(0,0,0,0.2);
+  flex-shrink: 0;
+}
+.chat-header h1 {
+  margin: 0;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.status-dot {
+  width: 10px;
+  height: 10px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  display: inline-block;
 }
 
 .chat-container {
@@ -72,11 +219,12 @@ select option[data-cloud="true"] {
   flex-direction: column;
   gap: 15px;
   scroll-behavior: smooth;
+  min-height: 0;
 }
 
 .message {
   display: flex;
-  max-width: 80%;
+  max-width: 85%;
   animation: fadeIn 0.3s ease;
 }
 .message.user {
@@ -122,11 +270,12 @@ select option[data-cloud="true"] {
 }
 
 .input-area {
-  padding: 20px;
+  padding: 16px 20px;
   background-color: var(--chat-bg);
   border-top: 1px solid var(--border-color);
   display: flex;
   gap: 10px;
+  flex-shrink: 0;
 }
 input[type="text"] {
   flex: 1;
@@ -142,7 +291,7 @@ input[type="text"] {
 input[type="text"]:focus {
   border-color: var(--user-msg-bg);
 }
-button {
+.input-area button {
   padding: 10px 24px;
   border-radius: 24px;
   border: none;
@@ -152,8 +301,8 @@ button {
   cursor: pointer;
   transition: opacity 0.2s;
 }
-button:hover { opacity: 0.9; }
-button:disabled { opacity: 0.5; cursor: not-allowed; }
+.input-area button:hover { opacity: 0.9; }
+.input-area button:disabled { opacity: 0.5; cursor: not-allowed; }
 
 .typing-indicator {
   display: flex;
@@ -179,7 +328,8 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   to { opacity: 1; transform: translateY(0); }
 }
 
-/* Custom BOM Tree Styles */
+/* ========== BOM Tree Styles (preserved) ========== */
+
 .bom-container {
   background: white;
   border-radius: 8px;
@@ -190,7 +340,6 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
   box-sizing: border-box;
   position: relative;
   overflow-x: auto;
-  /* scrollbar customization handled via ::-webkit-scrollbar below */
 }
 
 .bom-container::-webkit-scrollbar {

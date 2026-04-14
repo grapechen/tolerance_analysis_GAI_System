@@ -121,7 +121,7 @@ def init_knowledge_graph():
         
     print("⏳ 正在初始化本地知識庫 (建立 NetworkX 圖譜與向量索引)...")
     _graph = nx.DiGraph()
-    triplets = get_knowledge_triplets('0213_export.csv')
+    triplets = get_knowledge_triplets('ontology_export.csv')
     
     if not triplets:
         print("[ERROR] 無法讀取本地知識庫。")
@@ -139,19 +139,29 @@ def init_knowledge_graph():
     # 2. 建立社群摘要 (Community Summaries - 離線階段)
     parts = set(nx.get_node_attributes(_graph, 'parent_part').values())
     for part in parts:
-        subgraph_nodes = [n for n, attr in _graph.nodes(data=True) if attr.get('parent_part') == part]
-        subgraph = _graph.subgraph(subgraph_nodes)
+        summary_lines = [f"【中心組件】 [{part}] 的層級與關聯資訊："]
         
-        summary_lines = [f"【零件】 [{part}] 的層級與特徵資訊："]
-        for u, v, data in subgraph.edges(data=True):
-            # 轉換為容易理解的 Context
-            if data['relation'] in ['ns0__具有特徵面', 'ns0__包含特徵面', 'ns0__具有特徵']:
-                summary_lines.append(f"  └─ 具有特徵面 -> {v}")
-            elif data['relation'] == 'ns0__交互參考公差作用於':
-                summary_lines.append(f"  └─ [跨零件公差要求] 此公差交互作用於 -> {v} 特徵面")
-            else:
-                summary_lines.append(f"  - ({u}) --[{data['relation']}]--> ({v})")
-        _communities[part] = "\n".join(summary_lines)
+        # 尋找所有與該零件相關的邊 (不再受限於 subgraph 內部)
+        for u, v, data in _graph.edges(data=True):
+            u_part = _graph.nodes[u].get('parent_part')
+            v_part = _graph.nodes[v].get('parent_part')
+            rel = data['relation']
+            
+            if u_part == part or v_part == part:
+                # 轉換為容易理解的 Context
+                if rel in ['ns0__具有特徵面', 'ns0__包含特徵面', 'ns0__具有特徵']:
+                    summary_lines.append(f"  └─ 零件 「{u}」 具有特徵面 -> {v}")
+                elif rel in ['ns0__有零件', 'ns0__包含零件']:
+                    summary_lines.append(f"  ├─ [組合件結構] 「{u}」 包含子零件 -> {v}")
+                elif rel == 'ns0__交互參考公差作用於':
+                    summary_lines.append(f"  └─ [跨零件公差要求] 此公差交互作用於 -> {v} 特徵面")
+                elif rel == 'ns0__個別參考公差作用於':
+                    summary_lines.append(f"  └─ [局部限制] 特徵面 「{v}」 具有個別公差 -> {u}")
+                else:
+                    summary_lines.append(f"  - ({u}) --[{rel}]--> ({v})")
+        
+        # 移除重複行並存入摘要
+        _communities[part] = "\n".join(list(dict.fromkeys(summary_lines)))
 
     # 3. 向量嵌入 (Vector Embedding) - 改用 Ollama
     print("[WAIT] 嘗試透過 Ollama 載入語意模型 (nomic-embed-text) ...")

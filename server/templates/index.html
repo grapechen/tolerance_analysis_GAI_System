@@ -9,41 +9,83 @@
 </head>
 <body>
 
-  <div class="header">
-    <h1>
-      <div class="status-dot"></div>
-       AI 智能助手
-    </h1>
-    <div class="model-selector">
-      <label for="model-select" class="model-label">Model:</label>
-      <select id="model-select">
-        {% for model in models %}
-        <option value="{{ model }}" {% if model == current_model %}selected{% endif %}>
-          {{ model }}
-        </option>
-        {% endfor %}
-      </select>
-    </div>
-  </div>
+  <div class="app-layout">
 
-  <div class="chat-container" id="chat-history">
-    <!-- Welcome Message -->
-    <div class="message ai">
-      <div class="avatar">AI</div>
-      <div class="bubble">
-        你好！我是您的AI智能助手。<br>
-        您可以問我像是：<br>
-        • <strong>25mm H7</strong> (查詢單一公差)<br>
-        • <strong>分析 25mm H7/h6</strong> (進行配合分析)<br>
-        • <strong>精密迴轉滑台包含哪些零件？</strong> (畫出產品架構圖)<br>
-        請問有什麼我可以幫您的嗎？
+    <!-- ========== Left Panel: 控制與視覺化區 ========== -->
+    <aside class="left-panel">
+
+      <!-- Top 區間 1: 4 個功能按鈕 -->
+      <div class="left-btn-grid">
+        <button class="panel-btn" id="btn-parts" data-action="parts">零件</button>
+        <button class="panel-btn" id="btn-features" data-action="features">特徵面</button>
+        <button class="panel-btn" id="btn-network" data-action="network">公差網路</button>
+        <button class="panel-btn" id="btn-contact" data-action="contact">組裝接觸</button>
       </div>
-    </div>
-  </div>
 
-  <div class="input-area">
-    <input type="text" id="chat-input" placeholder="輸入您的問題..." autocomplete="off">
-    <button id="send-btn">發送</button>
+      <!-- Top 區間 2: 公差分析按鈕 -->
+      <div class="left-btn-analysis">
+        <button class="panel-btn analysis-btn" id="btn-analysis" data-action="analysis">公差分析</button>
+      </div>
+
+      <!-- Middle 區間: 圖表容器 -->
+      <div class="graph-container" id="graph-container">
+        <div class="graph-placeholder">
+          <span class="graph-placeholder-icon">📊</span>
+          <p>點擊上方按鈕或透過對話觸發圖表渲染</p>
+        </div>
+      </div>
+
+      <!-- Bottom 區間: 語言模型選單 -->
+      <div class="left-model-selector">
+        <label for="model-select" class="model-label">Model:</label>
+        <select id="model-select">
+          {% for model in models %}
+          <option value="{{ model }}" {% if model == current_model %}selected{% endif %}>
+            {{ model }}
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+
+    </aside>
+
+    <!-- ========== Resizer: 可拖曳分隔線 ========== -->
+    <div class="panel-resizer" id="panel-resizer"></div>
+
+    <!-- ========== Right Panel: AI 問答對話區 ========== -->
+    <main class="right-panel">
+
+      <!-- Header -->
+      <div class="chat-header">
+        <h1>
+          <div class="status-dot"></div>
+          AI 智能技術助理
+        </h1>
+      </div>
+
+      <!-- Chat History -->
+      <div class="chat-container" id="chat-history">
+        <div class="message ai">
+          <div class="avatar">AI</div>
+          <div class="bubble">
+            你好！我是您的AI智能助手。<br>
+            您可以問我像是：<br>
+            • <strong>25mm H7</strong> (查詢單一公差)<br>
+            • <strong>分析 25mm H7/h6</strong> (進行配合分析)<br>
+            • <strong>精密迴轉滑台包含哪些零件？</strong> (畫出產品架構圖)<br>
+            請問有什麼我可以幫您的嗎？
+          </div>
+        </div>
+      </div>
+
+      <!-- Input Area -->
+      <div class="input-area">
+        <input type="text" id="chat-input" placeholder="輸入您的問題..." autocomplete="off">
+        <button id="send-btn">發送</button>
+      </div>
+
+    </main>
+
   </div>
 
   <!-- Interactive BOM Modal -->

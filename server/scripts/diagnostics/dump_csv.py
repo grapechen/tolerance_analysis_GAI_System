@@ -4,7 +4,7 @@ import sys
 
 # Try different encodings
 encodings = ['utf-8', 'utf-8-sig', 'big5', 'cp950']
-file_path = 'server/data/0213_export.csv'
+file_path = 'server/data/ontology_export.csv'
 
 entities = set()
 

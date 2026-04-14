@@ -1,6 +1,6 @@
 import re
 
-with open('server/data/0213_export.csv', 'rb') as f:
+with open('server/data/ontology_export.csv', 'rb') as f:
     # Read ignoring nasty decode errors
     content = f.read().decode('utf-8', errors='ignore')
 

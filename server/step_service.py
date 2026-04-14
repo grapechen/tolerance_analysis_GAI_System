@@ -214,11 +214,36 @@ def route_parse_pmi():
             semantic_to_tao = load_sfa_association(xlsx_path)
 
         # ─────────────────────────────────────────────────
-        # 步驟 3b: 備援 - 幾何特徵樹（只在沒有 PMI 時調用）
+        # 步驟 3b: 多層備援（只在沒有 PMI 時觸發）
         # ─────────────────────────────────────────────────
-        progress.update(4, 6, "🌳 正在建構幾何特徵樹...")
+        progress.update(4, 6, "🌳 正在建構備援數據...")
+
         if not pmi_rows:
-            pmi_rows = build_geometry_feature_tree(engine_obj)
+            # 第一層備援：視覺表單（Visual Sheets）
+            if xlsx_path and os.path.exists(xlsx_path):
+                from step_core import parse_sfa_visual_sheets
+                extra_map, extra_rows = parse_sfa_visual_sheets(xlsx_path)
+                if extra_rows:
+                    face_pmi_map.update(extra_map)
+                    pmi_rows.extend(extra_rows)
+
+            # 第二層備援：ASSOCIATION 中的 annotation（如果仍為空）
+            if not pmi_rows and semantic_to_tao:
+                existing_sids = set()
+                for i, (sem_id, tao_id) in enumerate(
+                    sorted(semantic_to_tao.items(), key=lambda x: int(x[0]) if str(x[0]).isdigit() else 0), 1
+                ):
+                    pmi_rows.append({
+                        'label': f"annotation_{i:02d} (sem#{sem_id})",
+                        'semantic_id': sem_id,
+                        'face_ids': [],
+                        'nominal_size': None,
+                        'it_grade': None,
+                    })
+
+            # 第三層備援：幾何特徵樹（最後才調用）
+            if not pmi_rows:
+                pmi_rows = build_geometry_feature_tree(engine_obj)
 
         # ─────────────────────────────────────────────────
         # 步驟 4: 全局 tessellated 標註解析

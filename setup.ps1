@@ -16,28 +16,33 @@
     1. 預設 Anaconda 路徑 C:\Users\<USER>\anaconda3\envs\tol_env\python.exe
     2. PATH 上的 python
 
+.PARAMETER DbHost / DbPort / DbUser / DbPass / DbName
+  MySQL 連線資訊。預設 127.0.0.1:3306, root / Bb88710307 / tolerance_db。
+  若本機 MySQL 用非標準 port（例如 3307），請以 -DbPort 3307 覆蓋。
+
 .PARAMETER SkipInstall
   跳過 pip install 步驟（只做 DB 建置 + 匯入）
 
 .EXAMPLE
   .\setup.ps1
   .\setup.ps1 -PythonExe "D:\anaconda3\envs\tol_env\python.exe"
-  .\setup.ps1 -SkipInstall
+  .\setup.ps1 -DbPort 3307
+  .\setup.ps1 -SkipInstall -DbPort 3307
 #>
 
 param(
     [string]$PythonExe = "",
+    [string]$DbHost = "127.0.0.1",
+    [int]$DbPort = 3306,                          # 預設 3306；本機若用 3307 加 -DbPort 3307
+    [string]$DbUser = "root",
+    [string]$DbPass = "Bb88710307",
+    [string]$DbName = "tolerance_db",
     [switch]$SkipInstall
 )
 
 $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
 $ServerDir   = Join-Path $ProjectRoot "server"
-$DbHost      = "127.0.0.1"
-$DbPort      = 3307   # 本機 MySQL 聽 3307（非預設 3306）
-$DbUser      = "root"
-$DbPass      = "Bb88710307"
-$DbName      = "tolerance_db"
 # 帶 query string 給 ORM/Flask 用；setup_database.py 解析 URL 不夠聰明，要餵不帶 query 的版本
 $DbUrl       = "mysql+pymysql://${DbUser}:${DbPass}@${DbHost}:${DbPort}/${DbName}?charset=utf8mb4"
 $DbUrlPlain  = "mysql+pymysql://${DbUser}:${DbPass}@${DbHost}:${DbPort}/${DbName}"

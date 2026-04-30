@@ -811,7 +811,8 @@ def apply_iso_hole_rules():
         s.close()
 
 if __name__ == "__main__":
-    base_dir = Path(__file__).resolve().parent
+    # __file__ 在 server/scripts/，Excel 在 server/data/，所以要往上一層再進 data/
+    base_dir = Path(__file__).resolve().parent.parent
     iso1_excel = base_dir / "data" / "ISO_286_1_test.xlsx"
     iso2_excel = base_dir / "data" / "ISO_286_2_test.xlsx"
     iso2_excel_2 = base_dir / "data" / "ISO_286_2_test2.xlsx"

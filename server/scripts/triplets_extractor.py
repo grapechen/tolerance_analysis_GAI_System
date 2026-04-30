@@ -25,10 +25,14 @@ def extract_relationship(rel_str):
 
 def get_knowledge_triplets(csv_filename='ontology_export.csv'):
     """讀取 CSV 並回傳清理後的三元組列表"""
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    # triplets_extractor.py 在 server/scripts/，所以往上一層才是 server/data/
-    server_dir = os.path.dirname(current_dir)
-    csv_path = os.path.join(server_dir, 'data', csv_filename)
+    env_path = os.environ.get('RAS400_ONTOLOGY_PATH')
+    if env_path and os.path.exists(env_path) and csv_filename == 'ontology_export.csv':
+        csv_path = env_path
+    else:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        # triplets_extractor.py 在 server/scripts/，所以往上一層才是 server/data/
+        server_dir = os.path.dirname(current_dir)
+        csv_path = os.path.join(server_dir, 'data', csv_filename)
     
     print(f"Reading knowledge graph file: {csv_path}")
     
@@ -144,10 +148,14 @@ def get_mating_constraints(csv_filename='ontology_export.csv'):
     從 CSV 中提取具有 'ns0__有組裝接觸' 關係的配對，
     用於前端自動畫出綠色的接觸連線。
     """
-    current_dir = os.path.dirname(os.path.abspath(__file__))
-    server_dir = os.path.dirname(current_dir)
-    csv_path = os.path.join(server_dir, 'data', csv_filename)
-    
+    env_path = os.environ.get('RAS400_ONTOLOGY_PATH')
+    if env_path and os.path.exists(env_path) and csv_filename == 'ontology_export.csv':
+        csv_path = env_path
+    else:
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        server_dir = os.path.dirname(current_dir)
+        csv_path = os.path.join(server_dir, 'data', csv_filename)
+
     if not os.path.exists(csv_path):
         return []
     

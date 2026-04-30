@@ -1,0 +1,22 @@
+machine_attr,process_en_list,note
+立式加工中心機,Milling;Drilling;Reaming;Boring;Boring (Fine),多用途加工中心 含銑/鑽/鉸/搪（不含金剛鏜精）
+立式五軸加工機,Milling;Drilling;Reaming;Boring;Boring (Fine),五軸聯動 多角度加工（不含金剛鏜精）
+臥式搪銑加工機,Boring;Boring (Fine);Milling,大孔搪鏜加工（不含金剛鏜精）
+龍門型五面加工中心機,Milling;Boring;Boring (Fine);Drilling,大型工件五面加工
+臥式加工中心機,Milling;Boring;Boring (Fine),臥式銑搪
+鑽孔攻牙機,Drilling;Reaming,專用鑽孔攻牙
+車床,Turning (Rough);Turning (Fine);Turning (Precision),通用車床（外部設備）
+精密車床,Turning (Fine);Turning (Precision),精密車削（外部設備）
+外圓磨床,Cylindrical Grinding;Cylindrical Grinding (Fine);Cylindrical Grinding (Precision),軸類磨削（外部設備）
+精密外圓磨床,Cylindrical Grinding (Fine);Cylindrical Grinding (Precision),軸類精磨（外部設備）
+內圓磨床,Internal Grinding;Internal Grinding (Precision),孔類磨削（外部設備）
+精密內圓磨床,Internal Grinding (Precision),孔類精磨（外部設備）
+平面磨床,Surface Grinding,平面磨削（外部設備）
+搪磨機,Honing,內孔搪磨（外部設備）
+研磨拋光機,Lapping,精密研磨（外部設備）
+拉床,Broaching,拉削（外部設備）
+金剛鏜床,Boring (Precision),金剛鏜精加工（外部設備）
+精密搪床,Boring (Precision);Boring (Fine),精密搪孔（外部設備）
+鑄造設備,Casting,鑄造毛坯（外部設備）
+鍛壓設備,Forging,鍛造毛坯（外部設備）
+帶鋸機/圓鋸機,Sawing,下料（外部設備）

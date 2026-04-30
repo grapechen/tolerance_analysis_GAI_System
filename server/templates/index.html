@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>{% if lang == 'en' %}ISO 286 AI Intelligent Assistant{% else %}ISO 286 AI 智能助手{% endif %}</title>
+  <title>{% if lang == 'en' %}RAS400 Tolerance Analysis Assistant{% else %}RAS400 公差分析助手{% endif %}</title>
   
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
@@ -67,6 +67,8 @@
         <button class="panel-btn edit-path-btn" data-action="edit_path"> {% if lang == 'en' %}Edit Path{% else %}編輯公差路徑{% endif %}</button>
         <button class="panel-btn analysis-btn" data-action="analysis"> {% if lang == 'en' %}Analysis{% else %}公差分析{% endif %}</button>
         <button class="panel-btn allocation-btn" data-action="allocation"> {% if lang == 'en' %}Allocation{% else %}公差調配{% endif %}</button>
+        <button class="panel-btn matchmaking-btn" data-action="matchmaking"> {% if lang == 'en' %}Process Matching{% else %}製程與機台媒合{% endif %}</button>
+        <button class="panel-btn plan-compare-btn" style="grid-column: span 2;" data-action="plan_compare"> {% if lang == 'en' %}Plan 1 vs Plan 2 Verify{% else %}方案一 vs 方案二 驗證{% endif %}</button>
       </div>
     </div>
 
@@ -80,18 +82,18 @@
           <div class="avatar">AI</div>
           <div class="bubble">
             {% if lang == 'en' %}
-            Hello! I am your AI intelligent assistant.<br>
+            Hello! I am the RAS400 tolerance analysis assistant.<br>
             You can ask me things like:<br>
-            • <strong>25mm H7</strong> (Single tolerance query)<br>
-            • <strong>Analyze 25mm H7/h6</strong> (Fit analysis)<br>
-            • <strong>What parts does the precision slide contain?</strong> (Product structure diagram)<br>
+            • <strong>What parts does RAS400 have?</strong> (Product structure diagram)<br>
+            • <strong>Show tolerance network</strong> (Tolerance network diagram)<br>
+            • <strong>25mm H7/h6</strong> (Fit analysis)<br>
             Is there anything I can help you with?
             {% else %}
-            你好！我是您的AI智能助手。<br>
+            你好！我是 RAS400 公差分析助手。<br>
             您可以問我像是：<br>
-            • <strong>25mm H7</strong> (查詢單一公差)<br>
-            • <strong>分析 25mm H7/h6</strong> (進行配合分析)<br>
-            • <strong>精密迴轉滑台包含哪些零件？</strong> (畫出產品架構圖)<br>
+            • <strong>RAS400 有哪些零件？</strong> (畫出產品架構圖)<br>
+            • <strong>畫出公差網路圖</strong> (公差網路圖)<br>
+            • <strong>25mm H7/h6</strong> (配合分析)<br>
             請問有什麼我可以幫您的嗎？
             {% endif %}
           </div>
@@ -194,8 +196,8 @@
       </div>
       
       <div class="editor-actions">
-        <button class="btn-export" onclick="document.getElementById('excel-upload-input').click()">📁 {% if lang == 'en' %}Import Excel{% else %}匯入 Excel{% endif %}</button>
-        <input type="file" id="excel-upload-input" accept=".xlsx" onchange="uploadExcelPath(this)" title="Excel File Upload">
+        <button class="btn-export" onclick="document.getElementById('excel-upload-input').click()">📁 {% if lang == 'en' %}Import Excel/CSV{% else %}匯入 Excel/CSV{% endif %}</button>
+        <input type="file" id="excel-upload-input" accept=".xlsx,.xls,.csv" onchange="uploadExcelPath(this)" title="Excel/CSV File Upload">
         <button class="btn-export" onclick="exportCSV()">⬇️ {% if lang == 'en' %}Export as CSV{% else %}匯出為 CSV 分析檔{% endif %}</button>
         <button type="button" class="btn-export" onclick="exportToLeftPanel()">👁️ {% if lang == 'en' %}Display in Panel{% else %}顯示在左側面板{% endif %}</button>
       </div>
@@ -375,10 +377,336 @@
     </div>
   </template>
 
+  <!-- jQuery + Select2（製程媒合需要） -->
+  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet">
+  <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
   <script src="{{ url_for('static', filename='js/bom_render.js') }}"></script>
   <script src="{{ url_for('static', filename='js/chat.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/machines_data.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/process_kb.js') }}"></script>
+  <script src="{{ url_for('static', filename='js/matchmaking.js') }}"></script>
 
+  <!-- 製程與機台媒合 Modal（與 app.py 介面一模一樣） -->
+  <div id="matchmaking-modal" class="mm-overlay">
+    <div id="matchmaking-panel" class="matchmaking-panel">
 
+      <!-- 標題列 -->
+      <div class="mm-header">
+        <span>製程與機台媒合</span>
+        <button type="button" class="mm-close-btn" onclick="closeMatchmakingModal()">&times;</button>
+      </div>
+
+      <!-- 內容（直接移植 client/index.html #tab-recommend 的 card 內容） -->
+      <div class="mm-body mm-app-body">
+
+        <!-- Step 1: Smart Fit -->
+        <div class="section-divider">
+          <h3 class="section-title">Step 1: 定義需求與配合 (Smart Fit)</h3>
+          <div class="smart-input-container smart-input-container--bordered">
+            <label for="f_part_name">目標零件名稱 (Part Name)</label>
+            <input id="f_part_name" placeholder="例如：主軸 Shaft A" class="input-full-width" title="目標零件名稱">
+          </div>
+          <div class="smart-input-container">
+            <div class="kw-mode-row">
+              <label for="smart-keywords">功能需求關鍵字</label>
+              <div class="kw-mode-label-group">
+                <label class="kw-mode-label">
+                  <input type="radio" name="kw-mode" value="multiple" checked onchange="toggleKeywordMode(true)" class="kw-mode-radio"> 允許多選 (預設)
+                </label>
+                <label class="kw-mode-label">
+                  <input type="radio" name="kw-mode" value="single" onchange="toggleKeywordMode(false)" class="kw-mode-radio"> 限制單選
+                </label>
+              </div>
+            </div>
+            <div class="row smart-input-row">
+              <select id="smart-keywords" multiple="multiple" class="select-keywords" data-placeholder="選擇應用場景或功能...">
+              </select>
+              <div class="smart-size-input-group">
+                <span class="smart-label">加工直徑</span>
+                <input id="smart-size" type="number" placeholder="mm" title="輸入尺寸以自動計算機台精度要求">
+              </div>
+            </div>
+            <div class="row smart-settings-row">
+              <div class="smart-cp-group">
+                <label for="smart-cp" class="smart-cp-label">製程能力指標 (Cp):</label>
+                <select id="smart-cp" class="smart-cp-select" title="製程能力指標">
+                  <option value="1.0">1.0 (基本)</option>
+                  <option value="1.33">1.33 (一般)</option>
+                  <option value="1.67">1.67 (嚴格)</option>
+                  <option value="2.0">2.0 (六標準差)</option>
+                  <option value="3.0" selected>3.0 (高精密 - 1/3原則)</option>
+                  <option value="4.0">4.0 (超精密 - 1/4原則)</option>
+                </select>
+              </div>
+              <button type="button" class="smart-search-btn" onclick="querySmartFit()">🔍 搜尋適合的配合 &amp; 機台</button>
+            </div>
+          </div>
+          <div id="smart-result" class="result hidden"></div>
+          <div class="tip">輸入關鍵字與尺寸，系統將推薦配合代號，並自動計算所需精度來篩選機台。</div>
+        </div>
+
+        <!-- Step 2: Process Matching -->
+        <div>
+          <h3 class="section-title">Step 2: 製程與機台媒合 (Process Matching)</h3>
+          <div class="wrap kb-grid-wrapper">
+            <!-- 篩選條件 -->
+            <div class="kb-filter-grid">
+              <div class="row kb-scenario-box">
+                <label class="kb-scenario-label" for="f_scenario">應用場景</label>
+                <select id="f_scenario" class="kb-scenario-select" aria-label="應用場景">
+                  <option value="GENERAL">通用加工 (General)</option>
+                  <option value="MOLD">模具加工 (Mold &amp; Die)</option>
+                  <option value="AERO">航太零件 (Aerospace)</option>
+                  <option value="MASS">量產加工 (Mass Production)</option>
+                </select>
+              </div>
+              <div class="row">
+                <label for="f_company">公司</label>
+                <select id="f_company" aria-label="選擇公司"><option value="ALL">全部</option></select>
+              </div>
+              <div class="row">
+                <label for="f_process">機台類型</label>
+                <select id="f_process" aria-label="選擇機台類型">
+                  <option value="ALL">全部</option>
+                  <option value="TURNING">數控車床 (CNC Lathe)</option>
+                  <option value="CNC_MILLING">數控銑床 (CNC Milling Machine)</option>
+                  <option value="VMC_MILLING">立式加工機 (Vertical Machining Center)</option>
+                  <option value="HMC_MILLING">臥式加工機 (Horizontal Machining Center)</option>
+                  <option value="FIVE_AXIS_MILLING">五軸加工機 (5-Axis Machining Center)</option>
+                  <option value="MILL_TURN">車銑複合 (Mill-Turn)</option>
+                  <option value="GRINDING">磨床 (Grinding Machine)</option>
+                </select>
+              </div>
+              <div class="row">
+                <div><label for="f_axes">最低軸數</label><input id="f_axes" type="number" min="0" step="1" placeholder="3" title="最低軸數"></div>
+              </div>
+              <div class="sep kb-separator"></div>
+              <div class="kb-scenario-box kb-highlight-box">
+                <div class="row kb-result-row">
+                  <label class="kb-scenario-label kb-label-highlight" for="f_accuracy">目標重現性 (Positioning Repeatability)</label>
+                  <input type="number" id="f_accuracy" step="0.001" placeholder="系統自動填入 (或手動輸入)" title="目標重現性">
+                </div>
+                <div class="row">
+                  <label class="kb-scenario-label kb-label-highlight" for="f_positioning">目標定位精度 (Positioning Accuracy)</label>
+                  <input type="number" id="f_positioning" step="0.001" placeholder="系統自動填入 (或手動輸入)" title="目標定位精度">
+                </div>
+                <div class="tip kb-tip-highlight">* 上述數值可由 Step 1 自動帶入</div>
+              </div>
+              <div class="sep kb-separator"></div>
+              <details open>
+                <summary class="kb-details-summary">進階規格篩選 (行程、轉速、工件尺寸) <span class="arrow">▼</span></summary>
+                <div class="grid kb-filter-grid">
+                  <div class="row grp-mill">
+                    <label>最大加工行程 X/Y/Z (mm)</label>
+                    <div class="inline kb-inline-flex kb-input-group">
+                      <input id="f_x" placeholder="X" class="kb-input-third" title="行程X">
+                      <input id="f_y" placeholder="Y" class="kb-input-third" title="行程Y">
+                      <input id="f_z" placeholder="Z" class="kb-input-third" title="行程Z">
+                    </div>
+                  </div>
+                  <div class="row">
+                    <label>主軸規格 (轉速/馬力)</label>
+                    <div class="inline kb-inline-flex kb-input-group">
+                      <input id="f_rpm" placeholder="RPM" class="kb-input-half" title="最高轉速">
+                      <input id="f_power" placeholder="kW" class="kb-input-half" title="主軸功率">
+                    </div>
+                  </div>
+                  <div class="row grp-turn">
+                    <label>車/铣規格 (棒材/直徑/長度)</label>
+                    <div class="inline kb-inline-flex kb-input-group">
+                      <input id="f_bar" placeholder="棒材送料能力" class="kb-input-third" title="棒材送料能力">
+                      <input id="f_work_d" placeholder="最大加工直徑" class="kb-input-third" title="最大加工直徑">
+                      <input id="f_work_l" placeholder="最大加工長度" class="kb-input-third" title="最大加工長度">
+                    </div>
+                  </div>
+                </div>
+              </details>
+              <div class="row kb-margin-top-15">
+                <label>排序方式</label>
+                <div class="inline kb-inline-flex" id="sort_btns">
+                  <div class="chip on" data-sort="SCORE">綜合推薦</div>
+                  <div class="chip" data-sort="CAP">規格符合度</div>
+                  <div class="chip" data-sort="CONF">資料信賴度</div>
+                </div>
+                <input type="hidden" id="f_sort" value="SCORE">
+              </div>
+              <div class="btns kb-btns">
+                <button type="button" class="primary" id="btn_run">開始篩選機台</button>
+                <button type="button" id="btn_report" class="btn-report">📊 產生機台媒合報表</button>
+                <button type="button" id="btn_reset" class="kb-btn-reset">重置條件</button>
+              </div>
+            </div>
+
+            <!-- 結果清單 -->
+            <div class="mt-4">
+              <div class="hd kb-card-header">機台推薦清單</div>
+              <div class="kpis kb-kpis-margin-bottom">
+                <div class="kpi"><div class="t">符合</div><div class="v" id="k_ok">-</div></div>
+                <div class="kpi"><div class="t">Top 1</div><div class="v" id="k_top">-</div></div>
+              </div>
+              <div class="list" id="kb-result"></div>
+            </div>
+          </div>
+        </div>
+
+      </div><!-- /.mm-body -->
+    </div><!-- /.matchmaking-panel -->
+  </div><!-- /.mm-overlay -->
+
+  <!-- 方案一 vs 方案二 驗證測試 Modal -->
+  <div id="plan-compare-modal" class="mm-overlay">
+    <div id="plan-compare-panel" class="plan-compare-panel">
+      <div class="mm-header">
+        <span>🧪 {% if lang == 'en' %}Plan 1 vs Plan 2 Verification{% else %}方案一 vs 方案二 驗證測試{% endif %}</span>
+        <button type="button" class="mm-close-btn" onclick="closePlanCompareModal()">&times;</button>
+      </div>
+
+      <div class="pc-body">
+
+        <!-- ════════ 方案一：特徵驅動推薦 ════════ -->
+        <section class="pc-section">
+          <h3 class="pc-section-title">{% if lang == 'en' %}Plan 1: Feature-driven recommendation{% else %}方案一：特徵面 → IT 等級 / 製程 / 機台推薦{% endif %}</h3>
+          <div class="pc-form">
+            <div class="pc-form-row">
+              <label class="pc-label" for="pc1-feature">{% if lang == 'en' %}Feature face{% else %}特徵面{% endif %}：</label>
+              <select id="pc1-feature" class="pc-input pc-input--wide">
+                <option value="">— {% if lang == 'en' %}Loading…{% else %}載入中…{% endif %} —</option>
+              </select>
+              <button id="pc1-go" class="pc-btn-primary">▶ {% if lang == 'en' %}Recommend{% else %}推薦{% endif %}</button>
+              <span id="pc1-status" class="pc-status"></span>
+            </div>
+            <div class="pc-form-row">
+              <span class="pc-hint" id="pc1-feature-info">
+                {% if lang == 'en' %}Select a feature to see its known tolerances.{% else %}選擇一個特徵面後，下方會顯示已標註的公差。{% endif %}
+              </span>
+            </div>
+            <div class="pc-form-row" id="pc1-overrides-row" style="display:none;">
+              <details style="width:100%;">
+                <summary style="cursor:pointer;color:#94a3b8;font-size:12px;">▸ {% if lang == 'en' %}Override tolerances{% else %}手動覆蓋公差值（可選）{% endif %}</summary>
+                <div class="pc-form-row" style="margin-top:6px;flex-wrap:wrap;">
+                  <span class="pc-label">Cir:</span><input id="ov-Cir" class="pc-input pc-input--num" type="number" step="0.001">
+                  <span class="pc-label">Cyl:</span><input id="ov-Cyl" class="pc-input pc-input--num" type="number" step="0.001">
+                  <span class="pc-label">Per:</span><input id="ov-Per" class="pc-input pc-input--num" type="number" step="0.001">
+                  <span class="pc-label">Par:</span><input id="ov-Par" class="pc-input pc-input--num" type="number" step="0.001">
+                  <span class="pc-label">Co:</span><input id="ov-Co" class="pc-input pc-input--num" type="number" step="0.001">
+                  <span class="pc-label">Fla:</span><input id="ov-Fla" class="pc-input pc-input--num" type="number" step="0.001">
+                  <span class="pc-label">IT:</span><input id="ov-it_dim" class="pc-input pc-input--num" type="number" step="1" min="1" max="13">
+                </div>
+              </details>
+            </div>
+          </div>
+
+          <div id="pc1-result" class="pc-result-card" style="display:none;">
+            <div class="pc-result-head">
+              <span id="pc1-feature-title">—</span>
+              <span class="pc-result-input" id="pc1-feature-summary"></span>
+            </div>
+
+            <!-- 區塊 A：幾何公差等級判定 -->
+            <div class="pc1-section-title">① {% if lang == 'en' %}Geometric tolerance grade estimate{% else %}幾何公差等級推估{% endif %}</div>
+            <table class="pc-table" id="pc1-grades-table" style="margin-bottom:12px;">
+              <thead>
+                <tr>
+                  <th>{% if lang == 'en' %}Type{% else %}公差類型{% endif %}</th>
+                  <th>{% if lang == 'en' %}Value (μm){% else %}公差值 (μm){% endif %}</th>
+                  <th>{% if lang == 'en' %}IT grade{% else %}估計等級{% endif %}</th>
+                  <th>{% if lang == 'en' %}Application{% else %}對應應用{% endif %}</th>
+                </tr>
+              </thead>
+              <tbody id="pc1-grades-tbody"></tbody>
+            </table>
+
+            <!-- 區塊 B：推薦製程清單 -->
+            <div class="pc1-section-title">② {% if lang == 'en' %}Recommended processes & machines{% else %}推薦製程與機台{% endif %}</div>
+            <div id="pc1-processes" class="pc-process-list"></div>
+          </div>
+        </section>
+
+        <!-- ════════ 方案二：路徑分析 → 指令 → 結果 ════════ -->
+        <section class="pc-section">
+          <h3 class="pc-section-title">{% if lang == 'en' %}Plan 2: Tolerance accumulation path → analysis → manual command{% else %}方案二：公差累積路徑分析 → 指令調整{% endif %}</h3>
+          <div class="pc-form">
+            <div class="pc-form-row">
+              <label class="pc-label">{% if lang == 'en' %}Path source{% else %}路徑來源{% endif %}：</label>
+              <span id="pc2-chain-display" class="pc-chain-pill">{% if lang == 'en' %}From editorPathData (use “Edit Path” first){% else %}使用「編輯公差路徑」建立的路徑（editorPathData）{% endif %}</span>
+            </div>
+            <div class="pc-form-row">
+              <button id="pc2-analyze" class="pc-btn-primary">① {% if lang == 'en' %}Analyze path{% else %}執行公差分析{% endif %}</button>
+              <span id="pc2-analyze-status" class="pc-status"></span>
+            </div>
+          </div>
+
+          <!-- 步驟①：分析結果 -->
+          <div id="pc2-analysis-card" class="pc-result-card" style="display:none;">
+            <div class="pc-result-head">
+              {% if lang == 'en' %}Analysis result{% else %}分析結果（調整前）{% endif %}
+              <span class="pc-result-input">RSS = <strong id="pc2-rss-before">—</strong> μm　WC = <strong id="pc2-wc-before">—</strong> μm</span>
+            </div>
+            <table class="pc-table" id="pc2-analysis-table">
+              <thead>
+                <tr>
+                  <th>{% if lang == 'en' %}Rank{% else %}排序{% endif %}</th>
+                  <th>{% if lang == 'en' %}Tolerance name{% else %}公差名稱{% endif %}</th>
+                  <th>{% if lang == 'en' %}Part{% else %}零件{% endif %}</th>
+                  <th>Φ {% if lang == 'en' %}/ size{% else %}/ 尺寸{% endif %}</th>
+                  <th>IT</th>
+                  <th>{% if lang == 'en' %}Type{% else %}公差類型{% endif %}</th>
+                  <th>μm</th>
+                  <th>Contrib %</th>
+                </tr>
+              </thead>
+              <tbody id="pc2-analysis-tbody"></tbody>
+            </table>
+          </div>
+
+          <!-- 步驟②：指令輸入 -->
+          <div id="pc2-command-block" class="pc-form" style="display:none; margin-top:14px;">
+            <div class="pc-form-row">
+              <label class="pc-label" for="pc2-command">{% if lang == 'en' %}Command{% else %}指令{% endif %}：</label>
+              <input id="pc2-command" class="pc-input pc-input--wide" type="text"
+                     value="請將編號5零件第6特徵面的第1個直徑公差由IT6放寬至IT7"
+                     placeholder="例如：請將編號5零件第6特徵面的第1個直徑公差由IT6放寬至IT7">
+            </div>
+            <div class="pc-form-row">
+              <button id="pc2-apply" class="pc-btn-secondary">② {% if lang == 'en' %}Parse & apply{% else %}解析並套用（其他環節不動）{% endif %}</button>
+              <span id="pc2-apply-status" class="pc-status"></span>
+            </div>
+          </div>
+
+          <!-- 步驟③：套用後結果 -->
+          <div id="pc2-result-card" class="pc-result-card" style="display:none;">
+            <div class="pc-result-head">
+              {% if lang == 'en' %}Allocated result{% else %}套用後結果{% endif %}
+              <span class="pc-result-input">
+                RSS：<strong id="pc2-rss-r-before">—</strong> → <strong id="pc2-rss-r-after">—</strong> μm
+                <span id="pc2-rss-delta" class="pc-result-delta"></span>
+              </span>
+            </div>
+            <div id="pc2-parsed-info" class="pc-parsed-box"></div>
+            <table class="pc-table" id="pc2-result-table">
+              <thead>
+                <tr>
+                  <th>{% if lang == 'en' %}Tolerance name{% else %}公差名稱{% endif %}</th>
+                  <th>{% if lang == 'en' %}Part{% else %}零件{% endif %}</th>
+                  <th>Φ</th>
+                  <th>{% if lang == 'en' %}IT before{% else %}原 IT{% endif %}</th>
+                  <th>{% if lang == 'en' %}μm before{% else %}原 μm{% endif %}</th>
+                  <th>{% if lang == 'en' %}New IT / μm{% else %}新 IT / μm{% endif %}</th>
+                  <th>Δ μm</th>
+                </tr>
+              </thead>
+              <tbody id="pc2-result-tbody"></tbody>
+            </table>
+          </div>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <script src="{{ url_for('static', filename='js/plan_compare.js') }}"></script>
 
 </body>
 </html>

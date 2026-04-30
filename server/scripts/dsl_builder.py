@@ -15,27 +15,49 @@ FEATURE_TYPE_MAP = {
     '外圓柱面': 'S',
     '內圓柱面': 'H',
     '圓柱面':  'S',
+    '錐面':    'C',
 }
 
 # ─────────────────── 私有工具函式 ───────────────────
 
 def _get_csv_path():
+    env_path = os.environ.get('RAS400_ONTOLOGY_PATH')
+    if env_path and os.path.exists(env_path):
+        return env_path
     current_dir = os.path.dirname(os.path.abspath(__file__))
     server_dir  = os.path.dirname(current_dir)
-    return os.path.join(server_dir, 'data', 'ontology_export.csv')
+    return os.path.join(server_dir, 'data', 'ras400_ontology.csv')
 
 
 def _load_csv(csv_path=None):
     if csv_path is None:
         csv_path = _get_csv_path()
+    df = None
     for enc in ['utf-8-sig', 'utf-8', 'big5', 'cp950']:
         try:
             df = pd.read_csv(csv_path, encoding=enc, on_bad_lines='skip')
             if {'n', 'r', 'm'}.issubset(df.columns):
-                return df
+                break
+            df = None
         except Exception:
             pass
-    return None
+    if df is None:
+        return None
+
+    # 合併接觸面補丁（ras400_ontology_contacts.csv）
+    current_dir = os.path.dirname(os.path.abspath(__file__))
+    server_dir  = os.path.dirname(current_dir)
+    contacts_path = os.path.join(server_dir, 'data', 'ras400_ontology_contacts.csv')
+    if os.path.exists(contacts_path):
+        for enc in ['utf-8-sig', 'utf-8', 'big5', 'cp950']:
+            try:
+                df_c = pd.read_csv(contacts_path, encoding=enc, on_bad_lines='skip')
+                if {'n', 'r', 'm'}.issubset(df_c.columns):
+                    df = pd.concat([df, df_c], ignore_index=True).drop_duplicates()
+                break
+            except Exception:
+                pass
+    return df
 
 
 def _uri(node_str: str):
@@ -60,18 +82,39 @@ def _rel(rel_str: str):
     return rel_str.strip('[]:')
 
 
+# RAS400 組裝順序
+_RAS400_ORDER = {
+    '工作臺': 1, '軸承座': 2, '軸承': 3, '轉動軸': 4, '工作臺心軸': 5,
+    '馬達': 6, '馬達水套': 7, '編碼器心軸': 8, '分流座': 9, '馬達座': 10, '編碼器': 11,
+}
+
 def _part_sort_key(name: str):
+    # 優先用 RAS400 組裝順序，其次用舊格式數字前綴
+    if name in _RAS400_ORDER:
+        return (_RAS400_ORDER[name], name)
     m = re.match(r'^(\d+)', name)
-    return int(m.group(1)) if m else 999
+    return (int(m.group(1)), name) if m else (999, name)
 
 
 def _feat_sort_key(name: str):
-    """P < S < H，再依數字排序"""
-    m = re.search(r'-([PSHpsh])-(\d+)', name)
+    """P < S < H < C，再依數字排序"""
+    m = re.search(r'-([PSHCpshc])-(\d+)', name)
     if m:
-        order = {'P': 0, 'p': 0, 'S': 1, 's': 1, 'H': 2, 'h': 2}
-        return (order.get(m.group(1), 3), int(m.group(2)))
+        order = {'P': 0, 'p': 0, 'S': 1, 's': 1, 'H': 2, 'h': 2, 'C': 3, 'c': 3}
+        return (order.get(m.group(1), 4), int(m.group(2)))
     return (9, 0)
+
+
+def _detect_assembly_title(df) -> str:
+    """掃描 df，回傳第一個 ns0__組合件 NamedIndividual 的 URI；無則 fallback 'RAS400'"""
+    for _, row in df.iterrows():
+        for col in ('n', 'm'):
+            s = str(row[col])
+            if 'owl__NamedIndividual' in s and ':ns0__組合件' in s:
+                u = _uri(s)
+                if u:
+                    return u
+    return 'RAS400'
 
 
 # ─────────────────── 主解析函式 ───────────────────
@@ -93,6 +136,16 @@ def _parse_ontology(df):
     feat_itr     = {}   # {feature -> [tol]}
     feat_con     = {}   # {feature -> [contact_feature]}
 
+    assembly_uris = set()
+    for _, row in df.iterrows():
+        n_str = str(row['n']); m_str = str(row['m'])
+        if 'owl__NamedIndividual' in n_str and ':ns0__組合件' in n_str:
+            u = _uri(n_str);  assembly_uris.add(u) if u else None
+        if 'owl__NamedIndividual' in m_str and ':ns0__組合件' in m_str:
+            u = _uri(m_str);  assembly_uris.add(u) if u else None
+    if not assembly_uris:
+        assembly_uris = {'RAS400'}
+
     for _, row in df.iterrows():
         n_str = str(row['n'])
         r_str = str(row['r'])
@@ -104,12 +157,12 @@ def _parse_ontology(df):
         if not n_uri or not m_uri:
             continue
 
-        # ── 精密迴轉滑台 → 零件 ──
-        if '有零件' in rel and n_uri == '精密迴轉滑台':
+        # ── 組合件 → 零件（subject 是組合件） ──
+        if '有零件' in rel and n_uri in assembly_uris:
             parts_set.add(m_uri)
 
-        # ── 零件反向：有零件 → 組合件 (部分資料方向相反) ──
-        if '有零件' in rel and m_uri == '精密迴轉滑台':
+        # ── 零件反向：零件 → 組合件（部分資料方向相反） ──
+        if '有零件' in rel and m_uri in assembly_uris:
             parts_set.add(n_uri)
 
         # ── 特徵面 → 所屬零件 ──
@@ -147,11 +200,11 @@ def _parse_ontology(df):
                     feat_ind[m_uri].append(n_uri)
             else:
                 # 用 URI 命名規則猜：P/S/H 是特徵面
-                if m_uri and re.search(r'-[PSHpsh]-\d', m_uri):
+                if m_uri and re.search(r'-[PSHCpshc]-\d', m_uri):
                     feat_ind.setdefault(m_uri, [])
                     if n_uri not in feat_ind[m_uri]:
                         feat_ind[m_uri].append(n_uri)
-                elif n_uri and re.search(r'-[PSHpsh]-\d', n_uri):
+                elif n_uri and re.search(r'-[PSHCpshc]-\d', n_uri):
                     feat_ind.setdefault(n_uri, [])
                     if m_uri not in feat_ind[n_uri]:
                         feat_ind[n_uri].append(m_uri)
@@ -161,9 +214,9 @@ def _parse_ontology(df):
             ns0_n = _ns0_class(n_str)
             ns0_m = _ns0_class(m_str)
             is_n_feat = bool(ns0_n and ns0_n in FEATURE_TYPE_MAP) or \
-                        bool(n_uri and re.search(r'-[PSHpsh]-\d', n_uri))
+                        bool(n_uri and re.search(r'-[PSHCpshc]-\d', n_uri))
             is_m_feat = bool(ns0_m and ns0_m in FEATURE_TYPE_MAP) or \
-                        bool(m_uri and re.search(r'-[PSHpsh]-\d', m_uri))
+                        bool(m_uri and re.search(r'-[PSHCpshc]-\d', m_uri))
 
             if is_n_feat and not is_m_feat:
                 feat_itr.setdefault(n_uri, [])
@@ -210,7 +263,8 @@ def build_bom_dsl() -> Optional[str]:
     if not parts:
         return None
 
-    lines = ['---BOM_START---', '# 精密迴轉滑台']
+    title = _detect_assembly_title(df)
+    lines = ['---BOM_START---', f'# {title}']
     for p in parts:
         lines.append(f'- {p}')
     lines.append('---BOM_END---')
@@ -230,11 +284,8 @@ def build_feature_dsl(level='network', show_contacts=False) -> Optional[str]:
     parts, feat_to_part, feat_type, feat_ind, feat_itr, feat_con, part_feats = _parse_ontology(df)
     if not parts: return None
 
-    # 為接觸關係建立唯一的 Tag
-    contact_pairs = {} 
-    tag_counter = 1
-    
-    lines = ['---BOM_START---', f'# 精密迴轉滑台 ({level})']
+    title = _detect_assembly_title(df)
+    lines = ['---BOM_START---', f'# {title} ({level})']
     for p in parts:
         lines.append(f'- {p}')
         feats = sorted(part_feats.get(p, []), key=_feat_sort_key)
@@ -246,27 +297,21 @@ def build_feature_dsl(level='network', show_contacts=False) -> Optional[str]:
             if level == 'network':
                 raw_ind = feat_ind.get(f, [])
                 raw_itr = list(feat_itr.get(f, []))
-                
-                # 如果開啟接觸顯示，將 Con- 標籤加入交互參考清單
-                if show_contacts:
-                    cons = feat_con.get(f, [])
-                    for target_f in cons:
-                        pair = frozenset({f, target_f})
-                        if pair not in contact_pairs:
-                            contact_pairs[pair] = f'Con-{tag_counter}'
-                            tag_counter += 1
-                        if contact_pairs[pair] not in raw_itr:
-                            raw_itr.append(contact_pairs[pair])
 
-                # [核心修正] 重新分類 Str, Fla 等個別公差，並改用空格
+                # [v3 修正] 不再把 Con-N 文字標籤塞到特徵的 itr_list 裡
+                # 接觸資訊改成只透過下方 ---CONTACTS_START--- 區塊輸出，
+                # 由前端用綠色連線視覺呈現，避免跟使用者標註的 PMI 公差項
+                # （Cyl-1 / Dia-N / Co-1 / Per-1 等）混在同一格產生視覺干擾。
+
+                # 重新分類 Str, Fla 等個別公差
                 IND_KEYS = ['dia', 'rad', 'cyl', 'fla', 'cir', 'str', 'flat']
                 ind_list = []
                 itr_list = []
                 for t in list(set(raw_ind + raw_itr)):
-                    # 如果不是在 Contact 模式，過濾掉 Con- 標籤
-                    if not show_contacts and t.startswith('Con-') and '-' in t[4:]: 
+                    # 過濾掉任何殘留的 Con- 標籤（避免歷史資料汙染）
+                    if t.startswith('Con-') and t[4:5].isdigit():
                         continue
-                    
+
                     t_low = t.lower()
                     if any(k in t_low for k in IND_KEYS) and 'ang' not in t_low:
                         ind_list.append(t)

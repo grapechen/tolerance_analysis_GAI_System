@@ -9,7 +9,16 @@
       "Bash(python -c \"import ollama; c = ollama.Client\\(host=''http://localhost:11434''\\); print\\(c._client.base_url\\)\")",
       "Read(//c/Users/User/.claude/projects/c--Tolerance-Project/memory/**)",
       "Read(//c/Users/User/.gemini/antigravity/brain/de666a05-e2ff-4a4e-aa84-80eac998516d/**)",
-      "Bash(find c:/Tolerance_Project -name SensitivityContribution*.py -o -name ExcelData*.py)"
+      "Bash(find c:/Tolerance_Project -name SensitivityContribution*.py -o -name ExcelData*.py)",
+      "Bash(powershell -command ' *)",
+      "Bash(python3 -c ' *)",
+      "Bash(contacts\")",
+      "Bash(grep -n \"matchmaking\\\\|製程\\\\|openProcess\\\\|processModal\\\\|機台媒合\" C:/Tolerance_Project/server/static/js/*.js)",
+      "Bash(python -c ' *)",
+      "Bash(python scripts/import_all_data.py)",
+      "Bash(python -m scripts.import_all_data)",
+      "Bash(ls c:/Tolerance_Project/server/data/*.xlsx)",
+      "Bash(ls c:/Tolerance_Project/data/*.xlsx)"
     ],
     "additionalDirectories": [
       "c:\\Tolerance_Project"

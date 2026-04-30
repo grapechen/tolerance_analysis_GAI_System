@@ -140,22 +140,29 @@ def compute_sensitivity_contribution(tol_data):
     }
 
 
-def _run_mc_core(n_samples, values, sX, sY, sZ, saX, saY, saZ, dist_type=0, sigma=3.0):
+def _run_mc_core(n_samples, values, sX, sY, sZ, saX, saY, saZ,
+                 biases=None, dist_type=0, sigma=3.0):
     """
     向量化蒙地卡羅核心 (已移除 Numba 依賴)。
     使用 NumPy 矩陣運算替代 JIT 迴圈，效能與 JIT 相當且更具移植性。
+
+    biases: C 欄偏差值陣列（與 values 等長）。
+            距離公差不對稱帶時非零；幾何公差應為 0。
+            對應原始 ToleranceModel.py StatisticsModel 的 `d` 參數。
     """
     n_features = len(values)
-    
+    b = np.zeros(n_features) if biases is None else np.asarray(biases, dtype=np.float64)
+
     # 產生隨機變量矩陣 (n_samples, n_features)
+    # 分布中心 = bias (b)，半寬 = val/2
     if dist_type == 0:
-        # 均勻分布：範圍 [-t/2, t/2]
-        # np.random.random 產生 [0, 1)，(rand - 0.5) * t 產生 [-t/2, t/2]
-        deltas = (np.random.random((n_samples, n_features)) - 0.5) * values
+        # 均勻分布：[bias - val/2, bias + val/2]
+        rand = np.random.random((n_samples, n_features)) - 0.5   # [-0.5, 0.5)
+        deltas = rand * values + b                                 # 以 bias 為中心
     else:
-        # 常態分佈：std = (t/2) / sigma
+        # 常態分布：mean=bias, std=(val/2)/sigma
         std_devs = (values / 2.0) / sigma
-        deltas = np.random.normal(0.0, std_devs, size=(n_samples, n_features))
+        deltas = np.random.normal(b, std_devs, size=(n_samples, n_features))
 
     # 建立敏感度矩陣 (n_features, 6)
     sens_matrix = np.column_stack((sX, sY, sZ, saX, saY, saZ))
@@ -172,7 +179,8 @@ def compute_monte_carlo(tol_data, n_samples=10000, sigma=3.0, dist_type=0):
     - dist_type: 0 (均勻), 1 (常態)
     """
     # 1. 數據準備
-    values = np.array(tol_data.tol_values, dtype=np.float64)
+    values  = np.array(tol_data.tol_values, dtype=np.float64)
+    biases  = np.array(getattr(tol_data, 'tol_biases', [0.0]*len(tol_data.tol_values)), dtype=np.float64)
     sX  = np.array(tol_data.sens_X,  dtype=np.float64)
     sY  = np.array(tol_data.sens_Y,  dtype=np.float64)
     sZ  = np.array(tol_data.sens_Z,  dtype=np.float64)
@@ -180,8 +188,9 @@ def compute_monte_carlo(tol_data, n_samples=10000, sigma=3.0, dist_type=0):
     saY = np.array(tol_data.sens_aY, dtype=np.float64)
     saZ = np.array(tol_data.sens_aZ, dtype=np.float64)
 
-    # 2. 執行 JIT 核心運算
-    res_matrix = _run_mc_core(n_samples, values, sX, sY, sZ, saX, saY, saZ, dist_type, float(sigma))
+    # 2. 執行核心運算（傳入 biases）
+    res_matrix = _run_mc_core(n_samples, values, sX, sY, sZ, saX, saY, saZ,
+                              biases=biases, dist_type=dist_type, sigma=float(sigma))
 
     # 3. 統計計算
     def _get_stats(arr):

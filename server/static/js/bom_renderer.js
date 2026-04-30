@@ -84,13 +84,28 @@ function parseBomData(rawBOM) {
         const leadingSpaceMatch = line.match(/^(\s*)/);
         const rawIndent = leadingSpaceMatch ? leadingSpaceMatch[1].length : 0;
         const cleanLine = line.trim();
-        const isFeatureLine = cleanLine.match(/^[-*]\s*\d+-[PHS]-\d+/i) || cleanLine.startsWith('*');
-        const partMatch = cleanLine.match(/^[-*]\s*(\d+)-(.+)/i);
-        
-        if (partMatch && !isFeatureLine) {
+        // 特徵面：以 * 開頭，或含 -P-/-S-/-H- 模式（支援中文零件名如 分流座-P-1）
+        const isFeatureLine = cleanLine.startsWith('*') ||
+            /^[-]\s*[\w\u4e00-\u9fa5]+-[PSH]-\d+/i.test(cleanLine);
+
+        // 零件行：以 - 開頭且非特徵面
+        // 支援舊格式 "- 1-工作台" 和新格式 "- 分流座"
+        let partMatch = null;
+        if (!isFeatureLine && /^[-]\s+/.test(cleanLine)) {
+            const nameStr = cleanLine.replace(/^[-]\s*/, '').trim();
+            if (nameStr) {
+                const idMatch = nameStr.match(/^(\d+)-/);
+                partMatch = {
+                    id: idMatch ? parseInt(idMatch[1]) : 0,
+                    name: nameStr
+                };
+            }
+        }
+
+        if (partMatch) {
             const newPart = {
-                id: parseInt(partMatch[1]),
-                name: partMatch[1] + '-' + partMatch[2].trim(),
+                id: partMatch.id,
+                name: partMatch.name,
                 features: [],
                 children: []
             };

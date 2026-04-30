@@ -7,7 +7,165 @@
       "Bash(.venv/Scripts/pip search:*)",
       "Bash(.venv/Scripts/python -c \"import OCC\")",
       "Bash(.venv/Scripts/python -c \"from OCP.STEPCAFControl import STEPCAFControl_Reader; print\\('OCP import successful'\\)\")",
-      "Bash(.venv/Scripts/pip list:*)"
+      "Bash(.venv/Scripts/pip list:*)",
+      "WebFetch(domain:github.com)",
+      "WebFetch(domain:api.github.com)",
+      "Bash(gh api *)",
+      "Bash(C:/Users/User/anaconda3/envs/tol_env/python.exe -c ' *)",
+      "Bash(python3 -c ' *)",
+      "Bash(python3 -)",
+      "Bash(git clone *)",
+      "Bash(python -c ' *)",
+      "Bash(pip install *)",
+      "Bash(python build_final_pptx.py)",
+      "Bash(grep \"\\\\.py$\")",
+      "Bash(sort -t: -k2 -rn)",
+      "Bash(python build_25page_pptx.py)",
+      "Bash(python server/scripts/build_mating_pairs.py)",
+      "Bash(python scripts/smoke_plan.py)",
+      "Bash(python -c \"from controllers.plan_bp import plan_bp; from services.plan_service import PlanService; print\\('imports OK'\\); s=PlanService\\(\\); pairs=s.load_mating_pairs\\(\\); print\\(f'loaded {len\\(pairs\\)} pairs'\\)\")",
+      "Bash(python ai_app.py)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/plan1/recommend -H \"Content-Type: application/json\" -d '{\"focus_parts\": null}')",
+      "Read(//tmp/**)",
+      "Bash(c:/Tolerance_Project/.venv/Scripts/python -c \"import OCC; print\\('OCC OK'\\)\")",
+      "Bash(jobs -p)",
+      "Bash(xargs -r kill)",
+      "Bash(pkill -f \"ai_app.py\")",
+      "Read(//c/Users/User/.conda/**)",
+      "Read(//c/Users/User/anaconda3/envs/**)",
+      "Read(//c/Users/User/miniconda3/**)",
+      "Bash(c:/Users/User/anaconda3/envs/occ_env/python -c \"import OCC; print\\('OCC OK from occ_env'\\)\")",
+      "Bash(c:/Users/User/anaconda3/envs/tol_env/python -c \"import OCC; print\\('OCC OK from tol_env'\\)\")",
+      "Bash(netstat -ano)",
+      "Bash(curl -s -o /tmp/p1.json -w \"HTTP %{http_code}, %{size_download} bytes\\\\n\" -X POST http://127.0.0.1:7011/api/plan1/recommend -H \"Content-Type: application/json\" -d '{\"focus_parts\": null}')",
+      "Bash(curl -s http://127.0.0.1:7011/api/plan/mating_pairs -o c:/Users/User/AppData/Local/Temp/mp.json)",
+      "Bash(taskkill //F //PID 3384 //T)",
+      "Bash(c:/Users/User/anaconda3/envs/tol_env/python ai_app.py)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/plan1/recommend -H \"Content-Type: application/json\" -d '{\"focus_parts\": null}' -o \"C:/Users/User/AppData/Local/Temp/p1.json\")",
+      "Bash(pkill -f \"python.*ai_app.py\")",
+      "Bash(awk '{print $NF}')",
+      "Bash(xargs -r -I{} taskkill //F //PID {})",
+      "Bash(taskkill //F //PID 22308)",
+      "Bash(taskkill //F //PID 15744)",
+      "Bash(curl -s -o /dev/null -w \"HTTP %{http_code}\\\\n\" http://127.0.0.1:7011/api/plan/mating_pairs --max-time 3)",
+      "Read(//c//**)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:7011/api/plan/mating_pairs --max-time 3)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/plan1/recommend_one -H \"Content-Type: application/json\" -d '{\"part_name\":\"軸承座\",\"function_desc\":\"軸承外圈固定，承受徑向負載\",\"nominal_dia\":47}' -o c:/Users/User/AppData/Local/Temp/p1_one.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/plan1/recommend_one -H \"Content-Type: application/json; charset=utf-8\" --data-binary @C:/Users/User/AppData/Local/Temp/p1_req.json -o C:/Users/User/AppData/Local/Temp/p1_one.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/plan2/analyze_path -H \"Content-Type: application/json\" --data-binary \"{}\" -o C:/Users/User/AppData/Local/Temp/p2_a.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/plan2/apply_command -H \"Content-Type: application/json; charset=utf-8\" --data-binary @C:/Users/User/AppData/Local/Temp/p2_cmd.json -o C:/Users/User/AppData/Local/Temp/p2_cmd_out.json)",
+      "Read(//d/公差計畫/宏為_C軸/**)",
+      "Bash(python -X utf8 -c ' *)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/plan2/analyze_path -H \"Content-Type: application/json; charset=utf-8\" --data-binary @C:/Users/User/AppData/Local/Temp/p2_path.json -o C:/Users/User/AppData/Local/Temp/p2_a.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/plan2/apply_command -H \"Content-Type: application/json; charset=utf-8\" --data-binary @C:/Users/User/AppData/Local/Temp/p2_apply.json -o C:/Users/User/AppData/Local/Temp/p2_apply_out.json)",
+      "Read(//d/公差計畫/**)",
+      "Bash(grep -i \"sfa\\\\|csv$\")",
+      "Bash(grep \"sfa-csv$\")",
+      "Bash(c:/Users/User/anaconda3/envs/tol_env/python -c ' *)",
+      "Bash(c:/Users/User/anaconda3/envs/tol_env/python -X utf8 -c ' *)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F \"file=@D:/公差計畫/宏為_C軸/115單一C軸\\(簡化編碼器\\).STP_skeleton_chain.csv\" -o C:/Users/User/AppData/Local/Temp/import_csv_out.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F \"file=@C:/Users/User/AppData/Local/Temp/sk.csv\" -o /tmp/o1.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F \"file=@C:/Users/User/AppData/Local/Temp/sk.csv\" -o C:/Users/User/AppData/Local/Temp/import_csv_out.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F \"file=@C:/Users/User/AppData/Local/Temp/sk.xlsx\" -o C:/Users/User/AppData/Local/Temp/import_xlsx_out.json)",
+      "Bash(c:/Users/User/anaconda3/envs/tol_env/python C:/Users/User/AppData/Local/Temp/bench_analysis.py)",
+      "Bash(c:/Users/User/anaconda3/envs/tol_env/python.exe -c \"print\\('hi'\\)\")",
+      "Bash(c:/Users/User/anaconda3/envs/tol_env/python.exe C:/Users/User/AppData/Local/Temp/bench_analysis.py)",
+      "PowerShell(& \"C:\\\\Users\\\\User\\\\anaconda3\\\\envs\\\\tol_env\\\\python.exe\" \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\bench_analysis.py\" 2>&1)",
+      "PowerShell($env:PYTHONIOENCODING='utf-8'; & \"C:\\\\Users\\\\User\\\\anaconda3\\\\envs\\\\tol_env\\\\python.exe\" \"C:\\\\Users\\\\User\\\\AppData\\\\Local\\\\Temp\\\\bench_analysis.py\")",
+      "Bash(c:/Users/User/anaconda3/envs/tol_env/python.exe ai_app.py)",
+      "Bash(curl -s -o /dev/null -w \"ping HTTP %{http_code}\\\\n\" http://127.0.0.1:7011/api/plan/mating_pairs --max-time 3)",
+      "Bash(curl -s -o /dev/null -w \"ping HTTP %{http_code}\\\\n\" http://127.0.0.1:7011/api/plan/mating_pairs --max-time 5)",
+      "PowerShell(& \"C:\\\\Users\\\\User\\\\anaconda3\\\\envs\\\\tol_env\\\\python.exe\" -c \"import waitress; print\\('waitress', waitress.__version__\\)\")",
+      "PowerShell(& \"C:\\\\Users\\\\User\\\\anaconda3\\\\envs\\\\tol_env\\\\python.exe\" -m pip install waitress 2>&1)",
+      "Bash(c:/Users/User/anaconda3/envs/tol_env/python.exe -u ai_app.py)",
+      "Bash(curl -s http://127.0.0.1:7011/api/plan1/features -o C:/Users/User/AppData/Local/Temp/feats.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/plan1/feature_recommend -H \"Content-Type: application/json; charset=utf-8\" --data-binary @C:/Users/User/AppData/Local/Temp/fr_req.json -o C:/Users/User/AppData/Local/Temp/fr_out.json)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:7011/api/plan/mating_pairs --max-time 5)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F 'file=@D:/公差計畫/宏為_C軸/115單一C軸\\(簡化編碼器\\).STP_skeleton_chain.csv' -o C:/Users/User/AppData/Local/Temp/imp_out.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F file=@C:/Users/User/AppData/Local/Temp/sk.csv -o C:/Users/User/AppData/Local/Temp/imp_out.json)",
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F file=@C:/Users/User/AppData/Local/Temp/sk.csv -o /dev/null -w 'HTTP %{http_code}\\\\n')"
+    ],
+    "additionalDirectories": [
+      "C:\\Users\\User\\.claude",
+      "C:\\Users\\User\\AppData\\Local\\Temp",
+      "C:\\neo4j-community-4.4.46\\import",
+      "D:\\公差計畫\\宏為_C軸"
     ]
+  },
+  "hooks": {
+    "SubagentStart": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/subagent-tracker.js"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/subagent-tracker.js"
+          }
+        ]
+      }
+    ],
+    "PreCompact": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/compact-monitor.js"
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/message-tracker.js"
+          },
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/summary-updater.js"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "matcher": "*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/message-tracker.js"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node ~/.claude/hooks/file-tracker.js"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "node ~/.claude/statusline.js",
+    "refreshInterval": 30
   }
 }

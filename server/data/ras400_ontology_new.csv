@@ -1,0 +1,491 @@
+﻿n,r,m
+(:Resource:owl__DatatypeProperty {uri: 公稱值}),[:rdfs__subPropertyOf],"(:Resource {rdfs__comment: Unit
+UpperDeviation
+LowerDeviation
+ToleranceValue
+NominalValue
+ActualValue
+AssemblyResultValue,owl__deprecated: true,uri: topDataProperty})"
+"(:Resource:owl__Class {rdfs__comment: 控制角度尺寸允許變動範圍。,rdfs__label: AngularSizeTolerance(Ang),uri: 角度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制尺寸數值允許變動範圍。,rdfs__label: SizeTolerance,uri: 尺寸類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制角度尺寸允許變動範圍。,rdfs__label: AngularSizeTolerance(Ang),uri: 角度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有個別參考公差})
+"(:Resource:owl__Class {rdfs__comment: 特徵實際位置相對於理論位置之變動範圍，用於限制軸線或中心平面的位置變動量。,rdfs__label: PositionTolerance(Pos),uri: 位置度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})"
+"(:Resource:owl__Class {rdfs__comment: 特徵實際位置相對於理論位置之變動範圍，用於限制軸線或中心平面的位置變動量。,rdfs__label: PositionTolerance(Pos),uri: 位置度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+(:Resource {uri: topObjectProperty}),[:rdfs__subPropertyOf],(:Resource:owl__ObjectProperty {uri: 有特徵面})
+(:Resource {uri: topObjectProperty}),[:rdfs__subPropertyOf],(:Resource:owl__ObjectProperty {uri: 有零件})
+(:Resource {uri: topObjectProperty}),[:rdfs__subPropertyOf],(:Resource:owl__ObjectProperty {uri: 有參考公差})
+(:Resource:owl__Class {uri: 組合件}),[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有零件})
+"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵方向相對基準之偏差。,rdfs__label: OrientationTolerance,uri: 方向類公差})"
+"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制尺寸數值允許變動範圍。,rdfs__label: SizeTolerance,uri: 尺寸類公差})"
+"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})"
+"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制線或曲面輪廓偏差之公差。,rdfs__label: ProfileTolerance,uri: 輪廓類公差})"
+"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制旋轉特徵偏擺情形之公差。,rdfs__label: RunoutTolerance,uri: 偏轉類公差})"
+"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵與基準之平行程度。公差區域限制在相距t且平行於基準線/面之兩平面之間。,rdfs__label: ParallelismTolerance(Par),uri: 平行度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵方向相對基準之偏差。,rdfs__label: OrientationTolerance,uri: 方向類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵與基準之平行程度。公差區域限制在相距t且平行於基準線/面之兩平面之間。,rdfs__label: ParallelismTolerance(Par),uri: 平行度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 特徵實際位置相對於理論位置之變動範圍，用於限制軸線或中心平面的位置變動量。,rdfs__label: PositionTolerance(Pos),uri: 位置度公差})"
+"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})"
+"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制兩圓柱或圓形特徵中心軸線一致程度。公差區域限制在一個直徑為t,且圓心與基準點重合之圓內。,rdfs__label: ConcentricityTolerance(Con),uri: 同心度公差})"
+"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵相對基準對稱程度。,rdfs__label: SymmetryTolerance(Sym),uri: 對稱度公差})"
+"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制兩特徵間距離允許變動範圍。,rdfs__label: DistanceTolerance(Dis),uri: 距離公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵相對基準對稱程度。,rdfs__label: SymmetryTolerance(Sym),uri: 對稱度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+"(:Resource:owl__Class {rdfs__comment: 控制特徵相對基準對稱程度。,rdfs__label: SymmetryTolerance(Sym),uri: 對稱度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})"
+(:Resource:owl__DatatypeProperty {uri: 公差值}),[:rdfs__subPropertyOf],"(:Resource {rdfs__comment: Unit
+UpperDeviation
+LowerDeviation
+ToleranceValue
+NominalValue
+ActualValue
+AssemblyResultValue,owl__deprecated: true,uri: topDataProperty})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制直線或軸線直線程度之公差。當投影在一平面上時,公差區域限制在相距為t之兩平行直線間。,rdfs__label: StraightnessTolerance(Str),uri: 真直度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__label: 控制平面平整程度之公差。公差區域限制在距離為t之兩平行平面間。,uri: 真平度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__label: 控制圓形截面圓度之公差。在圖示平面內之公差區域限制在相距為 t之兩同心圓間。,uri: 真圓度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制圓柱面形狀偏差之公差。公差區域限制在相距t之兩同軸線圓柱面之間。,rdfs__label: CylindricityTolerance(Cyl),uri: 圓柱度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})"
+(:Resource:owl__ObjectProperty {uri: 有個別參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制圓柱或孔直徑允許變動範圍。,rdfs__label: DiameterTolerance(Dia),uri: 直徑公差})"
+(:Resource:owl__ObjectProperty {uri: 有個別參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__label: 控制圓形截面圓度之公差。在圖示平面內之公差區域限制在相距為 t之兩同心圓間。,uri: 真圓度公差})"
+(:Resource:owl__ObjectProperty {uri: 有個別參考公差}),[:rdfs__subPropertyOf],(:Resource:owl__ObjectProperty {uri: 有參考公差})
+(:Resource:owl__ObjectProperty {uri: 有個別參考公差}),[:rdfs__range],(:Resource:owl__Class {uri: 特徵面})
+(:Resource:owl__ObjectProperty {uri: 有個別參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制圓柱面形狀偏差之公差。公差區域限制在相距t之兩同軸線圓柱面之間。,rdfs__label: CylindricityTolerance(Cyl),uri: 圓柱度公差})"
+(:Resource:owl__ObjectProperty {uri: 有個別參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__label: 控制平面平整程度之公差。公差區域限制在距離為t之兩平行平面間。,uri: 真平度公差})"
+(:Resource:owl__ObjectProperty {uri: 有個別參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制直線或軸線直線程度之公差。當投影在一平面上時,公差區域限制在相距為t之兩平行直線間。,rdfs__label: StraightnessTolerance(Str),uri: 真直度公差})"
+(:Resource:owl__ObjectProperty {uri: 有個別參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制圓弧或圓形特徵半徑允許變動範圍。,rdfs__label: RadiusTolerance(Rad),uri: 半徑公差})"
+(:Resource:owl__ObjectProperty {uri: 有個別參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制角度尺寸允許變動範圍。,rdfs__label: AngularSizeTolerance(Ang),uri: 角度公差})"
+(:Resource:owl__DatatypeProperty {uri: 下偏差}),[:rdfs__subPropertyOf],"(:Resource {rdfs__comment: Unit
+UpperDeviation
+LowerDeviation
+ToleranceValue
+NominalValue
+ActualValue
+AssemblyResultValue,owl__deprecated: true,uri: topDataProperty})"
+(:Resource:owl__ObjectProperty {uri: 有特徵面}),[:rdfs__subPropertyOf],(:Resource {uri: topObjectProperty})
+(:Resource:owl__ObjectProperty {uri: 有特徵面}),[:rdfs__range],(:Resource:owl__Class {uri: 特徵面})
+(:Resource:owl__ObjectProperty {uri: 有特徵面}),[:rdfs__domain],(:Resource:owl__Class {uri: 零件})
+"(:Resource:owl__Class {rdfs__comment: 控制旋轉特徵偏擺情形之公差。,rdfs__label: RunoutTolerance,uri: 偏轉類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制單一截面之圓周偏擺程度。,rdfs__label: CircularRunoutTolerance,uri: 圓偏轉度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制旋轉特徵偏擺情形之公差。,rdfs__label: RunoutTolerance,uri: 偏轉類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制旋轉特徵偏擺情形之公差。,rdfs__label: RunoutTolerance,uri: 偏轉類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制整體表面之總偏擺程度。,rdfs__label: TotalRunoutTolerance,uri: 總偏轉度公差})"
+(:Resource:owl__Class {uri: 內圓柱面}),[:rdfs__subClassOf],(:Resource:owl__Class {uri: 圓柱面})
+"(:Resource:owl__Class {rdfs__comment: 控制單一截面之圓周偏擺程度。,rdfs__label: CircularRunoutTolerance,uri: 圓偏轉度公差})",[:owl__disjointWith],"(:Resource:owl__Class {rdfs__comment: 控制整體表面之總偏擺程度。,rdfs__label: TotalRunoutTolerance,uri: 總偏轉度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制單一截面之圓周偏擺程度。,rdfs__label: CircularRunoutTolerance,uri: 圓偏轉度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+"(:Resource:owl__Class {rdfs__comment: 控制單一截面之圓周偏擺程度。,rdfs__label: CircularRunoutTolerance,uri: 圓偏轉度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制旋轉特徵偏擺情形之公差。,rdfs__label: RunoutTolerance,uri: 偏轉類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制整體曲面輪廓偏差之公差。公差區域限制在以直徑為t之球所形成之兩包絡面之間,各球心均位於一真確幾何形狀之曲面上。,rdfs__label: ProfileOfSurfaceTolerance,uri: 面輪廓度公差})",[:owl__disjointWith],"(:Resource:owl__Class {rdfs__comment: 控制單一截面輪廓形狀偏差之公差。公差區域限制在以直徑為t之圓所形成之兩包絡線之間,各圓之圓心均位於一真確幾何形狀之曲線上。,rdfs__label: ProfileOfLineTolerance,uri: 線輪廓度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制整體曲面輪廓偏差之公差。公差區域限制在以直徑為t之球所形成之兩包絡面之間,各球心均位於一真確幾何形狀之曲面上。,rdfs__label: ProfileOfSurfaceTolerance,uri: 面輪廓度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制線或曲面輪廓偏差之公差。,rdfs__label: ProfileTolerance,uri: 輪廓類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制圓柱或孔直徑允許變動範圍。,rdfs__label: DiameterTolerance(Dia),uri: 直徑公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有個別參考公差})
+"(:Resource:owl__Class {rdfs__comment: 控制圓柱或孔直徑允許變動範圍。,rdfs__label: DiameterTolerance(Dia),uri: 直徑公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制尺寸數值允許變動範圍。,rdfs__label: SizeTolerance,uri: 尺寸類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制兩圓柱或圓形特徵中心軸線一致程度。公差區域限制在一個直徑為t,且圓心與基準點重合之圓內。,rdfs__label: ConcentricityTolerance(Con),uri: 同心度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+"(:Resource:owl__Class {rdfs__comment: 控制兩圓柱或圓形特徵中心軸線一致程度。公差區域限制在一個直徑為t,且圓心與基準點重合之圓內。,rdfs__label: ConcentricityTolerance(Con),uri: 同心度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制圓柱面形狀偏差之公差。公差區域限制在相距t之兩同軸線圓柱面之間。,rdfs__label: CylindricityTolerance(Cyl),uri: 圓柱度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制圓柱面形狀偏差之公差。公差區域限制在相距t之兩同軸線圓柱面之間。,rdfs__label: CylindricityTolerance(Cyl),uri: 圓柱度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有個別參考公差})
+"(:Resource:owl__Class {rdfs__comment: 控制特徵與基準之垂直程度。公差區域限制在相距t且垂直於基準線/面之兩平行平面之間。,rdfs__label: PerpendicularityTolerance(Per),uri: 垂直度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+"(:Resource:owl__Class {rdfs__comment: 控制特徵與基準之垂直程度。公差區域限制在相距t且垂直於基準線/面之兩平行平面之間。,rdfs__label: PerpendicularityTolerance(Per),uri: 垂直度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵方向相對基準之偏差。,rdfs__label: OrientationTolerance,uri: 方向類公差})"
+"(:Resource {rdfs__comment: Unit
+UpperDeviation
+LowerDeviation
+ToleranceValue
+NominalValue
+ActualValue
+AssemblyResultValue,owl__deprecated: true,uri: topDataProperty})",[:rdfs__subPropertyOf],(:Resource:owl__DatatypeProperty {uri: 公稱值})
+"(:Resource {rdfs__comment: Unit
+UpperDeviation
+LowerDeviation
+ToleranceValue
+NominalValue
+ActualValue
+AssemblyResultValue,owl__deprecated: true,uri: topDataProperty})",[:rdfs__subPropertyOf],(:Resource:owl__DatatypeProperty {uri: 公差值})
+"(:Resource {rdfs__comment: Unit
+UpperDeviation
+LowerDeviation
+ToleranceValue
+NominalValue
+ActualValue
+AssemblyResultValue,owl__deprecated: true,uri: topDataProperty})",[:rdfs__subPropertyOf],(:Resource:owl__DatatypeProperty {uri: 上偏差})
+"(:Resource {rdfs__comment: Unit
+UpperDeviation
+LowerDeviation
+ToleranceValue
+NominalValue
+ActualValue
+AssemblyResultValue,owl__deprecated: true,uri: topDataProperty})",[:rdfs__subPropertyOf],(:Resource:owl__DatatypeProperty {uri: 下偏差})
+"(:Resource:owl__Class {rdfs__comment: 控制尺寸數值允許變動範圍。,rdfs__label: SizeTolerance,uri: 尺寸類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制圓弧或圓形特徵半徑允許變動範圍。,rdfs__label: RadiusTolerance(Rad),uri: 半徑公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制尺寸數值允許變動範圍。,rdfs__label: SizeTolerance,uri: 尺寸類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制尺寸數值允許變動範圍。,rdfs__label: SizeTolerance,uri: 尺寸類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制圓柱或孔直徑允許變動範圍。,rdfs__label: DiameterTolerance(Dia),uri: 直徑公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制尺寸數值允許變動範圍。,rdfs__label: SizeTolerance,uri: 尺寸類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制角度尺寸允許變動範圍。,rdfs__label: AngularSizeTolerance(Ang),uri: 角度公差})"
+(:Resource:owl__ObjectProperty:owl__SymmetricProperty {uri: 有組裝接觸}),[:rdfs__domain],(:Resource:owl__Class {uri: 特徵面})
+(:Resource:owl__ObjectProperty:owl__SymmetricProperty {uri: 有組裝接觸}),[:rdfs__range],(:Resource:owl__Class {uri: 特徵面})
+(:Resource:owl__DatatypeProperty {uri: 上偏差}),[:rdfs__subPropertyOf],"(:Resource {rdfs__comment: Unit
+UpperDeviation
+LowerDeviation
+ToleranceValue
+NominalValue
+ActualValue
+AssemblyResultValue,owl__deprecated: true,uri: topDataProperty})"
+"(:Resource:owl__Class {rdfs__comment: 控制圓弧或圓形特徵半徑允許變動範圍。,rdfs__label: RadiusTolerance(Rad),uri: 半徑公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制尺寸數值允許變動範圍。,rdfs__label: SizeTolerance,uri: 尺寸類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制圓弧或圓形特徵半徑允許變動範圍。,rdfs__label: RadiusTolerance(Rad),uri: 半徑公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有個別參考公差})
+"(:Resource:owl__Class {rdfs__label: 控制平面平整程度之公差。公差區域限制在距離為t之兩平行平面間。,uri: 真平度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})"
+"(:Resource:owl__Class {rdfs__label: 控制平面平整程度之公差。公差區域限制在距離為t之兩平行平面間。,uri: 真平度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有個別參考公差})
+"(:Resource:owl__Class {rdfs__comment: 控制特徵相對基準之角度偏差。公差區域限制在相距t,且與基準線斜交成標註角度之兩平行平面之間。,rdfs__label: AngularityTolerance,uri: 傾斜度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵方向相對基準之偏差。,rdfs__label: OrientationTolerance,uri: 方向類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵相對基準之角度偏差。公差區域限制在相距t,且與基準線斜交成標註角度之兩平行平面之間。,rdfs__label: AngularityTolerance,uri: 傾斜度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+(:Resource:owl__Class {uri: 特徵面}),[:rdfs__domain],(:Resource:owl__ObjectProperty:owl__SymmetricProperty {uri: 有組裝接觸})
+(:Resource:owl__Class {uri: 特徵面}),[:rdfs__subClassOf],(:Resource:owl__Class {uri: 平面})
+(:Resource:owl__Class {uri: 特徵面}),[:rdfs__range],(:Resource:owl__ObjectProperty:owl__SymmetricProperty {uri: 有組裝接觸})
+(:Resource:owl__Class {uri: 特徵面}),[:rdfs__range],(:Resource:owl__ObjectProperty {uri: 有個別參考公差})
+(:Resource:owl__Class {uri: 特徵面}),[:rdfs__range],(:Resource:owl__ObjectProperty {uri: 有特徵面})
+(:Resource:owl__Class {uri: 特徵面}),[:rdfs__range],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+(:Resource:owl__Class {uri: 特徵面}),[:rdfs__subClassOf],(:Resource:owl__Class {uri: 圓柱面})
+(:Resource:owl__ObjectProperty {uri: 有零件}),[:rdfs__range],(:Resource:owl__Class {uri: 零件})
+(:Resource:owl__ObjectProperty {uri: 有零件}),[:rdfs__subPropertyOf],(:Resource {uri: topObjectProperty})
+(:Resource:owl__ObjectProperty {uri: 有零件}),[:rdfs__domain],(:Resource:owl__Class {uri: 組合件})
+"(:Resource:owl__Class {rdfs__comment: 控制線或曲面輪廓偏差之公差。,rdfs__label: ProfileTolerance,uri: 輪廓類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制整體曲面輪廓偏差之公差。公差區域限制在以直徑為t之球所形成之兩包絡面之間,各球心均位於一真確幾何形狀之曲面上。,rdfs__label: ProfileOfSurfaceTolerance,uri: 面輪廓度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制線或曲面輪廓偏差之公差。,rdfs__label: ProfileTolerance,uri: 輪廓類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制線或曲面輪廓偏差之公差。,rdfs__label: ProfileTolerance,uri: 輪廓類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制單一截面輪廓形狀偏差之公差。公差區域限制在以直徑為t之圓所形成之兩包絡線之間,各圓之圓心均位於一真確幾何形狀之曲線上。,rdfs__label: ProfileOfLineTolerance,uri: 線輪廓度公差})"
+(:Resource:owl__ObjectProperty {uri: 有參考公差}),[:rdfs__subPropertyOf],(:Resource:owl__ObjectProperty {uri: 有個別參考公差})
+(:Resource:owl__ObjectProperty {uri: 有參考公差}),[:rdfs__subPropertyOf],(:Resource {uri: topObjectProperty})
+(:Resource:owl__ObjectProperty {uri: 有參考公差}),[:rdfs__subPropertyOf],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+(:Resource:owl__Class {uri: 平面}),[:rdfs__subClassOf],(:Resource:owl__Class {uri: 特徵面})
+"(:Resource:owl__Class {rdfs__comment: 控制整體表面之總偏擺程度。,rdfs__label: TotalRunoutTolerance,uri: 總偏轉度公差})",[:owl__disjointWith],"(:Resource:owl__Class {rdfs__comment: 控制單一截面之圓周偏擺程度。,rdfs__label: CircularRunoutTolerance,uri: 圓偏轉度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制整體表面之總偏擺程度。,rdfs__label: TotalRunoutTolerance,uri: 總偏轉度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+"(:Resource:owl__Class {rdfs__comment: 控制整體表面之總偏擺程度。,rdfs__label: TotalRunoutTolerance,uri: 總偏轉度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制旋轉特徵偏擺情形之公差。,rdfs__label: RunoutTolerance,uri: 偏轉類公差})"
+(:Resource:owl__Class {uri: 圓柱面}),[:rdfs__subClassOf],(:Resource:owl__Class {uri: 外圓柱面})
+(:Resource:owl__Class {uri: 圓柱面}),[:rdfs__subClassOf],(:Resource:owl__Class {uri: 內圓柱面})
+(:Resource:owl__Class {uri: 圓柱面}),[:rdfs__subClassOf],(:Resource:owl__Class {uri: 特徵面})
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制特徵與基準之垂直程度。公差區域限制在相距t且垂直於基準線/面之兩平行平面之間。,rdfs__label: PerpendicularityTolerance(Per),uri: 垂直度公差})"
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制整體表面之總偏擺程度。,rdfs__label: TotalRunoutTolerance,uri: 總偏轉度公差})"
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制兩特徵間距離允許變動範圍。,rdfs__label: DistanceTolerance(Dis),uri: 距離公差})"
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制單一截面之圓周偏擺程度。,rdfs__label: CircularRunoutTolerance,uri: 圓偏轉度公差})"
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制特徵相對基準對稱程度。,rdfs__label: SymmetryTolerance(Sym),uri: 對稱度公差})"
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制特徵與基準之平行程度。公差區域限制在相距t且平行於基準線/面之兩平面之間。,rdfs__label: ParallelismTolerance(Par),uri: 平行度公差})"
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 特徵實際位置相對於理論位置之變動範圍，用於限制軸線或中心平面的位置變動量。,rdfs__label: PositionTolerance(Pos),uri: 位置度公差})"
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制兩圓柱或圓形特徵中心軸線一致程度。公差區域限制在一個直徑為t,且圓心與基準點重合之圓內。,rdfs__label: ConcentricityTolerance(Con),uri: 同心度公差})"
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__range],(:Resource:owl__Class {uri: 特徵面})
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__domain],"(:Resource:owl__Class {rdfs__comment: 控制特徵相對基準之角度偏差。公差區域限制在相距t,且與基準線斜交成標註角度之兩平行平面之間。,rdfs__label: AngularityTolerance,uri: 傾斜度公差})"
+(:Resource:owl__ObjectProperty {uri: 有交互參考公差}),[:rdfs__subPropertyOf],(:Resource:owl__ObjectProperty {uri: 有參考公差})
+(:Resource:owl__Class {uri: 零件}),[:rdfs__range],(:Resource:owl__ObjectProperty {uri: 有零件})
+(:Resource:owl__Class {uri: 零件}),[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有特徵面})
+"(:Resource:owl__Class {rdfs__comment: 控制直線或軸線直線程度之公差。當投影在一平面上時,公差區域限制在相距為t之兩平行直線間。,rdfs__label: StraightnessTolerance(Str),uri: 真直度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制直線或軸線直線程度之公差。當投影在一平面上時,公差區域限制在相距為t之兩平行直線間。,rdfs__label: StraightnessTolerance(Str),uri: 真直度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有個別參考公差})
+"(:Resource:owl__Class {rdfs__label: 控制圓形截面圓度之公差。在圖示平面內之公差區域限制在相距為 t之兩同心圓間。,uri: 真圓度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵自身幾何形狀之公差。,rdfs__label: FormTolerance,uri: 形狀類公差})"
+"(:Resource:owl__Class {rdfs__label: 控制圓形截面圓度之公差。在圖示平面內之公差區域限制在相距為 t之兩同心圓間。,uri: 真圓度公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有個別參考公差})
+(:Resource:owl__Class {uri: 外圓柱面}),[:rdfs__subClassOf],(:Resource:owl__Class {uri: 圓柱面})
+"(:Resource:owl__Class {rdfs__comment: 控制兩特徵間距離允許變動範圍。,rdfs__label: DistanceTolerance(Dis),uri: 距離公差})",[:rdfs__domain],(:Resource:owl__ObjectProperty {uri: 有交互參考公差})
+"(:Resource:owl__Class {rdfs__comment: 控制兩特徵間距離允許變動範圍。,rdfs__label: DistanceTolerance(Dis),uri: 距離公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 限制受測特徵（點、線、面）相對於基準在理想位置上變動量的一類幾何公差。包含位置度、同心度、對稱度及距離公差。,rdfs__label: UpperDeviation,uri: 位置類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制單一截面輪廓形狀偏差之公差。公差區域限制在以直徑為t之圓所形成之兩包絡線之間,各圓之圓心均位於一真確幾何形狀之曲線上。,rdfs__label: ProfileOfLineTolerance,uri: 線輪廓度公差})",[:owl__disjointWith],"(:Resource:owl__Class {rdfs__comment: 控制整體曲面輪廓偏差之公差。公差區域限制在以直徑為t之球所形成之兩包絡面之間,各球心均位於一真確幾何形狀之曲面上。,rdfs__label: ProfileOfSurfaceTolerance,uri: 面輪廓度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制單一截面輪廓形狀偏差之公差。公差區域限制在以直徑為t之圓所形成之兩包絡線之間,各圓之圓心均位於一真確幾何形狀之曲線上。,rdfs__label: ProfileOfLineTolerance,uri: 線輪廓度公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制線或曲面輪廓偏差之公差。,rdfs__label: ProfileTolerance,uri: 輪廓類公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵方向相對基準之偏差。,rdfs__label: OrientationTolerance,uri: 方向類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵相對基準之角度偏差。公差區域限制在相距t,且與基準線斜交成標註角度之兩平行平面之間。,rdfs__label: AngularityTolerance,uri: 傾斜度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵方向相對基準之偏差。,rdfs__label: OrientationTolerance,uri: 方向類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 用於表示最大極限尺寸與最小極限尺寸之差。,rdfs__label: Tolerance,uri: 公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵方向相對基準之偏差。,rdfs__label: OrientationTolerance,uri: 方向類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵與基準之垂直程度。公差區域限制在相距t且垂直於基準線/面之兩平行平面之間。,rdfs__label: PerpendicularityTolerance(Per),uri: 垂直度公差})"
+"(:Resource:owl__Class {rdfs__comment: 控制特徵方向相對基準之偏差。,rdfs__label: OrientationTolerance,uri: 方向類公差})",[:rdfs__subClassOf],"(:Resource:owl__Class {rdfs__comment: 控制特徵與基準之平行程度。公差區域限制在相距t且平行於基準線/面之兩平面之間。,rdfs__label: ParallelismTolerance(Par),uri: 平行度公差})"
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-2}),[:ns0__有交互參考公差],(:Resource:ns0__同心度公差:owl__NamedIndividual {uri: 工作臺-Co-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-1}),[:ns0__有交互參考公差],(:Resource:ns0__同心度公差:owl__NamedIndividual {uri: 工作臺-Co-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-1}),[:ns0__有個別參考公差],(:Resource:ns0__圓柱度公差:owl__NamedIndividual {uri: 工作臺-Cyl-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 工作臺-Dia-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 工作臺-Dia-2})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺-P-1}),[:ns0__有個別參考公差],(:Resource:ns0__真平度公差:owl__NamedIndividual {uri: 工作臺-Fla-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-1}),[:ns0__有交互參考公差],(:Resource:ns0__垂直度公差:owl__NamedIndividual {uri: 工作臺-Per-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺-P-1}),[:ns0__有交互參考公差],(:Resource:ns0__垂直度公差:owl__NamedIndividual {uri: 工作臺-Per-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-2}),[:ns0__有交互參考公差],(:Resource:ns0__垂直度公差:owl__NamedIndividual {uri: 工作臺-Per-2})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺-P-1}),[:ns0__有交互參考公差],(:Resource:ns0__垂直度公差:owl__NamedIndividual {uri: 工作臺-Per-2})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 軸承座-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 軸承座-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 軸承座-Dia-2})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-4}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 軸承座-Dia-4})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 軸承座-S-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 軸承座-Dia-5})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-4}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 軸承座-Dis-3})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-5}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 軸承座-Dis-3})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-5}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 軸承座-Par-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-6}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 軸承座-Par-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-2}),[:ns0__有個別參考公差],(:Resource:ns0__真圓度公差:owl__NamedIndividual {uri: 軸承座-Cir-1})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 軸承-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承-H-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 軸承-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 軸承-S-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 軸承-Dia-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承-H-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 軸承-Dia-2})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承-H-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 軸承-Dia-3})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 軸承-S-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 軸承-Dia-4})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-1}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 軸承-Dis-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-2}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 軸承-Dis-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-1}),[:ns0__有個別參考公差],(:Resource:ns0__真平度公差:owl__NamedIndividual {uri: 軸承-Fla-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-2}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 軸承-Par-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-1}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 軸承-Par-1})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 轉動軸-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 轉動軸-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 轉動軸-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 轉動軸-S-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 轉動軸-H-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 轉動軸-Dia-1})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 轉動軸-S-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 轉動軸-Dia-2})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-3}),[:ns0__有個別參考公差],(:Resource:ns0__真平度公差:owl__NamedIndividual {uri: 轉動軸-Fla-1})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-3}),[:ns0__有交互參考公差],(:Resource:ns0__同心度公差:owl__NamedIndividual {uri: 工作臺心軸-Co-1})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-2}),[:ns0__有交互參考公差],(:Resource:ns0__同心度公差:owl__NamedIndividual {uri: 工作臺心軸-Co-1})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-3}),[:ns0__有個別參考公差],(:Resource:ns0__圓柱度公差:owl__NamedIndividual {uri: 工作臺心軸-Cyl-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-2}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 工作臺心軸-Dis-2})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-3}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 工作臺心軸-Dis-2})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-1}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 工作臺心軸-Dis-3})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-3}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 工作臺心軸-Dis-3})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-4}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 工作臺心軸-Dia-1})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-3}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 工作臺心軸-Dia-2})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 工作臺心軸-Dia-3})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 工作臺心軸-Dia-4})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-1}),[:ns0__有個別參考公差],(:Resource:ns0__真平度公差:owl__NamedIndividual {uri: 工作臺心軸-Fla-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-2}),[:ns0__有個別參考公差],(:Resource:ns0__真平度公差:owl__NamedIndividual {uri: 工作臺心軸-Fla-2})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-2}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 工作臺心軸-Par-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-1}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 工作臺心軸-Par-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-3}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 工作臺心軸-Par-2})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-1}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 工作臺心軸-Par-2})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-2}),[:ns0__有交互參考公差],(:Resource:ns0__垂直度公差:owl__NamedIndividual {uri: 工作臺心軸-Per-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-1}),[:ns0__有交互參考公差],(:Resource:ns0__垂直度公差:owl__NamedIndividual {uri: 工作臺心軸-Per-1})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達-H-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達水套-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達水套-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達水套-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達水套-S-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 馬達水套-Dia-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達水套-H-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 馬達水套-Dia-2})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達水套-S-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 馬達水套-Dia-3})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-2}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 馬達水套-Dis-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-3}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 馬達水套-Dis-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-3}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 馬達水套-Par-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-2}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 馬達水套-Par-1})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 編碼器心軸-Dia-2})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 編碼器心軸-Dia-4})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-3}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 編碼器心軸-Dis-2})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-4}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 編碼器心軸-Dis-2})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-2}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 編碼器心軸-Dis-4})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-4}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 編碼器心軸-Dis-4})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-4}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 編碼器心軸-Par-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-2}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 編碼器心軸-Par-1})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 分流座-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 分流座-S-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 分流座-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 分流座-Dia-3})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 分流座-S-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 分流座-Dia-4})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 分流座-S-3}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 分流座-Dia-4})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-1}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 分流座-Par-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-3}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 分流座-Par-1})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達座-S-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達座-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達座-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達座-S-1}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 馬達座-Dia-3})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-2}),[:ns0__有個別參考公差],(:Resource:ns0__直徑公差:owl__NamedIndividual {uri: 馬達座-Dia-6})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-3}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 馬達座-Dis-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-4}),[:ns0__有交互參考公差],(:Resource:ns0__距離公差:owl__NamedIndividual {uri: 馬達座-Dis-1})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-3}),[:ns0__有交互參考公差],(:Resource:ns0__平行度公差:owl__NamedIndividual {uri: 馬達座-Par-1})
+(:Resource:ns0__組合件:owl__NamedIndividual {uri: RAS400}),[:ns0__有零件],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器-S-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 編碼器-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器-S-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:owl__Class {uri: 錐面}),[:rdfs__subClassOf],(:Resource:owl__Class {uri: 特徵面})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺-P-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺-C-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺-C-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-7}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-8}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 軸承座-C-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 軸承座-C-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承-H-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承-H-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 軸承-S-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 軸承-C-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 軸承-C-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 軸承})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 轉動軸-H-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 轉動軸-S-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 轉動軸})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺心軸-H-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-7}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-7}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-8}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺心軸-C-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺心軸-C-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺心軸-C-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 工作臺心軸})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達-H-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達-H-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達-S-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達-P-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 馬達-C-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 馬達-C-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達水套-H-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達水套-S-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達水套})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-7}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-8}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器心軸})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-7}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 分流座-S-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 分流座-S-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-7}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-1}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 分流座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-3}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-7}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-8}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 馬達座})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 編碼器-H-2}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器-S-4}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-5}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-6}),[:ns0__有特徵面],(:Resource:ns0__零件:owl__NamedIndividual {uri: 編碼器})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-5})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-4}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-6})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-5}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-6})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-6}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-6})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-7}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-6})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-2})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-3})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-5}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-1})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-5}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-2})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺心軸-C-1}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-3})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺心軸-C-2})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺-C-1}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-6})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 馬達-C-1}),[:ns0__有組裝接觸],(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達水套-H-2})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 馬達-C-2}),[:ns0__有組裝接觸],(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達水套-H-2})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 分流座-S-4})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 分流座-S-5})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-5}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-3})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-5}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-1})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺心軸-H-1}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-6})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺心軸-H-1}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-7})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 軸承-C-1}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-7})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 軸承-C-2}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-7})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-3}),[:ns0__有組裝接觸],(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-5})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-4}),[:ns0__有組裝接觸],(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-5})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺-P-2}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-6})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺-P-2}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺心軸-C-2})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-6})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺-C-2}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-6})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達水套-H-2}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-6})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-4}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-6})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達水套-H-2}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-7})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-5}),[:ns0__有組裝接觸],(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-6})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達水套-P-5}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-7})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達水套-S-3}),[:ns0__有組裝接觸],(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-6})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達水套-S-3}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 軸承座-C-1})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 馬達-S-2}),[:ns0__有組裝接觸],(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達水套-H-2})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達座-H-4}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-6})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-7}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-6})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-7}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-1})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 馬達-C-1}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-8})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達-P-5}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-8})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達座-P-8})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 分流座-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器-S-4})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 分流座-P-7}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-6})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-4}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-6})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 分流座-C-4}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器-S-4})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-5}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-5})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-5}),[:ns0__有組裝接觸],(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 轉動軸-H-2})
+(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺心軸-C-1}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-5})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-7}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-7})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 工作臺心軸-H-1}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-5})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承-H-3}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 工作臺心軸-S-7})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-5}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-8})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承-H-4}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 工作臺心軸-P-8})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-5}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 工作臺心軸-C-3})
+(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 軸承-S-3}),[:ns0__有組裝接觸],(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 軸承座-H-5})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-3}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承座-P-8})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 軸承-P-3}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 軸承座-C-2})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 編碼器-H-2}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-8})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 編碼器-H-2}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 編碼器心軸-S-6})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器-P-5}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 編碼器心軸-P-8})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達-H-4}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-6})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達-P-6}),[:ns0__有組裝接觸],(:Resource:ns0__平面:owl__NamedIndividual {uri: 轉動軸-P-6})
+(:Resource:ns0__平面:owl__NamedIndividual {uri: 馬達-P-6}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-4})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達-H-4}),[:ns0__有組裝接觸],(:Resource:ns0__外圓柱面:owl__NamedIndividual {uri: 轉動軸-S-4})
+(:Resource:ns0__內圓柱面:owl__NamedIndividual {uri: 馬達-H-4}),[:ns0__有組裝接觸],(:Resource:ns0__錐面:owl__NamedIndividual {uri: 轉動軸-C-5})

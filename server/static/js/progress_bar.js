@@ -200,6 +200,19 @@ const ProgressBar = (() => {
         const hasProgress = Object.values(currentProgress).some(p => p.status === 'running');
 
         if (!hasProgress) {
+            // 無 running 任務 → 若有 completed / error，顯示最終狀態 1.2s 後自動關閉
+            const finalized = Object.values(currentProgress).find(
+                p => p.status === 'completed' || p.status === 'error'
+            );
+            if (finalized && overlay.style.display !== 'none') {
+                updateProgressDisplay(finalized);
+                setTimeout(() => {
+                    const stillRunning = Object.values(currentProgress).some(p => p.status === 'running');
+                    if (!stillRunning) overlay.style.display = 'none';
+                }, 1200);
+            } else if (!finalized) {
+                overlay.style.display = 'none';
+            }
             return;
         }
 

@@ -254,6 +254,12 @@ document.querySelectorAll('.panel-btn').forEach(btn => {
       return;
     }
 
+    // plan_compare 直接開 Modal，不送 AI 訊息
+    if (action === 'plan_compare') {
+      if (typeof openPlanCompareModal === 'function') openPlanCompareModal();
+      return;
+    }
+
     if (!panelBtnPrompts[action]) return;
 
     // Toggle active state
@@ -445,8 +451,14 @@ function uploadStepFile(file) {
         StepViewer.clearGeometry();
       }
 
+      // 立即加載 3D 幾何
+      if (typeof StepViewer !== 'undefined') {
+        console.log(`📦 正在加載 3D 幾何...`);
+        StepViewer.loadAllGeometry(window._stepSessionId, 0.3); // 使用較低精度（0.3）加快速度
+      }
+
       // 提示用户下一步
-      alert(`✅ STEP 檔案已上傳。\n請上傳 XLSX 檔案，然後點擊「比對 & 解析 PMI」。`);
+      alert(`✅ STEP 檔案已上傳，3D 模型已加載。\n請上傳 XLSX 檔案，然後點擊「比對 & 解析 PMI」。`);
 
       // 清空XLSX輸入框
       const xlsxInput = document.getElementById('xlsx-file-input');
@@ -523,9 +535,9 @@ function parsePMI() {
 
       console.log(`✅ PMI 解析完成: ${data.n_pmi_rows} 項`);
 
-      // 載入幾何到 Three.js
+      // 載入 PMI 標註線到 Three.js（底模已在 STEP 上傳時載入，不重複三角化）
       if (typeof StepViewer !== 'undefined') {
-        StepViewer.loadAllGeometry(window._stepSessionId);
+        StepViewer.loadAllPmiAnnotations(window._stepSessionId);
       }
 
       // 填充 PMI 清單面板
@@ -542,22 +554,102 @@ function parsePMI() {
 }
 
 /**
+ * 輪詢 /api/step/asm_result 直到分析完成
+ */
+function _pollAsmResult(pollUrl, btn, btnLabel) {
+  const INTERVAL_MS = 2000;
+  let elapsed = 0;
+  const MAX_WAIT_MS = 620000; // 略大於後端 600s 超時
+
+  const iv = setInterval(async () => {
+    elapsed += INTERVAL_MS;
+    try {
+      const r = await fetch(pollUrl);
+      const d = await r.json();
+
+      if (d.status === 'done') {
+        clearInterval(iv);
+        console.log(`✅ 組合件分析完成: ${d.contacts ? d.contacts.length : 0} 個接觸對`);
+        if (typeof renderAsmContactsFromStep !== 'undefined' && d.contacts) {
+          renderAsmContactsFromStep(d.contacts);
+          if (typeof addMessage === 'function') {
+            addMessage('ai', '🔗 組合件接觸分析完成，接觸圖已更新。');
+          }
+        }
+        // 自動切換到接觸圖視圖
+        const contactBtn = document.querySelector('[data-action="contact"]');
+        if (contactBtn) contactBtn.click();
+        if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+
+      } else if (d.status === 'error') {
+        clearInterval(iv);
+        alert(`❌ 分析失敗: ${d.error}`);
+        if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+
+      } else if (elapsed >= MAX_WAIT_MS) {
+        clearInterval(iv);
+        alert('❌ 分析等待超時，請重試');
+        if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+      }
+      // status === 'running' → 繼續等
+    } catch (err) {
+      clearInterval(iv);
+      console.error('❌ 輪詢錯誤:', err);
+      alert('❌ 分析發生錯誤: ' + err.message);
+      if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+    }
+  }, INTERVAL_MS);
+}
+
+/**
  * [Phase 5] 執行組合件接觸分析
- * 呼叫 /api/step/asm_contact 子進程，並在完成後渲染接觸圖
+ * 呼叫 /api/step/asm_contact 啟動背景分析，再輪詢 /api/step/asm_result 取得結果
  */
 function runAssemblyContactAnalysis() {
+  const btnLabel = '🔩 組合件分析';
+  const btn = event && event.target ? event.target : null;
+
+  // 若尚未上傳 STP，直接彈出檔案選擇視窗
   if (!window._stepSessionId) {
-    alert('❌ 請先上傳 STEP 檔案');
+    const picker = document.createElement('input');
+    picker.type = 'file';
+    picker.accept = '.stp,.STP,.step,.STEP';
+    picker.onchange = () => {
+      const file = picker.files[0];
+      if (!file) return;
+      if (btn) { btn.disabled = true; btn.textContent = '⏳ 上傳中...'; }
+
+      const formData = new FormData();
+      formData.append('stp_file', file);
+      fetch('/api/step/upload', { method: 'POST', body: formData })
+        .then(r => r.json())
+        .then(data => {
+          if (!data.ok) {
+            alert(`❌ 上傳失敗: ${data.error}`);
+            if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+            return;
+          }
+          window._stepSessionId = data.session_id;
+          console.log(`✅ STP 上傳完成，Session: ${data.session_id}`);
+          // 上傳成功後直接啟動分析
+          _startAsmContact(btn, btnLabel);
+        })
+        .catch(err => {
+          alert('❌ 上傳失敗: ' + err.message);
+          if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+        });
+    };
+    picker.click();
     return;
   }
 
-  console.log(`🔧 執行組合件接觸分析 (Session: ${window._stepSessionId})...`);
-  const btn = event && event.target ? event.target : null;
-  if (btn) {
-    btn.disabled = true;
-    btn.textContent = '⏳ 分析中...';
-  }
+  // 已有 session，直接分析
+  if (btn) { btn.disabled = true; btn.textContent = '⏳ 分析中...'; }
+  _startAsmContact(btn, btnLabel);
+}
 
+function _startAsmContact(btn, btnLabel) {
+  console.log(`🔧 執行組合件接觸分析 (Session: ${window._stepSessionId})...`);
   fetch('/api/step/asm_contact', {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
@@ -566,40 +658,17 @@ function runAssemblyContactAnalysis() {
     .then(r => r.json())
     .then(data => {
       if (!data.ok) {
-        alert(`❌ 分析失敗: ${data.error}`);
-        if (btn) {
-          btn.disabled = false;
-          btn.textContent = '🔧 執行組合件分析';
-        }
+        alert(`❌ 啟動失敗: ${data.error}`);
+        if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
         return;
       }
-
-      console.log(`✅ 組合件分析完成: ${data.contacts ? data.contacts.length : 0} 個接觸對`);
-
-      // [Phase 5] 渲染接觸圖
-      if (typeof renderAsmContactsFromStep !== 'undefined' && data.contacts) {
-        renderAsmContactsFromStep(data.contacts);
-        addMessage('ai', '🔗 組合件接觸分析完成，接觸圖已更新。');
-      }
-
-      // 自動切換到接觸圖視圖
-      const contactBtn = document.querySelector('[data-action="contact"]');
-      if (contactBtn) {
-        contactBtn.click();
-      }
-
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = '🔧 執行組合件分析';
-      }
+      console.log('🔄 分析已啟動，輪詢結果中...');
+      _pollAsmResult(data.poll_url, btn, btnLabel);
     })
     .catch(err => {
       console.error('❌ 錯誤:', err);
       alert('❌ 分析發生錯誤: ' + err.message);
-      if (btn) {
-        btn.disabled = false;
-        btn.textContent = '🔧 執行組合件分析';
-      }
+      if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
     });
 }
 

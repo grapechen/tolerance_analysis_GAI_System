@@ -300,6 +300,15 @@ async function sendMessage() {
       // Clean tags from reply
       finalReply = finalReply.replace(highlightPmiRegex, '').trim();
 
+      // 2.5 公差調整指令 → 後端回傳 intent.modified_path（已含新 IT 與重算後的 val），整包替換
+      const modifiedPath = data.intent && data.intent.modified_path;
+      if (Array.isArray(modifiedPath) && typeof editorPathData !== 'undefined') {
+          editorPathData.length = 0;
+          editorPathData.push(...modifiedPath);
+          if (typeof renderPathFlowchart === 'function') renderPathFlowchart();
+          console.log(`[CMD] editorPathData replaced (${modifiedPath.length} items) and re-rendered`);
+      }
+
       // 3. 處理診斷建議卡片 <DIAGNOSTIC_CARD>
       const cardRegex = /<DIAGNOSTIC_CARD type="(.*?)" target="(.*?)" value="(.*?)" reason="(.*?)"\s*\/>/g;
       let cardsHtml = '';
@@ -533,6 +542,20 @@ document.querySelectorAll('.panel-btn').forEach(btn => {
             if (panel) panel.style.display = 'flex';
         }
         return; // 攔截，不發送訊息
+    }
+
+    // [直接開啟] 製程與機台媒合 → 不走 AI，直接開啟 Modal
+    if (action === 'matchmaking' || !action) {
+        if (typeof openMatchmakingModal === 'function') openMatchmakingModal();
+        btn.classList.remove('active'); // 媒合按鈕不需要 active 狀態
+        return;
+    }
+
+    // [直接開啟] 方案一 vs 方案二 驗證 → 不走 AI，直接開啟 Modal
+    if (action === 'plan_compare') {
+        if (typeof openPlanCompareModal === 'function') openPlanCompareModal();
+        btn.classList.remove('active');
+        return;
     }
 
     // [修正] 如果目前已有路徑數據，點擊分析或調配應直接開啟視窗，不應去問 AI (避免 AI 覆寫數據)
@@ -810,8 +833,10 @@ async function exportAllocationExcel() {
 
 function openStepViewerPanel() {
   const panel = document.getElementById('step-viewer-panel');
+  const resizer = document.getElementById('step-viewer-resizer');
   if (!panel) return;
   panel.style.display = 'flex';
+  if (resizer) resizer.style.display = 'block';
 
   // 初始化 Three.js（只做一次）
   if (typeof StepViewer !== 'undefined' && !window._stepViewerInitialized) {
@@ -820,13 +845,114 @@ function openStepViewerPanel() {
   }
 }
 
+// ══════════════════════════════════════════════
+// STEP 3D 檢視器面板：左右拖拉調整寬度
+// ══════════════════════════════════════════════
+(function initStepViewerResizer() {
+  const resizer = document.getElementById('step-viewer-resizer');
+  const panel   = document.getElementById('step-viewer-panel');
+  const appLayout = document.querySelector('.app-layout');
+  if (!resizer || !panel || !appLayout) return;
+
+  let isResizing = false;
+
+  resizer.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    resizer.style.background = '#0ea5e9';
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  resizer.addEventListener('mouseenter', () => {
+    if (!isResizing) resizer.style.background = '#0ea5e9';
+  });
+  resizer.addEventListener('mouseleave', () => {
+    if (!isResizing) resizer.style.background = '#64748b';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    const rect = appLayout.getBoundingClientRect();
+    // 面板貼右邊，所以用「右緣 - 滑鼠 X」當寬度
+    let newWidth = rect.right - e.clientX;
+    const minWidth = 380;
+    const maxWidth = rect.width * 0.8;
+    newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+    panel.style.width = newWidth + 'px';
+
+    // 通知 Three.js viewer 重繪（如果有 onWindowResize）
+    if (typeof StepViewer !== 'undefined' && StepViewer.onResize) StepViewer.onResize();
+    window.dispatchEvent(new Event('resize'));
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isResizing) return;
+    isResizing = false;
+    resizer.style.background = '#64748b';
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+
 function closeStepViewerPanel() {
   const panel = document.getElementById('step-viewer-panel');
+  const resizer = document.getElementById('step-viewer-resizer');
   if (panel) panel.style.display = 'none';
+  if (resizer) resizer.style.display = 'none';
 }
 
 /**
- * 上傳 STEP 檔案 → 後端解析 → 填充 PMI 清單
+ * STEP 3D Viewer 面板左右拖拉 resizer（初始化一次，全域綁定）
+ */
+(function initStepViewerResizer() {
+  const resizer = document.getElementById('step-viewer-resizer');
+  const panel = document.getElementById('step-viewer-panel');
+  const appLayout = document.querySelector('.app-layout');
+  if (!resizer || !panel || !appLayout) return;
+
+  let isResizing = false;
+
+  resizer.addEventListener('mousedown', (e) => {
+    isResizing = true;
+    resizer.style.background = '#0ea5e9';
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    e.preventDefault();
+  });
+
+  resizer.addEventListener('mouseenter', () => {
+    if (!isResizing) resizer.style.background = '#0ea5e9';
+  });
+
+  resizer.addEventListener('mouseleave', () => {
+    if (!isResizing) resizer.style.background = '#64748b';
+  });
+
+  document.addEventListener('mousemove', (e) => {
+    if (!isResizing) return;
+    const rect = appLayout.getBoundingClientRect();
+    // 從右邊界往左算新寬度
+    let newWidth = rect.right - e.clientX;
+    const minWidth = 380;
+    const maxWidth = rect.width * 0.65;
+    newWidth = Math.max(minWidth, Math.min(maxWidth, newWidth));
+    panel.style.width = newWidth + 'px';
+  });
+
+  document.addEventListener('mouseup', () => {
+    if (!isResizing) return;
+    isResizing = false;
+    resizer.style.background = '#64748b';
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+})();
+
+/**
+ * 上傳 STEP 檔案：只建立 session + 顯示 3D 幾何。
+ * 不自動跑 PMI 解析（由「比對 & 解析 PMI」按鈕觸發，對齊舊 Tkinter 版三步驟流程）。
  */
 function uploadStepFile(file) {
   if (!file) return;
@@ -835,44 +961,133 @@ function uploadStepFile(file) {
   const formData = new FormData();
   formData.append('stp_file', file);
 
-  const xlsxInput = document.getElementById('xlsx-file-input');
-  if (xlsxInput && xlsxInput.files[0]) {
-    formData.append('xlsx_file', xlsxInput.files[0]);
-  }
-
   fetch('/api/step/upload', { method: 'POST', body: formData })
     .then(r => r.json())
     .then(data => {
       if (!data.ok) { alert(`❌ 上傳失敗: ${data.error}`); return; }
       window._stepSessionId = data.session_id;
       console.log(`✅ Session 建立: ${data.session_id}`);
-      return fetch('/api/step/parse_pmi', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: data.session_id })
-      });
+
+      // 清空舊的 PMI 清單與高亮（新 session 開始）
+      if (typeof PmiPanel !== 'undefined') PmiPanel.clear();
+      if (typeof StepViewer !== 'undefined') StepViewer.clearGeometry();
+
+      // 立即載入 3D 幾何（淺灰半透明底模），但不跑 PMI 解析
+      if (typeof StepViewer !== 'undefined') {
+        StepViewer.loadAllGeometry(window._stepSessionId, 0.3);
+      }
+
+      alert('✅ STEP 已上傳，3D 模型已載入。\n接著請載入 XLSX，然後點擊「比對 & 解析 PMI」。');
     })
-    .then(r => r && r.json())
+    .catch(err => { console.error('❌ 錯誤:', err); alert('發生錯誤: ' + err.message); });
+}
+
+/**
+ * 上傳 XLSX 檔案到已有的 session（對齊舊版獨立上傳）。
+ * 不跑解析，只把 XLSX 附到 session，等按鈕觸發。
+ */
+function uploadXlsxFile(file) {
+  if (!file) return;
+  if (!window._stepSessionId) {
+    alert('❌ 請先上傳 STEP 檔案');
+    return;
+  }
+  console.log(`📊 上傳 XLSX: ${file.name} (Session: ${window._stepSessionId})`);
+
+  const formData = new FormData();
+  formData.append('xlsx_file', file);
+  formData.append('session_id', window._stepSessionId);
+
+  fetch('/api/step/upload_xlsx', { method: 'POST', body: formData })
+    .then(r => r.json())
     .then(data => {
-      if (!data || !data.ok) { if (data) alert(`❌ 解析失敗: ${data.error}`); return; }
+      if (!data.ok) { alert(`❌ XLSX 上傳失敗: ${data.error}`); return; }
+      console.log(`✅ XLSX 已附加到 session`);
+      alert('✅ XLSX 已載入，請點擊「比對 & 解析 PMI」開始解析。');
+    })
+    .catch(err => { console.error('❌ 錯誤:', err); alert('發生錯誤: ' + err.message); });
+}
+
+/**
+ * 手動觸發 PMI 解析（「比對 & 解析 PMI」按鈕）
+ */
+function parsePMI() {
+  if (!window._stepSessionId) { alert('❌ 請先上傳 STEP 檔案'); return; }
+  console.log(`🔍 手動觸發 PMI 解析 (Session: ${window._stepSessionId})`);
+  fetch('/api/step/parse_pmi', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ session_id: window._stepSessionId })
+  })
+    .then(r => r.json())
+    .then(data => {
+      if (!data.ok) { alert(`❌ 解析失敗: ${data.error}`); return; }
       console.log(`✅ PMI 解析完成: ${data.n_pmi_rows} 項`);
-      if (typeof StepViewer !== 'undefined') StepViewer.loadAllGeometry(window._stepSessionId);
+      // 注意：STEP 上傳時已經做過三角化，不要重跑 loadAllGeometry（會再三角化一遍）。
+      // 這裡只載入 PMI 引線+標註到既有場景，並把 PMI 清單渲染出來。
+      if (typeof StepViewer !== 'undefined' && StepViewer.loadAllPmiAnnotations) {
+        StepViewer.loadAllPmiAnnotations(window._stepSessionId);
+      }
       if (typeof PmiPanel !== 'undefined') PmiPanel.render(data.pmi_rows, window._stepSessionId);
     })
     .catch(err => { console.error('❌ 錯誤:', err); alert('發生錯誤: ' + err.message); });
 }
 
-function uploadXlsxFile(file) {
-  if (!file) return;
-  console.log(`📊 已選擇 XLSX: ${file.name}`);
+/**
+ * 導出 PMI BOM CSV（同時保存到 MySQL）
+ */
+function exportStepCSV() {
+  if (!window._stepSessionId) { alert('❌ 請先上傳 STEP 檔案'); return; }
+
+  const checkedIndices = typeof PmiPanel !== 'undefined' ? PmiPanel.getAllChecked() : [];
+  console.log(`📤 導出 CSV: session=${window._stepSessionId}, checked=${checkedIndices.length} 項`);
+
+  fetch('/api/step/export_csv', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      session_id: window._stepSessionId,
+      mode: 'pmi',
+      checked_indices: checkedIndices
+    })
+  })
+    .then(response => {
+      if (!response.ok) {
+        return response.json().then(data => { throw new Error(data.error || '導出失敗'); });
+      }
+      return response.blob().then(blob => ({ blob, response }));
+    })
+    .then(({ blob, response }) => {
+      const contentDisposition = response.headers.get('Content-Disposition');
+      let filename = 'PMI_Export.csv';
+      if (contentDisposition) {
+        const match = contentDisposition.match(/filename="(.+?)"/);
+        if (match) filename = match[1];
+      }
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      console.log(`✅ CSV 已導出: ${filename}`);
+      alert(`✅ CSV 已導出並保存到資料庫\n檔案: ${filename}\n勾選項: ${checkedIndices.length}`);
+    })
+    .catch(err => {
+      console.error('❌ 導出錯誤:', err);
+      alert(`❌ 導出失敗: ${err.message}`);
+    });
 }
 
 /**
- * 執行組合件接觸分析
+ * 執行組合件接觸分析（非阻塞版，配合後端背景執行緒）
  */
 function runAssemblyContactAnalysis() {
   if (!window._stepSessionId) { alert('❌ 請先上傳 STEP 檔案'); return; }
 
+  const btnLabel = '🔗 分析接觸';
   const btn = event && event.target ? event.target : null;
   if (btn) { btn.disabled = true; btn.textContent = '⏳ 分析中...'; }
 
@@ -884,20 +1099,59 @@ function runAssemblyContactAnalysis() {
     .then(r => r.json())
     .then(data => {
       if (!data.ok) {
-        alert(`❌ 分析失敗: ${data.error}`);
-        if (btn) { btn.disabled = false; btn.textContent = '🔗 分析接觸'; }
+        alert(`❌ 啟動失敗: ${data.error}`);
+        if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
         return;
       }
-      console.log(`✅ 組合件分析完成: ${data.contacts ? data.contacts.length : 0} 個接觸對`);
-      if (typeof renderAsmContactsFromStep !== 'undefined' && data.contacts) {
-        renderAsmContactsFromStep(data.contacts);
-        addMessage('ai', '🔗 組合件接觸分析完成，接觸圖已更新。');
-      }
-      if (btn) { btn.disabled = false; btn.textContent = '🔗 分析接觸'; }
+      // 後端回 202 + poll_url，開始輪詢
+      console.log('🔄 分析已啟動，輪詢結果中...');
+      _pollAsmResultChat(data.poll_url, btn, btnLabel);
     })
     .catch(err => {
       console.error('❌ 錯誤:', err);
       alert('❌ 分析發生錯誤: ' + err.message);
-      if (btn) { btn.disabled = false; btn.textContent = '🔗 分析接觸'; }
+      if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
     });
+}
+
+/**
+ * 輪詢 /api/step/asm_result（chat.js 專用，避免與 app.js 的同名函數衝突）
+ */
+function _pollAsmResultChat(pollUrl, btn, btnLabel) {
+  const INTERVAL_MS = 2000;
+  let elapsed = 0;
+  const MAX_WAIT_MS = 620000;
+
+  const iv = setInterval(async () => {
+    elapsed += INTERVAL_MS;
+    try {
+      const r = await fetch(pollUrl);
+      const d = await r.json();
+
+      if (d.status === 'done') {
+        clearInterval(iv);
+        console.log(`✅ 組合件分析完成: ${d.contacts ? d.contacts.length : 0} 個接觸對`);
+        if (typeof renderAsmContactsFromStep !== 'undefined' && d.contacts) {
+          renderAsmContactsFromStep(d.contacts);
+          addMessage('ai', '🔗 組合件接觸分析完成，接觸圖已更新。');
+        }
+        if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+
+      } else if (d.status === 'error') {
+        clearInterval(iv);
+        alert(`❌ 分析失敗: ${d.error}`);
+        if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+
+      } else if (elapsed >= MAX_WAIT_MS) {
+        clearInterval(iv);
+        alert('❌ 分析等待超時，請重試');
+        if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+      }
+    } catch (err) {
+      clearInterval(iv);
+      console.error('❌ 輪詢錯誤:', err);
+      alert('❌ 分析發生錯誤: ' + err.message);
+      if (btn) { btn.disabled = false; btn.textContent = btnLabel; }
+    }
+  }, INTERVAL_MS);
 }

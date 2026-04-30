@@ -557,10 +557,10 @@ def clean_invalid_data():
     print("\n=== 清除無效資料 ===")
     s = Session()
     try:
-        # Delete Shafts a, b, c > 500mm
+        # Delete Shafts a, b, c > 500mm (ISO 286: a,b,c 不適用於 500mm 以上，[500,630] 含端點需保留)
         deleted_shafts = s.query(ShaftTolerance).filter(
             ShaftTolerance.tolerance_code.in_(['a', 'b', 'c']),
-            ShaftTolerance.size_from_mm >= 500
+            ShaftTolerance.size_from_mm > 500
         ).delete(synchronize_session=False)
         
         # Delete Holes A, B, C > 500mm
@@ -593,18 +593,19 @@ def apply_iso_special_rules():
         ).delete(synchronize_session=False)
         print(f"  [規則1] 刪除 a, b (<= 1mm): {r1} 筆")
 
-        # Rule 2 & 3: Delete h, js where size <= 1mm AND IT14-16
+        # Rule 2: Delete h where size <= 1mm AND IT14-16
+        # (js 在所有 IT 等級均有定義，不適用此刪除規則)
         r23 = s.query(ShaftTolerance).filter(
-            ShaftTolerance.tolerance_code.in_(['h', 'js']),
+            ShaftTolerance.tolerance_code == 'h',
             ShaftTolerance.size_to_mm <= 1,
             ShaftTolerance.it_grade.in_(['IT14', 'IT15', 'IT16'])
         ).delete(synchronize_session=False)
-        print(f"  [規則2,3] 刪除 h, js (<= 1mm, IT14-16): {r23} 筆")
+        print(f"  [規則2] 刪除 h (<= 1mm, IT14-16): {r23} 筆")
         
-        # Rule 5: Delete v, x, y where size > 500mm
+        # Rule 5: Delete v, x, y where size > 500mm (嚴格大於 500，含 500mm 端點需保留)
         r5 = s.query(ShaftTolerance).filter(
             ShaftTolerance.tolerance_code.in_(['v', 'x', 'y']),
-            ShaftTolerance.size_from_mm >= 500
+            ShaftTolerance.size_from_mm > 500
         ).delete(synchronize_session=False)
         print(f"  [規則5] 刪除 v, x, y (> 500mm): {r5} 筆")
 
@@ -665,10 +666,10 @@ def apply_iso_special_rules():
         res7 = s.execute(sql_r7)
         print(f"  [規則7] 修正 y (<= 18mm, IT6-10) 使用 z 值: {res7.rowcount} 筆")
 
-        # Rule 8: Delete z, za, zb, zc where size > 500mm
+        # Rule 8: Delete z, za, zb, zc where size > 500mm (嚴格大於 500，含 500mm 端點需保留)
         r8 = s.query(ShaftTolerance).filter(
             ShaftTolerance.tolerance_code.in_(['z', 'za', 'zb', 'zc']),
-            ShaftTolerance.size_from_mm >= 500
+            ShaftTolerance.size_from_mm > 500
         ).delete(synchronize_session=False)
         print(f"  [規則8] 刪除 z, za, zb, zc (> 500mm): {r8} 筆")
 

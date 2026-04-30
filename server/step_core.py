@@ -23,7 +23,7 @@ from OCC.Core.TDF import TDF_LabelSequence
 from OCC.Core.STEPControl import STEPControl_Reader
 from OCC.Core.IFSelect import IFSelect_RetDone
 from OCC.Core.TopExp import TopExp_Explorer
-from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_REVERSED, TopAbs_SOLID, TopAbs_SHELL
+from OCC.Core.TopAbs import TopAbs_FACE, TopAbs_EDGE, TopAbs_REVERSED, TopAbs_SOLID, TopAbs_SHELL
 from OCC.Core.TopoDS import topods, TopoDS_Compound, TopoDS_Solid, TopoDS_Shell
 from OCC.Core.gp import gp_Pnt, gp_Dir, gp_Ax3
 from OCC.Core.BRepBuilderAPI import BRepBuilderAPI_MakeEdge
@@ -92,27 +92,42 @@ def extract_nominal_size(label, type_code):
     nominal_size = None
     it_grade = None
 
-    # 移除 emoji 和標籤前綴
-    clean_label = re.sub(r'^[\[\【\]【】]*(?:\[交互\]|\[個別\]|🎯|🚩|📐)', '', label)
+    # 移除所有 emoji 和標籤前綴（可能有多個混合）
+    clean_label = re.sub(r'^(?:\[交互\]|\[個別\]|🎯|🚩|📐|\s)+', '', label)
     clean_label = clean_label.strip()
 
     # 模式1：提取圓形符號開頭的尺寸 (⌀ 或 Ø 或 =)
-    # 注意：不包括 dia/DIA，因為這些是類型代碼，容易混淆
-    match = re.search(r'[⌀Øø\u00d8\u00f8\u2300\u2304=]\s*(\d+\.?\d*(?:\s*-\s*\d+\.?\d*)?)', clean_label)
+    # 注意：只取基本尺寸，不包含公差偏差
+    match = re.search(r'[⌀Øø\u00d8\u00f8\u2300\u2304=]\s*(\d+\.?\d*)', clean_label)
     if match:
-        nominal_size = match.group(1).replace(' ', '').strip()
+        nominal_size = match.group(1).strip()
 
     # 模式2：若未找到，嘗試提取冒號後的第一個數字序列 (e.g., "dia2: 55.00")
     if not nominal_size and re.match(r'^[a-z]+\d*:', clean_label, re.IGNORECASE):
         after_colon = clean_label.split(':', 1)[-1].strip()
-        match = re.search(r'(\d+\.?\d*(?:\s*-\s*\d+\.?\d*)?)', after_colon)
+        match = re.search(r'(\d+\.?\d*)', after_colon)
         if match:
-            nominal_size = match.group(1).replace(' ', '').strip()
+            nominal_size = match.group(1).strip()
 
     # 模式3：提取 IT 等級（IT01-IT18）
     it_match = re.search(r'IT\d{1,2}', clean_label, re.IGNORECASE)
     if it_match:
         it_grade = it_match.group(0).upper()
+
+    # 模式4：ISO 配合代號（如 H8, H7, f6, g6, JS5, ZA14）
+    # 格式：1-3 個字母 + 1-2 位數字（等級 1-18）
+    # 排除已知的公差類型縮寫，避免誤判如 dia2、par1 等
+    if not it_grade:
+        _EXCLUDED_CODES = {
+            'IT', 'DIA', 'DIS', 'DAT', 'PAR', 'PER', 'CYL', 'CIR', 'RUN',
+            'TOT', 'POS', 'ANG', 'SYM', 'FLA', 'CO', 'STR', 'FLT', 'RAD',
+            'NAN', 'INF',
+        }
+        for fc_letter, fc_num in re.findall(r'(?:(?<=\d)|(?<!\w))([A-Za-z]{1,3})(\d{1,2})(?!\w)', clean_label):
+            grade = int(fc_num)
+            if 1 <= grade <= 18 and fc_letter.upper() not in _EXCLUDED_CODES:
+                it_grade = f"IT{grade}"
+                break
 
     # 只有特定類型的公差才返回公稱尺寸
     if type_code not in TOLERANCE_TYPES_WITH_NOMINAL_SIZE:
@@ -121,9 +136,296 @@ def extract_nominal_size(label, type_code):
     return nominal_size, it_grade
 
 
+def extract_tolerance_value(label):
+    """
+    從 PMI 標籤中提取公差數值（公差帶寬度）。
+
+    規則：
+    - 單邊公差 (0 -0.08)：兩數差的絕對值 = 0.08
+    - 雙邊公差 (± 0.05)：± 後的數 × 2 = 0.1
+    - 幾何公差 (▱ | 0.002)：取 | 後的數 = 0.002
+    - 複合公差 (-0.12 -0.18)：兩數差的絕對值 = 0.06
+
+    Returns: tolerance_value_str or None
+    """
+    if not label:
+        return None
+
+    import re
+    # 移除所有 emoji 和標籤前綴（可能有多個混合）
+    clean_label = re.sub(r'^(?:\[交互\]|\[個別\]|🎯|🚩|📐|\s)+', '', label)
+    clean_label = clean_label.strip()
+
+    tolerance_value = None
+
+    # 模式1：幾何公差 (含有 | 符號，取 | 後的數字)
+    if '|' in clean_label:
+        parts = clean_label.split('|')
+        for part in parts[1:]:
+            match = re.search(r'(\d+\.?\d*)', part.strip())
+            if match:
+                tolerance_value = match.group(1)
+                break
+
+    # 模式2：雙邊公差 (± 符號)
+    if not tolerance_value:
+        match = re.search(r'±\s*(\d+\.?\d*)', clean_label)
+        if match:
+            val = float(match.group(1))
+            result = val * 2
+            tolerance_value = str(result)
+
+    # 模式3：單邊或複合公差 (兩個帶符號的數字)
+    # 對於 DIA/DIS：使用最後兩個數字（公差部分），避免混入公稱尺寸
+    # 如: ⌀133.50 0 -0.08 → 取 0 和 -0.08，不取 133.50
+    # 排除 ISO 配合代號中的等級數字（如 H8 中的 8），避免與公稱尺寸相減得出錯誤值
+    if not tolerance_value:
+        # 先找出配合代號後跟的等級數字，加入排除集合
+        _fit_grade_strs = set()
+        for _fc_letter, _fc_num in re.findall(r'(?:(?<=\d)|(?<!\w))([A-Za-z]{1,3})(\d{1,2})(?!\w)', clean_label):
+            _grade = int(_fc_num)
+            if 1 <= _grade <= 18:
+                _fit_grade_strs.add(_fc_num)
+
+        nums = re.findall(r'[-+]?\d+\.?\d*', clean_label)
+        # 過濾掉純等級數字（如 '8' 來自 H8），只保留帶符號或含小數點的數字
+        nums = [n for n in nums if n not in _fit_grade_strs or '.' in n or n.startswith(('+', '-'))]
+        if len(nums) >= 2:
+            try:
+                val1 = float(nums[-2])
+                val2 = float(nums[-1])
+                diff = abs(val1 - val2)
+                if diff > 0:
+                    # 四舍五入到4位小数，避免浮点精度问题
+                    tolerance_value = str(round(diff, 4))
+            except (ValueError, IndexError):
+                pass
+
+    return tolerance_value
+
+
 # ═══════════════════════════════════════════════════════════
 # 3. SFA Excel 解析
 # ═══════════════════════════════════════════════════════════
+# ═══════════════════════════════════════════════════════════
+# 1-3. 關聯交互參考公差與基準面的 Face ID
+#      交互參考公差 = 本體特徵面 + 基準參考面的 Face ID
+# ═══════════════════════════════════════════════════════════
+def _link_interactive_tolerances_with_datums(pmi_rows):
+    """
+    第二階段處理：為交互參考公差關聯其基準面的 Face ID。
+
+    交互參考公差應包含：
+    - 本體特徵面 (feature)
+    - 基準面 (datum reference)
+
+    方法：
+    1. 掃描標籤中的基準代號 (如 "| C" 或 "| A | B" 或 "| A ▽ ⎹ [B]")
+    2. 查找對應的基準面行 (is_datum=True)
+    3. 將基準面的 Face ID 添加到交互參考公差的 face_ids
+    """
+    # 首先建立基準面的查找表
+    datum_lookup = {}  # datum_name -> {label, face_ids, ...}
+    for row in pmi_rows:
+        if row.get('is_datum'):
+            # 從 label 提取基準代號，通常格式為 "🚩 dat: [C]" 或 "🚩 dat: [A]"
+            dm = re.search(r'\[([A-Z0-9_-]+)\]', row['label'])
+            if dm:
+                datum_name = dm.group(1)
+                datum_lookup[datum_name] = row
+
+    # 掃描交互參考公差，關聯其基準面
+    linked_count = 0
+    for row in pmi_rows:
+        if row.get('is_interactive'):
+            label = row['label']
+            original_fids = len(row.get('face_ids', []))
+
+            # 格式範例：
+            # - "[交互] 🎯 pos1: // | 0.002 | A"
+            # - "[交互] 🎯 par2: // | 0.05 | A | B"
+            # - "[交互] 🎯 per1: ... | 0.01 | A ▽ ⎹ [B]"   ← 基準 = A
+            # - "[交互] 🎯 per3: Ø0.1 | A"
+
+            found_datums = set()
+
+            # 方法1：提取 "|" 與 "▽/⏊" 之間的字母（最精確）
+            datum_matches = re.findall(r'\|\s*([A-Z])\s*[▽⏊]', label)
+            for datum_name in datum_matches:
+                if datum_name in datum_lookup and datum_name not in found_datums:
+                    found_datums.add(datum_name)
+                    datum_row = datum_lookup[datum_name]
+                    for fid in datum_row['face_ids']:
+                        if fid not in row['face_ids']:
+                            row['face_ids'].append(fid)
+                            linked_count += 1
+
+            # 方法2：如果方法1沒找到，提取 "|" 後跟字母的部分（處理 "| A | B" 格式）
+            if not found_datums and '|' in label:
+                parts = label.split('|')
+                for part in parts[1:]:  # 跳過第一個部分（公差值）
+                    # 提取該部分開頭的純字母
+                    m = re.match(r'\s*([A-Z])\s*', part)
+                    if m:
+                        datum_name = m.group(1)
+                        if datum_name in datum_lookup and datum_name not in found_datums:
+                            found_datums.add(datum_name)
+                            datum_row = datum_lookup[datum_name]
+                            for fid in datum_row['face_ids']:
+                                if fid not in row['face_ids']:
+                                    row['face_ids'].append(fid)
+                                    linked_count += 1
+
+    print(f"[二階段] 交互參考公差關聯完成：共添加 {linked_count} 個基準面 Face ID")
+    return pmi_rows
+
+
+# GD&T type-name (Sec. 8.4) → type_code  (for tessellated supplement)
+_TAO_TYPE_MAP = {
+    'parallelism':          'par',
+    'perpendicularity':     'per',
+    'angularity':           'ang',
+    'flatness':             'fla',
+    'straightness':         'str',
+    'circularity':          'cir',
+    'roundness':            'cir',
+    'cylindricity':         'cyl',
+    'position':             'pos',
+    'concentricity':        'co',
+    'coaxiality':           'co',
+    'symmetry':             'sym',
+    'total runout':         'tot',
+    'total_runout':         'tot',
+    'circular runout':      'run',
+    'runout':               'run',
+    'profile of line':      'profl',
+    'profile of surface':   'profs',
+}
+# GD&T unicode symbols
+_TYPE_SYMBOL = {
+    'par':   '⫽',
+    'per':   '⟂',
+    'ang':   '∠',
+    'fla':   '⏥',
+    'str':   '⏤',
+    'cir':   '○',
+    'cyl':   '⌭',
+    'pos':   '⊕',
+    'co':    '◎',
+    'sym':   '⌯',
+    'tot':   '⌮',
+    'run':   '↗',
+    'profl': '⌒',
+    'profs': '⌓',
+}
+
+
+def _supplement_graphic_pmi(xls, pmi_rows, face_pmi_map, tol_counters, sheet_code_map):
+    """
+    第三階段補充：掃描 tessellated_annotation_occurren 分頁，
+    找出「只有圖形PMI、沒有語意PMI連結」的 GD&T 標註（Associated Semantic PMI 欄為空）。
+    為這些標註建立佔位 PMI 記錄，使它們出現在 PMI 列表中並可連結至幾何面。
+    """
+    sheet_lower_map = {s.lower(): s for s in xls.sheet_names}
+    tao_sheet_key = next(
+        (orig for low, orig in sheet_lower_map.items() if 'tessellated_annotation' in low),
+        None
+    )
+    if not tao_sheet_key:
+        return
+
+    df_raw = pd.read_excel(xls, sheet_name=tao_sheet_key, header=None)
+
+    # 找 header 行（包含 'id'）
+    header_idx = -1
+    for i in range(min(5, len(df_raw))):
+        if 'id' in str(df_raw.iloc[i, 0]).lower():
+            header_idx = i
+            break
+    if header_idx == -1:
+        return
+
+    df = df_raw.iloc[header_idx + 1:].reset_index(drop=True)
+    df.columns = df_raw.iloc[header_idx].astype(str).str.strip()
+
+    # 定位欄位（欄名是多行標題，用包含關鍵字定位）
+    id_col      = next((c for c in df.columns if str(c).strip().lower() == 'id'), None)
+    name_col    = next((c for c in df.columns if str(c).strip().lower() == 'name'), None)
+    type_col    = next((c for c in df.columns
+                        if 'name' in str(c).lower() and 'sec' in str(c).lower()), None)
+    geom_col    = next((c for c in df.columns
+                        if 'associated geometry' in str(c).lower()
+                        or ('associated' in str(c).lower() and 'geometry' in str(c).lower())), None)
+    sem_col     = next((c for c in df.columns
+                        if 'semantic' in str(c).lower()
+                        or ('associated' in str(c).lower() and 'semantic' in str(c).lower())), None)
+
+    if not all([id_col, type_col, geom_col]):
+        print(f"  [TAO-SUPP] 無法定位欄位 id={id_col!r}, type={type_col!r}, geom={geom_col!r}")
+        return
+
+    # 已有語意PMI記錄的 type_code 集合（避免重複）
+    existing_type_codes = {r.get('type_code') for r in pmi_rows if r.get('type_code')}
+
+    added = 0
+    for _, row in df.iterrows():
+        tao_id_raw = str(row[id_col]).strip()
+        if tao_id_raw == 'nan':
+            continue
+
+        # 只補充「沒有語意PMI連結」的標註
+        sem_val = str(row[sem_col]).strip() if sem_col else 'nan'
+        if sem_val and sem_val.lower() != 'nan':
+            continue  # 已有語意PMI，不需補充
+
+        # 取 GD&T 類型
+        type_raw = str(row[type_col]).strip().lower()
+        type_code = _TAO_TYPE_MAP.get(type_raw)
+        if not type_code:
+            continue  # 非 GD&T 形位公差（如 diameter dimension, datum 等），跳過
+
+        # 如果語意PMI已有同類型記錄，跳過（語意 > 圖形）
+        if type_code in existing_type_codes:
+            continue
+
+        # 從 Associated Geometry 欄提取 advanced_face ID
+        geom_str = str(row[geom_col])
+        face_ids = []
+        for line in geom_str.split('\n'):
+            if 'advanced_face' in line.lower():
+                after = re.sub(r'.*advanced_face\s*', '', line, flags=re.IGNORECASE)
+                ids = re.findall(r'\d+', after)
+                face_ids.extend(ids)
+
+        # 標註顯示名稱
+        ann_name = str(row[name_col]).strip() if name_col else ''
+        tol_counters[type_code] += 1
+        sym = _TYPE_SYMBOL.get(type_code, '?')
+        label = f"[交互] 📐 {type_code}{tol_counters[type_code]}: {sym} [圖形PMI]  {ann_name}"
+
+        for fid in face_ids:
+            face_pmi_map[fid].add(label)
+
+        nominal_size, it_grade = extract_nominal_size(label, type_code)
+        pmi_rows.append({
+            'label':           label,
+            'type_code':       type_code,
+            'semantic_id':     None,
+            'face_ids':        face_ids,
+            'is_datum':        False,
+            'is_feature_only': False,
+            'is_interactive':  True,
+            'nominal_size':    nominal_size,
+            'it_grade':        it_grade,
+            'tolerance_value': None,
+        })
+        added += 1
+        print(f"  [TAO-SUPP] 補充圖形PMI: {label} → faces {face_ids}")
+
+    if added:
+        print(f"  [TAO-SUPP] 共補充 {added} 條圖形PMI記錄")
+
+
 def parse_sfa_excel(sfa_path):
     face_pmi_map = defaultdict(set)
     pmi_rows     = []
@@ -156,11 +458,88 @@ def parse_sfa_excel(sfa_path):
         'runout':             'run',
     }
     tol_counters = defaultdict(int)
+    xls = None
 
     try:
         xls = pd.ExcelFile(sfa_path)
         pmi_sheets_found = []
         all_sheets = xls.sheet_names
+
+        # ── 預處理：讀取 datum_feature 表，建立 ID → face_ids 對應 ──
+        sheet_lower_map = {s.lower(): s for s in all_sheets}
+        datum_feature_faces = {}  # {datum_feature_id: face_id}
+
+        # ── 預處理：從 dimensional_characteristic_repr 建立 shape_aspect_id → 公稱長度(mm) ──
+        # 用於後續交叉查詢 PAR/FLA 等幾何公差的參考長度
+        shape_aspect_length_map = {}  # {shape_aspect_id_str: float mm}
+        _dcr_key = next((k for k in sheet_lower_map if 'dimensional_characteristic_repr' in k), None)
+        if _dcr_key:
+            try:
+                df_dcr_raw = pd.read_excel(xls, sheet_name=sheet_lower_map[_dcr_key], header=None)
+                _h = -1
+                for _i in range(min(10, len(df_dcr_raw))):
+                    _row_s = ' '.join(str(x).lower() for x in df_dcr_raw.iloc[_i].values)
+                    if 'dimension' in _row_s and ('geometry' in _row_s or 'length' in _row_s):
+                        _h = _i
+                        break
+                if _h >= 0:
+                    df_dcr = df_dcr_raw.iloc[_h + 1:].copy()
+                    df_dcr.columns = df_dcr_raw.iloc[_h].astype(str)
+                    # 找「length/angle」欄（公稱值）與「Associated Geometry」欄
+                    _len_col = next(
+                        (c for c in df_dcr.columns
+                         if 'length' in str(c).lower() and 'angle' in str(c).lower()
+                         and 'name' not in str(c).lower() and 'prec' not in str(c).lower()),
+                        None
+                    )
+                    _geo_col = next(
+                        (c for c in df_dcr.columns
+                         if 'associated' in str(c).lower() and 'geometry' in str(c).lower()),
+                        None
+                    )
+                    if _len_col and _geo_col:
+                        for _, _r in df_dcr.iterrows():
+                            _len_val = _r.get(_len_col)
+                            _geo_val = str(_r.get(_geo_col, ''))
+                            if pd.isna(_len_val) or not _geo_val or _geo_val.lower() == 'nan':
+                                continue
+                            try:
+                                _length_mm = float(_len_val)
+                            except (ValueError, TypeError):
+                                continue
+                            # 每個 shape_aspect 只取第一次出現的公稱長度
+                            for _sa_id in re.findall(r'shape_aspect\s+(\d+)', _geo_val, re.IGNORECASE):
+                                if _sa_id not in shape_aspect_length_map:
+                                    shape_aspect_length_map[_sa_id] = _length_mm
+                        print(f"  [DCR] shape_aspect 公稱長度映射：{len(shape_aspect_length_map)} 筆")
+            except Exception as _e:
+                print(f"  [WARN] 無法載入 dimensional_characteristic_repr：{_e}")
+
+        if 'datum_feature' in sheet_lower_map:
+            try:
+                df_raw = pd.read_excel(xls, sheet_name=sheet_lower_map['datum_feature'], header=None)
+                header_idx = -1
+                for i in range(min(5, len(df_raw))):
+                    if 'id' in str(df_raw.iloc[i].values).lower():
+                        header_idx = i
+                        break
+                if header_idx >= 0:
+                    df_datum = df_raw.iloc[header_idx+1:].copy()
+                    df_datum.columns = df_raw.iloc[header_idx].astype(str)
+                    geom_col = next((c for c in df_datum.columns if 'geometry' in str(c).lower()), None)
+                    id_col = next((c for c in df_datum.columns if str(c).strip().lower() == 'id'), None)
+                    if geom_col and id_col:
+                        for _, row in df_datum.iterrows():
+                            df_id = str(row[id_col]).strip()
+                            geom = str(row[geom_col])
+                            # 精確提取 advanced_face ID
+                            match = re.search(r'advanced_face\s+(\d+)', geom, re.IGNORECASE)
+                            if match:
+                                face_id = match.group(1)
+                                datum_feature_faces[df_id] = face_id
+            except Exception:
+                pass
+
         for sheet in all_sheets:
             sl = sheet.lower()
             if not (
@@ -217,7 +596,17 @@ def parse_sfa_excel(sfa_path):
                 clean_val = re.sub(r'\s+', ' ', val).strip()
 
                 vals_in_str = re.findall(r'[-+]?\d*\.\d+|\b\d+\b', clean_val)
-                has_tol = bool(re.search(r'[+\-±]', clean_val)) or len(vals_in_str) > 1
+                # 判斷是否帶公差：
+                # 1. 含有 +/-/± 符號
+                # 2. 含有 2 個(含)以上的數值序列
+                # 3. 含有 ISO 配合代號（如 H8, h7, f6, JS5）
+                #    - \b[A-Za-z]{1,2}\d{1,2}\b 可捕捉 H8、JS5 等
+                #    - 三字母的公差代號(dia/par/dis等)不會被誤判，因為無法同時滿足{1,2}
+                # 同時支援 "⌀230H8"（緊接）與 "⌀230.00 H8"（有空格）兩種格式
+                _ISO_FIT_RE = re.compile(r'(?:(?<=\d)|(?<!\w))[A-Za-z]{1,2}\d{1,2}(?!\w)')
+                has_tol = (bool(re.search(r'[+\-±]', clean_val))
+                           or len(vals_in_str) > 1
+                           or bool(_ISO_FIT_RE.search(clean_val)))
 
                 is_feature_only = (type_code == 'dis' and not has_tol)
 
@@ -240,11 +629,54 @@ def parse_sfa_excel(sfa_path):
                 else:
                     display_label = fmt_val
 
+                # Path A：提取本體面 ID（被標註的面）
+                # dimensional_size     格式: "(1) advanced_face 4881"        → [4881]
+                # dimensional_location 格式: "(2) advanced_face 587 661"     → [587, 661]（特徵面+基準面）
                 face_ids = []
+                primary_face = None
                 for line in geom.split('\n'):
                     if 'advanced_face' in line.lower():
-                        after = line.lower().split('advanced_face')[-1]
-                        face_ids += re.findall(r'\d+', after)
+                        # 取 'advanced_face' 之後所有數字（支援同行多個 ID）
+                        after = re.sub(r'.*advanced_face\s*', '', line, flags=re.IGNORECASE)
+                        ids = re.findall(r'\d+', after)
+                        for fid in ids:
+                            if fid not in face_ids:
+                                face_ids.append(fid)
+                        if not primary_face and ids:
+                            primary_face = ids[0]
+                        break
+
+                # ── 追踪基準面 ID（用於交互參考公差）──
+                datum_face = None
+
+                # 方法1：檢查是否有 "Datum Feature" 列（如 perpendicularity_tolerance）
+                datum_feat_col = next((c for c in df.columns if 'datum_feature' in str(c).lower() and
+                                      'datum_system' not in str(c).lower()), None)
+                if datum_feat_col:
+                    datum_feat_val = str(row.get(datum_feat_col, ''))
+                    # 提取 datum_feature ID（如 "datum_feature 5527"）
+                    m = re.search(r'datum_feature\s+(\d+)', datum_feat_val, re.IGNORECASE)
+                    if m:
+                        df_id = m.group(1)
+                        # 查詢該 datum_feature 對應的 face ID
+                        if df_id in datum_feature_faces:
+                            datum_face = datum_feature_faces[df_id]
+
+                # 方法2：檢查是否有直接包含 advanced_face 的基準面幾何列
+                if not datum_face:
+                    for col in df.columns:
+                        col_lower = str(col).lower()
+                        if ('associated' in col_lower and 'geometry' in col_lower) and 'datum_system' not in col_lower:
+                            datum_geom_val = str(row.get(col, ''))
+                            if datum_geom_val and 'advanced_face' in datum_geom_val.lower():
+                                match = re.search(r'advanced_face\s+(\d+)', datum_geom_val, re.IGNORECASE)
+                                if match:
+                                    datum_face = match.group(1)
+                                    break
+
+                # 添加基準面 ID（如果找到且不重複）
+                if datum_face and datum_face != primary_face:
+                    face_ids.append(datum_face)
 
                 is_datum = 'datum_feature' in sl
 
@@ -275,12 +707,44 @@ def parse_sfa_excel(sfa_path):
                 for fid in face_ids:
                     face_pmi_map[fid].add(final_label)
 
-                # 提取公稱尺寸與 IT 等級
-                nominal_size, it_grade = extract_nominal_size(final_label, row_type)
+                # 提取公稱尺寸、IT 等級與公差數值
+                # type_code 先正規化，確保與 pmi_rows 儲存值一致，避免 extract_nominal_size 拿到 None
+                type_code_for_nominal = row_type or ('dat' if is_datum else 'feat')
+                nominal_size, it_grade = extract_nominal_size(final_label, type_code_for_nominal)
+                tolerance_value = extract_tolerance_value(final_label)
+
+                # ── [新增] PAR/FLA 幾何公差：交叉查詢 dimensional_characteristic_repr 取得參考長度 ──
+                # 幾何公差標籤中不含參考長度，需從 toleranced_shape_aspect 欄位交叉查詢
+                if type_code_for_nominal in ('par', 'fla', 'str', 'per', 'sym', 'cyl') and shape_aspect_length_map:
+                    # 找 toleranced_shape_aspect 欄（parallelism/flatness 等表均有此欄）
+                    _tsa_col = next(
+                        (c for c in df.columns
+                         if 'toleranced_shape_aspect' in str(c).lower()
+                         or ('toleranced' in str(c).lower() and 'shape' in str(c).lower())),
+                        None
+                    )
+                    if _tsa_col is None:
+                        # 部分 sheet 以「Toleranced Geometry」命名
+                        _tsa_col = next(
+                            (c for c in df.columns
+                             if 'toleranced' in str(c).lower() and 'geometry' in str(c).lower()),
+                            None
+                        )
+                    if _tsa_col is not None:
+                        _tsa_val = str(row.get(_tsa_col, ''))
+                        _sa_match = re.search(r'shape_aspect\s+(\d+)', _tsa_val, re.IGNORECASE)
+                        if _sa_match:
+                            _sa_id = _sa_match.group(1)
+                            _ref_len = shape_aspect_length_map.get(_sa_id)
+                            if _ref_len is not None:
+                                # 格式化：整數不顯示小數點
+                                nominal_size = (
+                                    str(int(_ref_len)) if _ref_len == int(_ref_len) else str(_ref_len)
+                                )
 
                 pmi_rows.append({
                     'label':          final_label,
-                    'type_code':      row_type or ('dat' if is_datum else 'feat'),
+                    'type_code':      type_code_for_nominal,
                     'semantic_id':    semantic_id,
                     'face_ids':       face_ids,
                     'is_datum':       is_datum,
@@ -288,20 +752,125 @@ def parse_sfa_excel(sfa_path):
                     'is_interactive': (not is_datum and not is_feature_only and is_interactive),
                     'nominal_size':   nominal_size,      # 新增：公稱尺寸
                     'it_grade':       it_grade,          # 新增：IT等級
+                    'tolerance_value': tolerance_value,  # 新增：公差數值
                 })
 
     except Exception as e:
+        import traceback
         print(f"⚠️  SFA Excel 解析錯誤：{e}")
+        traceback.print_exc()
 
-    print(f"✅ XLSX 解析完成：{len(face_pmi_map)} 個 face，{len(pmi_rows)} 條 PMI 記錄")
+    # ── [新增] 第二階段：關聯交互參考公差與基準面的 Face ID ──
+    # 交互參考公差應該同時包含：本體特徵面 + 基準面的 Face ID
+    pmi_rows = _link_interactive_tolerances_with_datums(pmi_rows)
+
+    # ── [新增] 第三階段：補充圖形PMI（tessellated_annotation_occurren 中未連結語意PMI的標註）──
+    # 當 STEP 檔只有圖形 PMI（無語意 PARALLELISM_TOLERANCE 等實體）時，補充這些標註。
+    if xls is not None:
+        try:
+            _supplement_graphic_pmi(xls, pmi_rows, face_pmi_map, tol_counters, sheet_code_map)
+        except Exception as _e:
+            print(f"  [WARN] 補充圖形PMI時發生錯誤：{_e}")
+
+    print(f"[OK] XLSX 解析完成：{len(face_pmi_map)} 個 face，{len(pmi_rows)} 條 PMI 記錄")
     return face_pmi_map, pmi_rows
 
 
 def parse_sfa_visual_sheets(sfa_path):
-    """舊版備援解析函式"""
+    """
+    Layer 1 備援：從 SFA XLSX 的「視覺表單」提取 PMI 引用。
+    當 tolerance 分頁沒東西可解析時，從 styled_item / draughting_model /
+    advanced_brep_shape_representat 等分頁反向抓 entity 引用做標註列表。
+    """
     face_pmi_map = defaultdict(set)
     pmi_rows     = []
-    # ... (實作同原 step_pmi_3d_viewer.py)
+
+    # Sheet 名稱關鍵字 → (icon, 優先擷取欄位關鍵字)
+    TARGET_SHEETS = [
+        ('styled_item',                    '🎨', ['item']),
+        ('draughting_model',               '🖊️',  ['items']),
+        ('mechanical_design_geometric_pre', '📐', ['items']),
+        ('mechanical_design_and_draughtin', '🔗', ['rep_1', 'rep_2']),
+        ('advanced_brep_shape_representat', '🧊', ['items']),
+    ]
+
+    try:
+        xls = pd.ExcelFile(sfa_path)
+        sheet_names_lower = {s.lower(): s for s in xls.sheet_names}
+        counter = 0
+
+        for key, icon, item_col_keys in TARGET_SHEETS:
+            # 部分前綴匹配（SFA 會截斷長名稱）
+            matched = next(
+                (orig for low, orig in sheet_names_lower.items() if key in low),
+                None
+            )
+            if not matched:
+                continue
+
+            df_raw = pd.read_excel(xls, sheet_name=matched, header=None)
+            # 找 header 行（含 'id'）
+            header_idx = -1
+            for i in range(min(5, len(df_raw))):
+                row_str = ' '.join(str(x).lower() for x in df_raw.iloc[i].values)
+                if 'id' in row_str:
+                    header_idx = i
+                    break
+            if header_idx == -1:
+                continue
+
+            df = df_raw.iloc[header_idx + 1:].copy()
+            df.columns = df_raw.iloc[header_idx].astype(str).str.strip()
+
+            id_col   = next((c for c in df.columns if str(c).strip().lower() == 'id'), None)
+            item_col = next(
+                (c for c in df.columns
+                 if any(k in str(c).lower() for k in item_col_keys)),
+                None
+            )
+            name_col = next(
+                (c for c in df.columns if 'name' in str(c).lower()), None
+            )
+
+            if not id_col or not item_col:
+                continue
+
+            for _, row in df.iterrows():
+                row_id   = str(row[id_col]).strip()
+                item_str = str(row[item_col]).strip()
+                name_str = str(row[name_col]).strip() if name_col else ''
+
+                if row_id == 'nan' or item_str == 'nan':
+                    continue
+
+                # 從 item 欄提取所有 "entity_type NNNN" 引用
+                refs = re.findall(r'([A-Za-z][A-Za-z0-9_]*)\s+(\d+)', item_str)
+                face_ids = [eid for _, eid in refs]
+
+                # 組合短標籤
+                item_short = item_str[:70] + ('...' if len(item_str) > 70 else '')
+                name_part  = f' "{name_str}"' if name_str and name_str != 'nan' else ''
+                counter   += 1
+                label = (
+                    f"{icon} [{matched}] #{row_id}{name_part}: {item_short}"
+                )
+
+                for fid in face_ids:
+                    face_pmi_map[fid].add(label)
+
+                pmi_rows.append({
+                    'label':           label,
+                    'semantic_id':     row_id,
+                    'face_ids':        face_ids,
+                    'nominal_size':    None,
+                    'it_grade':        None,
+                    'tolerance_value': None,
+                })
+
+    except Exception as e:
+        print(f"⚠️  視覺 sheet 解析錯誤：{e}")
+
+    print(f"[OK] 幾何視覺 sheet 解析完成：{len(pmi_rows)} 條記錄，涵蓋 {len(face_pmi_map)} 個實體 ID")
     return face_pmi_map, pmi_rows
 
 
@@ -487,7 +1056,7 @@ def load_sfa_association(xlsx_path):
                             semantic_to_tao[sid] = tao_id
 
             if semantic_to_tao:
-                print(f"✅ 從 TAO Sheet 建立 {len(semantic_to_tao)} 條精確鏈結")
+                print(f"[OK] 從 TAO Sheet 建立 {len(semantic_to_tao)} 條精確鏈結")
                 return semantic_to_tao
 
     except Exception as e:
@@ -581,7 +1150,7 @@ def parse_tessellated_annotations(stp_path, tao_ids=None, scan_all=False):
             result[tao_id] = data
 
     total_req = len(target_ids)
-    print(f"✅ 成功建立 {len(result)} / {total_req} 個 tessellated 標註幾何")
+    print(f"[OK] 成功建立 {len(result)} / {total_req} 個 tessellated 標註幾何")
     return result, step_sem_to_tao
 
 
@@ -689,6 +1258,7 @@ class StepXcafEngine:
 
         self.root_shape       = None
         self.step_id_to_face  = {}
+        self.face_to_part     = {}   # face_step_id → part_name
 
     def load(self, stp_path):
         self.doc = TDocStd_Document("SFA-XCAF")
@@ -709,10 +1279,21 @@ class StepXcafEngine:
         self.tr           = self.ws.TransferReader()
 
         self._build_face_map()
-        print(f"✅ STEP XCAF 載入：{len(self.step_id_to_face)} 個 face")
+        print(f"[OK] STEP XCAF 載入：{len(self.step_id_to_face)} 個 face，{len(self.face_to_part)} 個面已映射到零件")
+
+    def _get_label_name(self, label):
+        """從 XCAF label 取得零件名稱"""
+        try:
+            from OCC.Core.TDataStd import TDataStd_Name
+            name_attr = TDataStd_Name()
+            if label.FindAttribute(TDataStd_Name.GetID(), name_attr):
+                return name_attr.Get().ToExtString()
+        except Exception:
+            pass
+        return None
 
     def _build_face_map(self):
-        """TransferReader 掃描 → step_id → TopoDS_Face"""
+        """TransferReader 掃描 → step_id → TopoDS_Face，同時建立 face → part 映射"""
         roots = TDF_LabelSequence()
         self.shape_tool.GetFreeShapes(roots)
 
@@ -721,15 +1302,62 @@ class StepXcafEngine:
             if i == 1:
                 self.root_shape = shape
 
-            exp = TopExp_Explorer(shape, TopAbs_FACE)
-            while exp.More():
-                face = topods.Face(exp.Current())
-                ent  = self.tr.EntityFromShapeResult(face, 1)
-                if ent:
-                    sid = self.ws.EntityLabel(ent).ToCString().replace('#', '').strip()
-                    if sid:
-                        self.step_id_to_face[sid] = face
-                exp.Next()
+            # ── 遍歷 solid 層級，建立 face → part 映射 ──
+            solid_exp = TopExp_Explorer(shape, TopAbs_SOLID)
+            has_solids = False
+            while solid_exp.More():
+                has_solids = True
+                solid = topods.Solid(solid_exp.Current())
+
+                # 透過 shape_tool 查找此 solid 對應的 XCAF label → 取得零件名稱
+                part_name = None
+                solid_label = self.shape_tool.FindShape(solid)
+                if solid_label and not solid_label.IsNull():
+                    part_name = self._get_label_name(solid_label)
+                if not part_name:
+                    # 嘗試透過上層 component 取得名稱
+                    comp_labels = TDF_LabelSequence()
+                    self.shape_tool.GetComponents(roots.Value(i), comp_labels)
+                    for ci in range(1, comp_labels.Length() + 1):
+                        comp_label = comp_labels.Value(ci)
+                        ref = comp_label
+                        if self.shape_tool.IsReference(comp_label):
+                            from OCC.Core.TDF import TDF_Label
+                            ref_out = TDF_Label()
+                            if self.shape_tool.GetReferredShape(comp_label, ref_out):
+                                ref = ref_out
+                        comp_shape = self.shape_tool.GetShape(ref)
+                        if comp_shape and solid.IsPartner(comp_shape):
+                            part_name = self._get_label_name(comp_label) or self._get_label_name(ref)
+                            break
+
+                # 遍歷此 solid 中的所有 face
+                face_exp = TopExp_Explorer(solid, TopAbs_FACE)
+                while face_exp.More():
+                    face = topods.Face(face_exp.Current())
+                    ent = self.tr.EntityFromShapeResult(face, 1)
+                    if ent:
+                        sid = self.ws.EntityLabel(ent).ToCString().replace('#', '').strip()
+                        if sid:
+                            self.step_id_to_face[sid] = face
+                            if part_name:
+                                self.face_to_part[sid] = part_name
+                    face_exp.Next()
+                solid_exp.Next()
+
+            # ── 如果沒有 solid（單零件），退回原始 face 遍歷 ──
+            if not has_solids:
+                face_exp = TopExp_Explorer(shape, TopAbs_FACE)
+                while face_exp.More():
+                    face = topods.Face(face_exp.Current())
+                    ent = self.tr.EntityFromShapeResult(face, 1)
+                    if ent:
+                        sid = self.ws.EntityLabel(ent).ToCString().replace('#', '').strip()
+                        if sid:
+                            self.step_id_to_face[sid] = face
+                    face_exp.Next()
+
+        print(f"[OK] face_to_part 映射：{len(self.face_to_part)} 個面已對應到零件")
 
 
 # ═══════════════════════════════════════════════════════════
@@ -755,22 +1383,24 @@ def tessellate_shape_to_json(shape, deflection=0.1):
             loc = TopLoc_Location()
             triangulation = BRep_Tool.Triangulation(face, loc)
             if triangulation:
-                nodes = triangulation.Nodes()
-                triangles = triangulation.Triangles()
+                # OCC 7.9.0 API: use .NbNodes() and .Node(i) instead of .Nodes()
+                nb_nodes = triangulation.NbNodes()
+                nb_triangles = triangulation.NbTriangles()
 
-                for i in range(1, nodes.Length() + 1):
-                    pt = nodes.Value(i)
+                for i in range(1, nb_nodes + 1):
+                    pt = triangulation.Node(i)
                     key = (round(pt.X(), 6), round(pt.Y(), 6), round(pt.Z(), 6))
                     if key not in vertex_map:
                         vertex_map[key] = vertex_idx
                         vertices.append([pt.X(), pt.Y(), pt.Z()])
                         vertex_idx += 1
 
-                for i in range(1, triangles.NbTriangles() + 1):
-                    n1, n2, n3 = triangles.Triangle(i)
-                    pt1 = nodes.Value(n1)
-                    pt2 = nodes.Value(n2)
-                    pt3 = nodes.Value(n3)
+                for i in range(1, nb_triangles + 1):
+                    tri = triangulation.Triangle(i)
+                    n1, n2, n3 = tri.Value(1), tri.Value(2), tri.Value(3)
+                    pt1 = triangulation.Node(n1)
+                    pt2 = triangulation.Node(n2)
+                    pt3 = triangulation.Node(n3)
 
                     key1 = (round(pt1.X(), 6), round(pt1.Y(), 6), round(pt1.Z(), 6))
                     key2 = (round(pt2.X(), 6), round(pt2.Y(), 6), round(pt2.Z(), 6))
@@ -797,7 +1427,7 @@ def tessellate_shape_to_json(shape, deflection=0.1):
             'normals': normals
         }
     except Exception as e:
-        print(f"❌ 三角化失敗：{e}")
+        print(f"[ERROR] 三角化失敗：{e}")
         return None
 
 
@@ -831,28 +1461,48 @@ def tessellate_face_by_step_ids(engine, step_ids, deflection=0.1):
 
 
 def tao_compound_to_lines_json(compound):
-    """將 TAO compound（leader lines）轉成 Three.js LineSegments 格式"""
+    """將 TAO compound（leader lines）轉成 Three.js LineSegments 格式（edges 僅）"""
     lines = []
 
-    try:
-        exp = TopExp_Explorer(compound, TopAbs_EDGE)
-        while exp.More():
-            edge = topods.Edge(exp.Current())
-            hc = BRep_Tool.Curve(edge, None, None)
-            if hc[0]:
-                curve = hc[0]
-                start_param = curve.FirstParameter()
-                end_param = curve.LastParameter()
-
-                pt_start = curve.Value(start_param)
-                pt_end = curve.Value(end_param)
-
+    exp = TopExp_Explorer(compound, TopAbs_EDGE)
+    while exp.More():
+        edge = topods.Edge(exp.Current())
+        try:
+            # BRep_Tool.Curve(edge) → (Handle_Geom_Curve, first_param, last_param)
+            result = BRep_Tool.Curve(edge)
+            curve, first, last = result[0], result[1], result[2]
+            if curve:
+                pt_start = curve.Value(first)
+                pt_end   = curve.Value(last)
                 lines.append([
                     [pt_start.X(), pt_start.Y(), pt_start.Z()],
-                    [pt_end.X(), pt_end.Y(), pt_end.Z()]
+                    [pt_end.X(),   pt_end.Y(),   pt_end.Z()]
                 ])
-            exp.Next()
-    except Exception as e:
-        print(f"⚠️  Leader line 提取失敗：{e}")
+        except Exception:
+            pass
+        exp.Next()
 
     return lines
+
+
+def tao_compound_to_geometry_json(compound, deflection=0.1):
+    """
+    將 TAO compound 轉成 Three.js 幾何格式。
+
+    重要：_build_compound_from_tao 把 TESSELLATED_CURVE_SET 與
+    COMPLEX_TRIANGULATED_SURFACE_SET 通通轉成 **edges**（三角形拆成 3 條邊），
+    compound 裡不含 face。舊 Tkinter 版靠 AIS_Shape(compound) 把所有 edges
+    畫成線，GDT 框/符號/文字就是這些邊的集合。
+
+    所以這裡只需輸出 leader_lines（= 所有 edges），不用再三角化。
+
+    Returns:
+        {
+            "leader_lines": [[[x,y,z],[x,y,z]], ...],  # 所有邊（含 GDT 框/符號/文字與引線）
+            "triangles":    None  # TAO 無面，保留欄位供未來擴充
+        }
+    """
+    return {
+        "leader_lines": tao_compound_to_lines_json(compound),
+        "triangles":    None,
+    }

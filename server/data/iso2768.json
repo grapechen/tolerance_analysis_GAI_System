@@ -1,0 +1,315 @@
+{
+  "schema_version": "1.0",
+  "description": "ISO 2768 general tolerances - structured rule set for Knowledge Base / Inference Engine use",
+  "generated_for": "GAI 公差配合計畫",
+  "units": "millimetres unless stated otherwise",
+  "size_range_convention": {
+    "over": "lower bound, exclusive (except where 'up_to' starts at 0.5)",
+    "up_to": "upper bound, inclusive",
+    "note": "A dimension D falls in a range when over < D <= up_to"
+  },
+
+  "standards": [
+    {
+      "id": "ISO_2768-1",
+      "title": "General tolerances - Part 1: Tolerances for linear and angular dimensions without individual tolerance indications",
+      "edition": "First edition",
+      "date": "1989-11-15",
+      "replaces": "ISO 2768:1973",
+      "scope": {
+        "applies_to": [
+          "linear dimensions (external, internal, step, diameter, radius, distance, external radius, chamfer height)",
+          "angular dimensions (including right angles 90 degrees unless ISO 2768-2 is referenced; angles of uniform polygons)",
+          "linear and angular dimensions produced by machining assembled parts"
+        ],
+        "does_not_apply_to": [
+          "dimensions covered by other general-tolerance standards",
+          "auxiliary dimensions in brackets",
+          "theoretically exact dimensions in rectangular frames"
+        ],
+        "typical_processes": ["metal removal", "forming from sheet metal"]
+      },
+      "tolerance_classes": {
+        "f": { "description": "fine" },
+        "m": { "description": "medium" },
+        "c": { "description": "coarse" },
+        "v": { "description": "very coarse" }
+      },
+      "tables": {
+        "table_1_linear_dimensions": {
+          "title": "Permissible deviations for linear dimensions except for broken edges",
+          "units": "mm",
+          "ranges": [
+            { "over": 0.5, "up_to": 3,    "note": "nominal sizes below 0.5 mm must be individually indicated" },
+            { "over": 3,   "up_to": 6    },
+            { "over": 6,   "up_to": 30   },
+            { "over": 30,  "up_to": 120  },
+            { "over": 120, "up_to": 400  },
+            { "over": 400, "up_to": 1000 },
+            { "over": 1000,"up_to": 2000 },
+            { "over": 2000,"up_to": 4000 }
+          ],
+          "deviations": {
+            "f": [ 0.05, 0.05, 0.1, 0.15, 0.2, 0.3, 0.5, null ],
+            "m": [ 0.1,  0.1,  0.2, 0.3,  0.5, 0.8, 1.2, 2    ],
+            "c": [ 0.2,  0.3,  0.5, 0.8,  1.2, 2,   3,   4    ],
+            "v": [ null, 0.5,  1,   1.5,  2.5, 4,   6,   8    ]
+          },
+          "notation": "Values are +/- (symmetric deviation)"
+        },
+        "table_2_broken_edges": {
+          "title": "Permissible deviations for broken edges (external radii and chamfer heights)",
+          "units": "mm",
+          "ranges": [
+            { "over": 0.5, "up_to": 3, "note": "below 0.5 mm must be individually indicated" },
+            { "over": 3,   "up_to": 6 },
+            { "over": 6,   "up_to": null, "note": "no upper bound" }
+          ],
+          "deviations": {
+            "f": [ 0.2, 0.5, 1 ],
+            "m": [ 0.2, 0.5, 1 ],
+            "c": [ 0.4, 1,   2 ],
+            "v": [ 0.4, 1,   2 ]
+          }
+        },
+        "table_3_angular_dimensions": {
+          "title": "Permissible deviations of angular dimensions",
+          "deviation_basis": "applies to the length of the shorter side of the angle, in mm",
+          "ranges_mm": [
+            { "over": 0,   "up_to": 10  },
+            { "over": 10,  "up_to": 50  },
+            { "over": 50,  "up_to": 120 },
+            { "over": 120, "up_to": 400 },
+            { "over": 400, "up_to": null }
+          ],
+          "deviations_deg_min": {
+            "f": [ "1deg",     "0deg30min", "0deg20min", "0deg10min", "0deg5min"  ],
+            "m": [ "1deg",     "0deg30min", "0deg20min", "0deg10min", "0deg5min"  ],
+            "c": [ "1deg30min","1deg",      "0deg30min", "0deg15min", "0deg10min" ],
+            "v": [ "3deg",     "2deg",      "1deg",      "0deg30min", "0deg20min" ]
+          },
+          "notes": [
+            "Angular general tolerances control only the general orientation of lines, not their form deviations.",
+            "General orientation is derived from the contacting line of ideal geometrical form (see ISO 8015)."
+          ]
+        }
+      },
+      "rules": {
+        "selection": "The customary workshop accuracy must be considered when selecting the tolerance class.",
+        "override": "If a feature needs tighter or looser tolerance, indicate it individually adjacent to the nominal dimension.",
+        "cast_vs_machined": "For a dimension between an unfinished and a finished surface, the larger of the two applicable general tolerances applies (see ISO 8062 for castings).",
+        "rejection": "Workpieces exceeding the general tolerance shall not lead to automatic rejection, provided function is not impaired."
+      },
+      "drawing_indication": {
+        "format": "ISO 2768-<letter>",
+        "example": "ISO 2768-m"
+      }
+    },
+
+    {
+      "id": "ISO_2768-2",
+      "title": "General tolerances - Part 2: Geometrical tolerances for features without individual tolerance indications",
+      "edition": "First edition",
+      "date": "1989-11-15",
+      "replaces": "ISO 2768:1973",
+      "scope": {
+        "applies_to": [
+          "features produced primarily by removal of material",
+          "features that do not have individual geometrical tolerance indications"
+        ],
+        "covered_characteristics": [
+          "straightness", "flatness", "circularity", "cylindricity (combined effect only)",
+          "parallelism", "perpendicularity", "symmetry", "coaxiality", "circular run-out"
+        ],
+        "excluded_characteristics": [
+          "cylindricity (no direct general tolerance)",
+          "profile of any line", "profile of any surface",
+          "angularity", "positional tolerances", "total run-out"
+        ]
+      },
+      "tolerance_classes": {
+        "H": { "description": "most precise (tightest)" },
+        "K": { "description": "medium" },
+        "L": { "description": "coarsest" }
+      },
+
+      "features": {
+        "single_features": {
+          "straightness_and_flatness": {
+            "source": "Table 1",
+            "size_basis": {
+              "straightness": "length of the corresponding line",
+              "flatness": "longer lateral length of the surface, or diameter of the circular surface"
+            },
+            "ranges": [
+              { "up_to": 10   },
+              { "over": 10,   "up_to": 30   },
+              { "over": 30,   "up_to": 100  },
+              { "over": 100,  "up_to": 300  },
+              { "over": 300,  "up_to": 1000 },
+              { "over": 1000, "up_to": 3000 }
+            ],
+            "values_mm": {
+              "H": [ 0.02, 0.05, 0.1, 0.2, 0.3, 0.4 ],
+              "K": [ 0.05, 0.1,  0.2, 0.4, 0.6, 0.8 ],
+              "L": [ 0.1,  0.2,  0.4, 0.8, 1.2, 1.6 ]
+            }
+          },
+          "circularity": {
+            "source": "Clause 5.1.2",
+            "rule": "circularity_tolerance = min( diameter_tolerance_numerical_value , circular_radial_runout_from_table_4 )",
+            "narrative": "The general tolerance on circularity is equal to the numerical value of the diameter tolerance, but in no case shall it be greater than the circular radial run-out value in Table 4.",
+            "tolerance_class_mapping_to_runout_table": { "H": "H", "K": "K", "L": "L" }
+          },
+          "cylindricity": {
+            "source": "Clause 5.1.3",
+            "rule": "not_specified",
+            "narrative": "Cylindricity has no direct general tolerance.",
+            "combined_upper_bound": "cylindricity <= circularity + straightness + parallelism",
+            "envelope_requirement_recommended": true
+          }
+        },
+
+        "related_features": {
+          "parallelism": {
+            "source": "Clause 5.2.2",
+            "rule": "parallelism_tolerance = max( size_tolerance , flatness_or_straightness_tolerance )",
+            "narrative": "General tolerance on parallelism equals the numerical value of the size tolerance or the flatness/straightness tolerance, whichever is greater.",
+            "datum_selection": "The longer of the two features is the datum; if equal length, either may be taken as datum."
+          },
+          "perpendicularity": {
+            "source": "Table 2",
+            "size_basis": "nominal length of the shorter side",
+            "datum_selection": "The longer side is the datum.",
+            "ranges": [
+              { "up_to": 100  },
+              { "over": 100,  "up_to": 300  },
+              { "over": 300,  "up_to": 1000 },
+              { "over": 1000, "up_to": 3000 }
+            ],
+            "values_mm": {
+              "H": [ 0.2, 0.3, 0.4, 0.5 ],
+              "K": [ 0.4, 0.6, 0.8, 1   ],
+              "L": [ 0.6, 1,   1.5, 2   ]
+            }
+          },
+          "symmetry": {
+            "source": "Table 3",
+            "size_basis": "nominal length",
+            "datum_selection": "The longer of the two features is the datum.",
+            "ranges": [
+              { "up_to": 100  },
+              { "over": 100,  "up_to": 300  },
+              { "over": 300,  "up_to": 1000 },
+              { "over": 1000, "up_to": 3000 }
+            ],
+            "values_mm": {
+              "H": [ 0.5, 0.5, 0.5, 0.5 ],
+              "K": [ 0.6, 0.6, 0.8, 1   ],
+              "L": [ 0.6, 1,   1.5, 2   ]
+            }
+          },
+          "coaxiality": {
+            "source": "Clause 5.2.5",
+            "rule": "not_specified",
+            "narrative": "Coaxiality has no direct general tolerance. Fallback: use circular radial run-out Table 4.",
+            "fallback_reference": "circular_runout_table_4"
+          },
+          "circular_runout": {
+            "source": "Table 4",
+            "applies_to": ["radial run-out", "axial run-out", "run-out on any surface of revolution"],
+            "datum_selection": "Bearing surfaces if designated; otherwise the longer feature.",
+            "values_mm_single_value": {
+              "H": 0.1,
+              "K": 0.2,
+              "L": 0.5
+            }
+          }
+        }
+      },
+
+      "rules_and_principles": {
+        "independency_principle_ISO_8015": "General geometrical tolerances apply independently of the actual local size.",
+        "envelope_requirement_E": {
+          "symbol": "E",
+          "indication_format": "ISO 2768-<letter1><letter2>-E"
+        },
+        "right_angles_override": "The angular general tolerances in ISO 2768-1 do NOT apply to right angles (90 deg) when ISO 2768-2 is referenced.",
+        "rejection": "Workpieces exceeding the general geometrical tolerance shall not lead to automatic rejection unless function is impaired."
+      },
+
+      "drawing_indication": {
+        "rules": [
+          "Place indication in or near the title block.",
+          "Combined: 'ISO 2768-<Part1_class><Part2_class>', e.g. 'ISO 2768-mK'.",
+          "Part 2 only: 'ISO 2768-K'.",
+          "With envelope: 'ISO 2768-mK-E'."
+        ],
+        "examples": ["ISO 2768-mK", "ISO 2768-K", "ISO 2768-mK-E"]
+      }
+    }
+  ],
+
+  "inference_helpers": {
+    "feature_to_table_lookup": {
+      "straightness":     "ISO_2768-2.features.single_features.straightness_and_flatness",
+      "flatness":         "ISO_2768-2.features.single_features.straightness_and_flatness",
+      "circularity":      "ISO_2768-2.features.single_features.circularity",
+      "cylindricity":     "ISO_2768-2.features.single_features.cylindricity",
+      "parallelism":      "ISO_2768-2.features.related_features.parallelism",
+      "perpendicularity": "ISO_2768-2.features.related_features.perpendicularity",
+      "symmetry":         "ISO_2768-2.features.related_features.symmetry",
+      "coaxiality":       "ISO_2768-2.features.related_features.coaxiality",
+      "circular_runout":  "ISO_2768-2.features.related_features.circular_runout",
+      "linear_dimension": "ISO_2768-1.tables.table_1_linear_dimensions",
+      "broken_edge":      "ISO_2768-1.tables.table_2_broken_edges",
+      "angular_dimension":"ISO_2768-1.tables.table_3_angular_dimensions"
+    },
+    "class_mapping": {
+      "ISO_2768-1": ["f", "m", "c", "v"],
+      "ISO_2768-2": ["H", "K", "L"]
+    },
+    "code_conflict_note": {
+      "problem": "The letter 'H' can mean both ISO 286 fit-class H AND ISO 2768-2 geometric tolerance class H.",
+      "project_convention": "Use 'GH'/'GTH' for ISO 2768-2 class H in the GAI knowledge base.",
+      "proposed_mapping": {
+        "ISO_2768-2_H": "GH",
+        "ISO_2768-2_K": "GK",
+        "ISO_2768-2_L": "GL"
+      }
+    },
+    "default_values_for_missing_pmi": {
+      "comment": "If a feature has no PMI tolerance value and ISO 2768-mK is declared, resolve: look up feature type → size range → class K value.",
+      "datum_feature_with_no_tolerance": {
+        "comment": "Datum features with no tolerance indication: tolerance_value = 0, translation XYZ = 0, rotation = identity matrix I.",
+        "tolerance_value": 0
+      }
+    }
+  },
+
+  "lookup_examples": [
+    {
+      "description": "Flatness of a 400mm x 400mm plate, ISO 2768-mK",
+      "query": { "characteristic": "flatness", "length": 400, "class": "K" },
+      "matched_range": { "over": 300, "up_to": 1000 },
+      "result_mm": 0.6
+    },
+    {
+      "description": "Perpendicularity of a 150mm shorter side, class H",
+      "query": { "characteristic": "perpendicularity", "shorter_side_length": 150, "class": "H" },
+      "matched_range": { "over": 100, "up_to": 300 },
+      "result_mm": 0.3
+    },
+    {
+      "description": "Circular run-out, class K",
+      "query": { "characteristic": "circular_runout", "class": "K" },
+      "result_mm": 0.2
+    },
+    {
+      "description": "Linear dimension 50mm, class m",
+      "query": { "characteristic": "linear_dimension", "size": 50, "class": "m" },
+      "matched_range": { "over": 30, "up_to": 120 },
+      "result_mm": 0.3
+    }
+  ]
+}

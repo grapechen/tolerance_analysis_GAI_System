@@ -48,6 +48,7 @@ class ToleranceData:
         self.tol_names = []
         self.tol_values = []
         self.tol_dis    = []
+        self.tol_biases = []   # C 欄：偏差值（距離公差不對稱帶中心）
         # [新增] 存儲原始元數據，用於更新與回傳
         self.nominal_sizes = []
         self.it_grades = []
@@ -78,6 +79,18 @@ class ToleranceData:
                     dist = 1.0
                 self.tol_dis.append(dist)
 
+                # C 欄：偏差值（距離公差不對稱帶的中心偏移）
+                # 幾何公差（per/fla/par/cir 等）理論上 bias=0；
+                # 距離公差（dis）才需要使用 bias。
+                raw_bias = float(item.get('bias', 0.0))
+                tol_type = item.get('tol_type', '')
+                # 非距離公差的 bias 強制歸零（遵循說明書規定）
+                if tol_type and tol_type != 'dis':
+                    bias_val = 0.0
+                else:
+                    bias_val = raw_bias
+                self.tol_biases.append(bias_val)
+
                 # 角度類公差值預除 dist
                 if _is_angular(name):
                     eff_val = raw_val / dist
@@ -96,12 +109,206 @@ class ToleranceData:
 
 from openpyxl import load_workbook
 import io
+import csv as _csv
 
-def parse_excel_to_path(file_stream):
+# 公差軟體說明書的標準 XLSX 欄位順序：
+#   A=代碼, B=值, C=偏差, D=距離(角度), E=公稱尺寸, F=IT等級
+#
+# 也支援使用者直接拖 skeleton_chain.csv，header 可能變體很多：
+#   - 路徑代碼, 公稱尺寸, IT等級, 數值, 偏差值, 角度公差
+#   - A 路徑代碼, E 公稱尺寸, F IT 等級, B 數值, C 偏差值, D 角度公差   ← 帶 Excel 字母前綴
+#   - 只要 header 含關鍵字皆能識別
+
+PURE_SPATIAL_AXES = {'traX', 'traY', 'traZ', 'rotX', 'rotY', 'rotZ'}
+
+
+def _norm_header(s):
+    """正規化 header 字串：去前後空白、移除空格、去除 'A '/'B '/.../ Excel 字母前綴。"""
+    if not s:
+        return ''
+    s = s.strip().replace(' ', '').replace('　', '')   # 移除半形+全形空格
+    # 去除常見前綴 A/B/C/D/E/F（如 'A路徑代碼' 變 '路徑代碼'）
+    if len(s) >= 2 and s[0] in 'ABCDEF' and not s[1].isalnum():
+        s = s[1:].lstrip()
+    elif len(s) >= 2 and s[0] in 'ABCDEF':
+        # 如 'B數值' / 'A路徑代碼' (大寫前綴緊接著中文/IT)
+        rest = s[1:]
+        if rest and (not rest[0].isascii() or rest.startswith('IT')):
+            s = rest
+    return s
+
+
+def _build_skeleton_col_map(headers):
+    """掃 header → 回傳 {name/nominal/it/val/bias/dist: column_index}。
+
+    用包含關鍵字的方式比對，可容忍 'A 路徑代碼'、'F IT 等級'、'IT等級' 等變體。
     """
-    從 Excel 檔案流解析公差路徑。
-    格式要求：A欄為代碼(Sym), B欄為值(Val), C欄為偏差(Bias), D欄為距離(Dist)。
+    # 比對表：規範 key → 可能含的關鍵詞列表
+    matchers = {
+        'name':    ['路徑代碼', '代碼', 'sym'],
+        'nominal': ['公稱尺寸', '公稱', 'nominal'],
+        'it':      ['IT等級', 'IT級', 'IT'],
+        'val':     ['數值', '公差值', 'val'],
+        'bias':    ['偏差值', '偏差', 'bias'],
+        'dist':    ['角度公差', '距離', '角度', 'dist'],
+    }
+    col_map = {}
+    used = set()
+    for key, candidates in matchers.items():
+        for i, h in enumerate(headers):
+            if i in used:
+                continue
+            nh = _norm_header(h).upper()
+            if any(c.upper() in nh for c in candidates):
+                col_map[key] = i
+                used.add(i)
+                break
+    return col_map
+
+
+def _is_skeleton_csv_header(header):
+    """偵測是否為 skeleton_chain.csv 標頭格式（含字母前綴變體）。"""
+    if not header:
+        return False
+    col_map = _build_skeleton_col_map(header)
+    # 至少要找到 name + (val 或 數值) + (公稱 或 IT) — 三項以上就算
+    required = {'name', 'val'}
+    optional_at_least_one = {'nominal', 'it', 'bias', 'dist'}
+    return required.issubset(col_map.keys()) and bool(set(col_map.keys()) & optional_at_least_one)
+
+
+def _parse_skeleton_csv(text):
+    """解析 skeleton_chain.csv → editorPathData 結構。"""
+    items: list[dict] = []
+    skipped: list[str] = []
+    reader = _csv.reader(io.StringIO(text))
+    headers = next(reader, None)
+    if not headers:
+        raise ValueError("CSV 無 header")
+    col_map = _build_skeleton_col_map(headers)
+    if 'name' not in col_map or 'val' not in col_map:
+        raise ValueError(f"CSV 缺少必要欄位（路徑代碼/數值），header: {headers}")
+
+    def _cell(row, key, default=None):
+        idx = col_map.get(key)
+        if idx is None or idx >= len(row):
+            return default
+        v = (row[idx] or '').strip()
+        return v if v else default
+
+    def _num(row, key, default=None):
+        v = _cell(row, key, default)
+        if v in (None, ''):
+            return default
+        try:
+            return float(v)
+        except (ValueError, TypeError):
+            return v
+
+    for row in reader:
+        if not row or not (row[col_map['name']] or '').strip():
+            continue
+        sym = row[col_map['name']].strip()
+
+        # IT 等級檢查：只接受數字或 ITn；其他 (H/K/L 等) → 留空
+        it_raw = _cell(row, 'it', '') or ''
+        if it_raw:
+            if it_raw.isdigit():
+                it_grade = f"IT{it_raw}"
+            elif it_raw.upper().startswith('IT') and it_raw[2:].isdigit():
+                it_grade = it_raw.upper()
+            else:
+                skipped.append(f"{sym} (IT={it_raw} → 空)")
+                it_grade = None
+        else:
+            it_grade = None
+
+        val      = _num(row, 'val', 0.0)      or 0.0
+        bias     = _num(row, 'bias', 0.0)     or 0.0
+        dist     = _num(row, 'dist', 1.0)     or 1.0
+        if dist == 0:
+            dist = 1.0
+        nominal  = _num(row, 'nominal')
+
+        is_spatial = sym in PURE_SPATIAL_AXES
+        item = {
+            'type':         'spatial' if is_spatial else 'feature',
+            'val':          val, 'bias': bias, 'dist': dist,
+            'nominal_size': nominal, 'it_grade': it_grade,
+        }
+        if is_spatial:
+            item['axis'] = sym
+        else:
+            item['name'] = sym
+        items.append(item)
+
+    if skipped:
+        print(f"[CSV import] {len(skipped)} 列 IT 欄非數字，已留空（公差值仍保留）：{', '.join(skipped[:5])}"
+              + (f" ...等共 {len(skipped)} 列" if len(skipped) > 5 else ""))
+
+    if not items:
+        raise ValueError("CSV 中找不到有效的公差路徑資料列")
+    return items
+
+
+def parse_excel_to_path(file_stream, filename=None):
     """
+    從上傳的檔案流解析公差路徑。
+
+    支援兩種格式（自動偵測）：
+      1. .xlsx  — 標準格式：A=代碼, B=值, C=偏差, D=距離, E=公稱, F=IT
+      2. .csv   — skeleton_chain.csv：路徑代碼, 公稱尺寸, IT等級, 數值, 偏差值, 角度公差
+    """
+    # 先嘗試 CSV：副檔名為 .csv，或 XLSX 解析失敗再 fallback
+    is_csv = bool(filename and filename.lower().endswith('.csv'))
+    if not is_csv:
+        # 內容嗅探：xlsx 是 zip（PK\x03\x04），純文字 CSV 開頭通常是字元
+        head = file_stream[:4] if isinstance(file_stream, (bytes, bytearray)) else b''
+        is_csv = not head.startswith(b'PK')
+
+    if is_csv:
+        try:
+            text = file_stream.decode('utf-8-sig') if isinstance(file_stream, (bytes, bytearray)) else file_stream
+        except UnicodeDecodeError:
+            text = file_stream.decode('big5', errors='replace')
+        # peek header 確認是 skeleton 格式
+        first_line = text.split('\n', 1)[0]
+        header = [h.strip() for h in first_line.split(',')]
+        print(f"[CSV import] filename={filename!r}  header={header}")
+        if _is_skeleton_csv_header(header):
+            print(f"[CSV import] → 走 skeleton 6-欄 parser")
+            return _parse_skeleton_csv(text)
+        print(f"[CSV import] → 走舊 4-欄 fallback parser（headers 不匹配 skeleton 格式）")
+        # 一般 CSV：第一欄 sym, 第二欄 val, 第三欄 bias, 第四欄 dist
+        # （與 XLSX 欄序相同的單純 CSV）
+        items: list[dict] = []
+        for row in _csv.reader(io.StringIO(text)):
+            if not row or not row[0].strip():
+                continue
+            sym = row[0].strip()
+            try:
+                val  = float(row[1]) if len(row) > 1 and row[1] else 0.0
+                bias = float(row[2]) if len(row) > 2 and row[2] else 0.0
+                dist = float(row[3]) if len(row) > 3 and row[3] else 1.0
+            except ValueError:
+                continue
+            if dist == 0:
+                dist = 1.0
+            is_spatial = sym in PURE_SPATIAL_AXES
+            item = {
+                'type':         'spatial' if is_spatial else 'feature',
+                'val': val, 'bias': bias, 'dist': dist,
+                'nominal_size': None, 'it_grade': None,
+            }
+            if is_spatial:
+                item['axis'] = sym
+            else:
+                item['name'] = sym
+            items.append(item)
+        if not items:
+            raise ValueError("CSV 中找不到有效的公差路徑資料列")
+        return items
+
     try:
         wb = load_workbook(io.BytesIO(file_stream), data_only=True)
     except Exception as e:
@@ -110,8 +317,6 @@ def parse_excel_to_path(file_stream):
     # 嘗試尋找含有公差設定的分頁
     # 邏輯：優先檢查當前分頁，若失敗則檢查所有分頁，尋找 A2 或 A1 有資料的分頁
     target_sheet = None
-    PURE_SPATIAL_AXES = {'traX', 'traY', 'traZ', 'rotX', 'rotY', 'rotZ'}
-    
     # 常用關鍵字分頁優先
     for name in wb.sheetnames:
         if any(k in name.lower() for k in ('tolerance', 'path', '公差', '路徑')):
@@ -144,7 +349,16 @@ def parse_excel_to_path(file_stream):
                 # [新增] 讀取公稱尺寸與 IT 等級
                 nominal  = sheet.cell(row=row_idx, column=5).value
                 it_grade = sheet.cell(row=row_idx, column=6).value
-                
+                # 正規化 it_grade 為 string-or-None（前端會做 .trim()，不可為 int/float）
+                if it_grade is None:
+                    pass
+                elif isinstance(it_grade, (int, float)):
+                    it_grade = f"IT{int(it_grade)}"
+                else:
+                    it_grade = str(it_grade).strip() or None
+                    if it_grade and it_grade.isdigit():
+                        it_grade = f"IT{it_grade}"
+
                 is_spatial = (sym_str in PURE_SPATIAL_AXES)
                 item = {
                     "type": "spatial" if is_spatial else "feature",
@@ -175,81 +389,105 @@ def parse_excel_to_path(file_stream):
 
 # ─── SSE 串流分析 ──────────────────────────────────────────────────────────────
 
+# 蒙地卡羅原始樣本回傳上限：避免 SSE 大 JSON 寫入時 broken pipe / 記憶體峰值
+# 樣本仍照 mc_samples 跑統計（標準差、Worst Case 等準確），只是 mc_raw 只截前 MC_RAW_CAP 筆。
+MC_RAW_CAP = 2000
+
+
 def analyze_stream(path_data: list, run_mc: bool = True, mc_samples: int = 10000, mc_sigma: float = 3.0, mc_dist: int = 0):
     """
     Generator，以 SSE 格式 yield 進度與結果。
 
-    Usage in Flask:
-        return Response(analyze_stream(path_data), mimetype='text/event-stream')
-
-    SSE 事件格式：
-        data: {"progress": 45}           — 進度百分比 (0~100)
-        data: {"result": {...}}           — 最終分析結果
-        data: {"error": "msg"}            — 錯誤訊息
+    [v3] 同步執行，避免 Windows + conda numpy/MKL + threading 組合的 segfault。
+    每個分析階段完成後 yield 一次進度。
     """
-    progress_q = queue.Queue()
-    result_box = [None]
-    error_box  = [None]
 
-    def _worker():
+    def _safe_yield(payload_dict):
+        """Yield 一條 SSE 訊息，若客戶端斷線則靜默返回。"""
+        try:
+            return f"data: {json.dumps(payload_dict, default=str)}\n\n"
+        except Exception:
+            return f"data: {json.dumps({'error': 'JSON 序列化失敗'})}\n\n"
+
+    try:
+        # 階段 0：建立公差資料物件
         try:
             tol_data = ToleranceData(path_data)
-
-            if len(tol_data.tol_names) == 0:
-                error_box[0] = "路徑中沒有任何公差特徵（feature），無法進行分析。"
-                return
-
-            def _cb(pct):
-                progress_q.put(pct)
-
-            t_ideal = compute_jacobian(tol_data, progress_cb=_cb)
-            progress_q.put(88)
-
-            rss = compute_rss(tol_data)
-            progress_q.put(93)
-
-            mc = compute_monte_carlo(tol_data, n_samples=mc_samples, sigma=mc_sigma, dist_type=mc_dist) if run_mc else {}
-            progress_q.put(98)
-
-            sc = compute_sensitivity_contribution(tol_data)
-            progress_q.put(99)
-
-            result_box[0] = {
-                "tol_names":  tol_data.tol_names,
-                "tol_values": tol_data.tol_values,
-                "t_ideal_matrix": t_ideal,
-                "sens_X":  tol_data.sens_X,
-                "sens_Y":  tol_data.sens_Y,
-                "sens_Z":  tol_data.sens_Z,
-                "sens_aX": tol_data.sens_aX,
-                "sens_aY": tol_data.sens_aY,
-                "sens_aZ": tol_data.sens_aZ,
-                **rss,
-                **mc,
-                **sc,   # sensitivity / angle_sensitivity / contribution / angle_contribution
-            }
-
         except Exception as e:
             import traceback
-            error_box[0] = f"{e}\n{traceback.format_exc()}"
-        finally:
-            progress_q.put(None)  # sentinel
+            yield _safe_yield({'error': f'ToleranceData 建立失敗: {e}\n{traceback.format_exc()}'})
+            return
 
-    t = threading.Thread(target=_worker, daemon=True)
-    t.start()
+        if len(tol_data.tol_names) == 0:
+            yield _safe_yield({'error': '路徑中沒有任何公差特徵（feature），無法進行分析。'})
+            return
 
-    while True:
-        item = progress_q.get()
-        if item is None:
-            break
-        yield f"data: {json.dumps({'progress': item})}\n\n"
+        yield _safe_yield({'progress': 5})
 
-    if error_box[0]:
-        yield f"data: {json.dumps({'error': error_box[0]})}\n\n"
-    elif result_box[0]:
-        yield f"data: {json.dumps({'result': result_box[0]})}\n\n"
-    else:
-        yield f"data: {json.dumps({'error': '分析完成但無結果，請檢查後端日誌。'})}\n\n"
+        # 階段 1：Jacobian（不用 progress_cb，避免 thread 互動）
+        try:
+            t_ideal = compute_jacobian(tol_data)
+        except Exception as e:
+            import traceback
+            yield _safe_yield({'error': f'compute_jacobian 失敗: {e}\n{traceback.format_exc()}'})
+            return
+        yield _safe_yield({'progress': 60})
+
+        # 階段 2：RSS / Worst Case
+        try:
+            rss = compute_rss(tol_data)
+        except Exception as e:
+            import traceback
+            yield _safe_yield({'error': f'compute_rss 失敗: {e}\n{traceback.format_exc()}'})
+            return
+        yield _safe_yield({'progress': 75})
+
+        # 階段 3：蒙地卡羅
+        mc = {}
+        if run_mc:
+            try:
+                mc = compute_monte_carlo(tol_data, n_samples=mc_samples, sigma=mc_sigma, dist_type=mc_dist)
+                # 截斷 mc_raw 避免 SSE 大 JSON 失敗（統計值仍照完整樣本算）
+                if 'mc_raw' in mc and len(mc['mc_raw']) > MC_RAW_CAP:
+                    mc['mc_raw'] = mc['mc_raw'][:MC_RAW_CAP]
+                    mc['mc_raw_truncated_from'] = mc_samples
+            except Exception as e:
+                import traceback
+                yield _safe_yield({'error': f'compute_monte_carlo 失敗: {e}\n{traceback.format_exc()}'})
+                return
+        yield _safe_yield({'progress': 90})
+
+        # 階段 4：敏感度 / 貢獻度
+        try:
+            sc = compute_sensitivity_contribution(tol_data)
+        except Exception as e:
+            import traceback
+            yield _safe_yield({'error': f'compute_sensitivity_contribution 失敗: {e}\n{traceback.format_exc()}'})
+            return
+        yield _safe_yield({'progress': 99})
+
+        # 階段 5：組合結果
+        result = {
+            'tol_names':  tol_data.tol_names,
+            'tol_values': tol_data.tol_values,
+            't_ideal_matrix': t_ideal,
+            'sens_X':  tol_data.sens_X,
+            'sens_Y':  tol_data.sens_Y,
+            'sens_Z':  tol_data.sens_Z,
+            'sens_aX': tol_data.sens_aX,
+            'sens_aY': tol_data.sens_aY,
+            'sens_aZ': tol_data.sens_aZ,
+            **rss,
+            **mc,
+            **sc,
+        }
+        yield _safe_yield({'result': result})
+
+    except GeneratorExit:
+        return
+    except Exception as e:
+        import traceback
+        yield _safe_yield({'error': f'analyze_stream 例外: {e}\n{traceback.format_exc()}'})
 
 
 def analyze_tolerance_path(path_data: list, mc_samples: int = 10000, mc_sigma: float = 3.0, mc_dist: int = 0):

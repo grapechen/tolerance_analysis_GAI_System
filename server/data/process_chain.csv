@@ -1,0 +1,12 @@
+process_en,prerequisite_en,reason_zh
+Cylindrical Grinding,Turning,需先車削粗成型再磨削精加工
+Internal Grinding,Boring,需先搪孔建立內孔基準再磨削
+Honing,Boring,搪磨前需先搪孔達到基本尺寸
+Reaming,Drilling,鉸孔前需先鑽孔建立底孔
+Surface Grinding,Milling,平面磨削前需先銑削去除大量餘量
+Lapping,Cylindrical Grinding,研磨拋光前需先磨削達到接近最終尺寸
+Lapping,Surface Grinding,平面拋光前需先平面磨削
+Boring,Drilling,搪孔前需先鑽出底孔
+Turning,Forging,車削前需先鍛造毛坯
+Turning,Casting,車削前需先鑄造毛坯
+Milling,Casting,銑削前需先鑄造毛坯

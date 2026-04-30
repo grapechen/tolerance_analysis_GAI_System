@@ -95,11 +95,23 @@ function renderCustomBomTree(text, bubbleElement, intent) {
                 const leadingSpaceMatch = line.match(/^(\s*)/);
                 const rawIndent = leadingSpaceMatch ? leadingSpaceMatch[1].length : 0;
                 const cleanLine = line.trim();
-                const isFeatureLine = cleanLine.match(/^[-*]\s*\d+-[PHS]-\d+(.*)/i) || cleanLine.startsWith('*');
-                const partMatch = cleanLine.match(/^[-*]\s*(\d+)[-\s]+(.+)/i);
+                // 特徵面：以 * 開頭，或含 -P-/-S-/-H-/-C- 模式（支援中文零件名如 分流座-P-1）
+                const isFeatureLine = cleanLine.startsWith('*') ||
+                    /^[-]\s*[\w\u4e00-\u9fa5]+-[PSHC]-\d+/i.test(cleanLine);
 
-                if (partMatch && !isFeatureLine) {
-                    const newPart = { id: parseInt(partMatch[1]), name: partMatch[1] + '-' + partMatch[2].trim(), features: [], children: [] };
+                // 零件行：以 - 開頭且非特徵面
+                // 支援舊格式 "- 1-工作台" 和新格式 "- 分流座"
+                let partMatch = null;
+                if (!isFeatureLine && /^-\s+/.test(cleanLine)) {
+                    const nameStr = cleanLine.replace(/^-\s*/, '').trim();
+                    if (nameStr) {
+                        const idMatch = nameStr.match(/^(\d+)-/);
+                        partMatch = { id: idMatch ? parseInt(idMatch[1]) : 0, name: nameStr };
+                    }
+                }
+
+                if (partMatch) {
+                    const newPart = { id: partMatch.id, name: partMatch.name, features: [], children: [] };
 
                     if (partStack.length === 0) {
                         rootParts.push(newPart);
@@ -124,10 +136,12 @@ function renderCustomBomTree(text, bubbleElement, intent) {
                     if (partStack.length > 0) {
                         attachTarget = partStack[partStack.length - 1].part;
                     } else {
-                        const m = cleanLine.match(/^[-*]\s*(\d+)-/);
+                        // 從特徵面名稱反推零件名：分流座-P-1 → 分流座, 1-P-1 → 1
+                        const m = cleanLine.match(/^[-*]\s*([\w\u4e00-\u9fa5]+)-[PSHC]-\d+/i) ||
+                                  cleanLine.match(/^[-*]\s*(\d+)-/);
                         const partId = m ? m[1] : 'Unknown';
                         const featureSetName = window.CURRENT_LANG === 'en' ? 'Feature set' : '特徵集合';
-                        attachTarget = { id: partId === 'Unknown' ? 999 : parseInt(partId), name: `${partId}-${featureSetName}`, features: [], children: [] };
+                        attachTarget = { id: /^\d+$/.test(partId) ? parseInt(partId) : 999, name: `${partId}-${featureSetName}`, features: [], children: [] };
                         rootParts.push(attachTarget);
                         partStack.push({ depth: 0, part: attachTarget });
                     }
@@ -196,9 +210,9 @@ function renderCustomBomTree(text, bubbleElement, intent) {
                 if (part.features && part.features.length > 0) {
                     part.features.sort((fa, fb) => {
                         const getWeight = (s) => {
-                            const m = s.match(/([PSH])/i);
+                            const m = s.match(/([PSHC])/i);
                             if (!m) return 9;
-                            const map = { 'P': 1, 'S': 2, 'H': 3 };
+                            const map = { 'P': 1, 'S': 2, 'H': 3, 'C': 4 };
                             return map[m[1].toUpperCase()] || 9;
                         };
                         const getNum = (s) => {
@@ -280,16 +294,30 @@ function renderCustomBomTree(text, bubbleElement, intent) {
                         });
                         bridges.sort((a, b) => (a.end - a.start) - (b.end - b.start));
 
-                        const isGrid = layoutClass === 'layout-grid';
-                        const ROW_H = 60; // 統一使用 60px 以符合 CSS 的 .bom-feature-row 高度
-                        const NODE_BOX_W = isGrid ? 220 : 180; 
-                        const GRID_NODE_LEFT_PAD = isGrid ? 20 : 0;
-                        const RAIL_START = GRID_NODE_LEFT_PAD + NODE_BOX_W;
-                        const COL_GAP = 110; 
-                        const BRIDGE_GAP = 85;
+                        // 分離：只關聯一個特徵的互動公差 → 內嵌顯示；橋接兩個特徵的 → 右側膠囊
+                        const multiBridges = [];
+                        const singleBridgesByFeature = {}; // featureIdx -> [tag, ...]
+                        bridges.forEach(bridge => {
+                            if (bridge.start === bridge.end) {
+                                if (!singleBridgesByFeature[bridge.start]) singleBridgesByFeature[bridge.start] = [];
+                                singleBridgesByFeature[bridge.start].push(bridge.tag);
+                            } else {
+                                multiBridges.push(bridge);
+                            }
+                        });
 
-                        const boxId = `box-${part.id}`;
-                        const drfId = `drf-${part.id}`;
+                        const isGrid = layoutClass === 'layout-grid';
+                        const ROW_H = 75; // 行高加大，拉開特徵面間距
+                        const NODE_BOX_W = isGrid ? 240 : 180;
+                        const GRID_NODE_LEFT_PAD = isGrid ? 25 : 0;
+                        const RAIL_START = GRID_NODE_LEFT_PAD + NODE_BOX_W;
+                        const COL_GAP = 130;
+                        const BRIDGE_GAP = 100;
+
+                        // 用零件名生成唯一 ID（支援中文零件名如 工作臺、軸承座）
+                        const partKey = part.id > 0 ? part.id : part.name.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, '_');
+                        const boxId = `box-${partKey}`;
+                        const drfId = `drf-${partKey}`;
 
                         if (isGrid) {
                             html += `<div class="bom-grid-border-box" id="${boxId}" style="position: relative; flex: 0 0 auto; display: flex; align-items: center; padding: 20px; overflow: visible;">`;
@@ -300,13 +328,16 @@ function renderCustomBomTree(text, bubbleElement, intent) {
                                      </div>`;
                         }
 
-                        const maxIndsCount = Math.max(0, ...part.features.map(f => f.individuals.length));
+                        const maxIndsCount = Math.max(0, ...part.features.map((f, idx) =>
+                            f.individuals.length + (singleBridgesByFeature[idx] || []).length
+                        ));
                         const indBlockW = maxIndsCount * COL_GAP;
                         const bridgeBaseX = RAIL_START + indBlockW + 10;
                         const listH = part.features.length * ROW_H;
+                        const visibleBridgeCount = multiBridges.filter(b => !b.tag.startsWith('Con-')).length;
                         let minListWidth = 160;
-                        if (maxIndsCount > 0 || bridges.length > 0) {
-                            minListWidth = bridgeBaseX + bridges.length * BRIDGE_GAP + 60;
+                        if (maxIndsCount > 0 || visibleBridgeCount > 0) {
+                            minListWidth = bridgeBaseX + visibleBridgeCount * BRIDGE_GAP + 60;
                         }
 
                         let trunkHtml = '';
@@ -331,7 +362,7 @@ function renderCustomBomTree(text, bubbleElement, intent) {
 
                         part.features.forEach((f, idx) => {
                             const isLast = idx === part.features.length - 1 ? ' last-feature-row' : '';
-                            const nodeId = `node-${part.id}-${f.name}`;
+                            const nodeId = `node-${partKey}-${f.name}`;
                             const clickAttr = enableContact ? `onclick="toggleContactNode('${nodeId}')"` : '';
                             
                             // [新增] 根據象限上色 (與調配報告色彩對齊)
@@ -350,12 +381,19 @@ function renderCustomBomTree(text, bubbleElement, intent) {
                             
                             // 只有在 Grid 模式下才解析公差與連線
                             if (isGrid) {
-                                const hasInd = f.individuals.length > 0;
+                                const inlineInteractives = singleBridgesByFeature[idx] || [];
+                                const hasInd = f.individuals.length > 0 || inlineInteractives.length > 0;
                                 if (hasInd) {
                                     let indHtml = '';
                                     f.individuals.forEach((t, tIdx) => {
-                                        const indId = `ind-${part.id}-${f.name}-${tIdx}`;
+                                        const indId = `ind-${partKey}-${f.name}-${tIdx}`;
                                         indHtml += `<div class="tol-individual-wrapper"><div class="tolerance-bubble tol-individual" id="${indId}"><span class="tol-code">${t}</span></div></div>`;
+                                    });
+                                    // 單一特徵的互動公差（如 par1）內嵌顯示，用橙色膠囊區別
+                                    // ID 延續數字序列，讓 drawAllBomNetworks 的掃描迴圈能找到
+                                    inlineInteractives.forEach((t, tIdx) => {
+                                        const indId = `ind-${partKey}-${f.name}-${f.individuals.length + tIdx}`;
+                                        indHtml += `<div class="tol-individual-wrapper"><div class="tolerance-bubble tol-interactive" id="${indId}"><span class="tol-code">${t}</span></div></div>`;
                                     });
                                     const rTop = idx * ROW_H + ROW_H / 2;
                                     railsHtml += `<div class="tol-rail-container" style="left:${RAIL_START}px; top:${rTop}px; width: auto;">${indHtml}</div>`;
@@ -364,11 +402,11 @@ function renderCustomBomTree(text, bubbleElement, intent) {
                         });
 
                         if (isGrid) {
-                            bridges.forEach((bridge, bIdx) => {
+                            multiBridges.forEach((bridge, bIdx) => {
                                 // [核心修正] 如果是組裝接觸標籤 (Con-)，我們只記錄連線關係，不產生紫色膠囊
                                 if (bridge.tag.startsWith('Con-')) {
-                                    const startNode = `node-${part.id}-${part.features[bridge.start].name}`;
-                                    const endNode = `node-${part.id}-${part.features[bridge.end].name}`;
+                                    const startNode = `node-${partKey}-${part.features[bridge.start].name}`;
+                                    const endNode = `node-${partKey}-${part.features[bridge.end].name}`;
                                     if (!contactPairs.some(p => (p.start === startNode && p.end === endNode) || (p.end === startNode && p.start === endNode))) {
                                         contactPairs.push({ start: startNode, end: endNode });
                                     }
@@ -377,17 +415,17 @@ function renderCustomBomTree(text, bubbleElement, intent) {
 
                                 const lineX = bridgeBaseX + bIdx * BRIDGE_GAP;
                                 const capsuleCY = (bridge.start * ROW_H + bridge.end * ROW_H + ROW_H) / 2;
-                                const bridgeId = `bridge-${part.id}-${bIdx}`;
+                                const bridgeId = `bridge-${partKey}-${bIdx}`;
                                 bridgesHtml += `<div class="tol-interactive-wrapper" id="${bridgeId}" style="left:${lineX}px; top:${capsuleCY}px;"><div class="tolerance-bubble tol-interactive"><span class="tol-code">${bridge.tag}</span></div></div>`;
                             });
                         }
 
                         bomNetworks.push({
-                            partId: part.id, drfId: drfId, boxId: boxId,
-                            features: part.features.map(f => `node-${part.id}-${f.name}`),
-                            bridges: bridges.map((b, bIdx) => {
+                            partId: partKey, drfId: drfId, boxId: boxId,
+                            features: part.features.map(f => `node-${partKey}-${f.name}`),
+                            bridges: multiBridges.map((b, bIdx) => {
                                 const realLineX = bridgeBaseX + bIdx * BRIDGE_GAP;
-                                return { id: `bridge-${part.id}-${bIdx}`, startIdx: b.start, endIdx: b.end, xOffset: realLineX };
+                                return { id: `bridge-${partKey}-${bIdx}`, startIdx: b.start, endIdx: b.end, xOffset: realLineX };
                             }),
                             rowH: ROW_H
                         });
@@ -901,8 +939,8 @@ function openEditorModal(partsJsonStr) {
     try {
         // [修正] 如果目前已有數據 (例如剛匯入 Excel)，提示使用者是否要覆蓋
         if (editorPathData && editorPathData.length > 0) {
-            const confirmOverwrite = window.CURRENT_LANG === 'en' ? 
-                "You have existing path data (possibly imported). Overwrite with default features?" : 
+            const confirmOverwrite = window.CURRENT_LANG === 'en' ?
+                "You have existing path data (possibly imported). Overwrite with default features?" :
                 "目前已有路徑數據（可能是匯入的）。是否要以預設特徵覆蓋？";
             if (!confirm(confirmOverwrite)) {
                 // 不覆蓋，直接顯示現有數據
@@ -919,32 +957,64 @@ function openEditorModal(partsJsonStr) {
             if (part.features) {
                 part.features.forEach(f => {
                     const allTols = [...f.individuals, ...f.interactives];
-                    // [核心修正] 只推送公差項，不再顯示基礎特徵名稱 (避免 1-P-1 等項目干擾)
                     if (allTols.length > 0) {
                         allTols.forEach(tol => {
                             const key = `${part.name}||${tol}`;
-                            if (seenKeys.has(key)) return; // 跳過重複的 (同零件+同公差名)
+                            if (seenKeys.has(key)) return;
                             seenKeys.add(key);
                             editorPathData.push({
                                 type: 'feature',
                                 name: tol,
                                 val: 0.01,
                                 bias: 0,
-                                dist: 1,
+                                dist: '',
                                 part: part.name,
                                 nominal_size: null,
                                 it_grade: null
                             });
                         });
                     }
-                    // 移除 else 分支，不再填補基礎特徵
                 });
             }
         });
-        renderEditorList();
-        document.getElementById('editor-modal-overlay').style.display = 'flex';
+
+        // 從 RAS400 CSV 自動填入真實公差值
+        _fillFromRas400Lookup().then(() => {
+            renderEditorList();
+            document.getElementById('editor-modal-overlay').style.display = 'flex';
+        });
     } catch (e) {
         alert(window.CURRENT_LANG === 'en' ? "Failed to parse data, cannot open editor" : "資料解析失敗，無法開啟編輯器");
+    }
+}
+
+/**
+ * 從 /api/ras400/tolerance_lookup 取得 CSV 真實數值，自動填入 editorPathData
+ */
+async function _fillFromRas400Lookup() {
+    try {
+        const resp = await fetch('/api/ras400/tolerance_lookup');
+        const data = await resp.json();
+        if (!data.ok || !data.lookup) return;
+
+        const lookup = data.lookup;
+        let filled = 0;
+        editorPathData.forEach(item => {
+            if (item.type !== 'feature') return;
+            const info = lookup[item.name];
+            if (!info) return;
+            item.val          = info.val || item.val;
+            item.bias         = info.bias || 0;
+            item.nominal_size = info.nominal_size;
+            item.it_grade     = info.it_grade;
+            item.dist         = info.dist || '';
+            item.part         = info.part || item.part;
+            item.tol_type     = info.type_code || item.tol_type;  // fla/per/sym…
+            filled++;
+        });
+        console.log(`[RAS400] 自動填入 ${filled}/${editorPathData.length} 項公差值`);
+    } catch (e) {
+        console.warn('[RAS400] 公差查找失敗，使用預設值:', e);
     }
 }
 
@@ -1090,7 +1160,19 @@ function renderEditorList() {
             : `<td class="cell-code spatial"><input list="axis-list-${idx}" value="${node.axis || ''}" oninput="editorPathData[${idx}].axis=this.value; renderPathFlowchart();" class="axis-input" placeholder="traZ…"><datalist id="axis-list-${idx}">${['traX', 'traY', 'traZ', 'rotX', 'rotY', 'rotZ', 'cy1', 'co1', 'AngX', 'AngY', 'AngZ', 'PerX', 'PerY', 'PerZ'].map(ax => `<option value="${ax}">`).join('')}</datalist></td>`;
         
         const colE = `<td><input type="number" step="0.1" value="${node.nominal_size ?? ''}" oninput="updateNominal(${idx}, this.value)" class="cell-input" placeholder="-"></td>`;
-        const colF = `<td><input type="text" value="${node.it_grade ?? ''}" oninput="updateITGrade(${idx}, this.value)" class="cell-input" placeholder="e.g. IT7"></td>`;
+
+        // F 欄：IT 等級 + ISO 2768 一般公差參考標籤
+        const gradeUpper = String(node.it_grade ?? '').trim().toUpperCase();
+        const isGeoGrade = isFeat && _ISO2768_GEO_CLASSES.has(gradeUpper) && _TOL_TYPE_TO_ISO2768[node.tol_type];
+        const gradeInputCls = (isGeoGrade && node.val > 0) ? 'cell-input grade-individual' : 'cell-input';
+        const colF = isFeat
+          ? `<td class="cell-grade-wrap">
+               <input type="text" value="${node.it_grade ?? ''}"
+                      oninput="updateITGrade(${idx}, this.value)"
+                      class="${gradeInputCls}" placeholder="e.g. IT7">
+               <span class="iso2768-ref" id="iso2768-ref-${idx}"></span>
+             </td>`
+          : `<td></td>`;
         
         const colB = `<td><input type="number" step="0.001" value="${node.val ?? 0}" oninput="editorPathData[${idx}].val=parseFloat(this.value)||0; renderPathFlowchart();" class="cell-input"></td>`;
         const colC = `<td><input type="number" step="0.001" value="${node.bias ?? 0}" oninput="editorPathData[${idx}].bias=parseFloat(this.value)||0; renderPathFlowchart();" class="cell-input"></td>`;
@@ -1101,6 +1183,77 @@ function renderEditorList() {
     });
     html += `</tbody></table>`;
     container.innerHTML = html;
+
+    // 非同步填入 ISO 2768 一般公差參考標籤（不阻塞渲染）
+    _fillISO2768References();
+}
+
+/**
+ * 為 F 欄有幾何等級（H/K/L）且 B 欄已有個別標示值的行，
+ * 非同步查詢 ISO 2768-2 一般公差，顯示提示標籤。
+ *
+ * 標籤顏色：
+ *   黃底（ref-individual）= 個別標示值 < 一般公差（個別標示更嚴格，優先）
+ *   藍底（ref-general）   = 個別標示值 >= 一般公差（一般公差適用）
+ */
+async function _fillISO2768References() {
+    for (let idx = 0; idx < editorPathData.length; idx++) {
+        const item = editorPathData[idx];
+        if (item.type !== 'feature') continue;
+
+        const gradeUpper = String(item.it_grade ?? '').trim().toUpperCase();
+        if (!_ISO2768_GEO_CLASSES.has(gradeUpper)) continue;
+
+        const characteristic = _TOL_TYPE_TO_ISO2768[item.tol_type];
+        if (!characteristic) continue;
+
+        const refEl = document.getElementById(`iso2768-ref-${idx}`);
+        if (!refEl) continue;
+
+        const nom = item.nominal_size || 1;
+        const geoBody = {
+            characteristic,
+            geo_class:           gradeUpper,
+            length_mm:           nom,
+            shorter_side_mm:     nom,
+            size_tolerance_mm:    item.val || 0.01,
+            diameter_tolerance_mm: item.val || 0.01,
+        };
+
+        try {
+            const resp = await fetch('/api/iso2768/geometric', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(geoBody),
+            });
+            const res = await resp.json();
+            if (!res.ok || !res.result) continue;
+
+            const isoVal = res.result.value_mm
+                ?? res.result.combined_upper_bound
+                ?? res.result.fallback_circular_runout;
+            if (isoVal == null) continue;
+
+            const hasIndividual = item.val > 0;
+            const isStricter    = hasIndividual && item.val < isoVal;
+
+            const lang = window.CURRENT_LANG === 'en';
+            const label = lang
+                ? `Std: ${isoVal}mm`
+                : `一般: ${isoVal}mm`;
+            const tip = isStricter
+                ? (lang
+                    ? `ISO 2768-${gradeUpper} general tol = ${isoVal}mm. This feature has individual indication ${item.val}mm (stricter — takes precedence).`
+                    : `ISO 2768-${gradeUpper} 一般公差 = ${isoVal}mm\n本項個別標示 ${item.val}mm（更嚴格，優先適用）`)
+                : (lang
+                    ? `ISO 2768-${gradeUpper} general tol = ${isoVal}mm (applies)`
+                    : `ISO 2768-${gradeUpper} 一般公差 = ${isoVal}mm（適用）`);
+
+            refEl.textContent = label;
+            refEl.title       = tip;
+            refEl.className   = `iso2768-ref ${isStricter ? 'ref-individual' : 'ref-general'}`;
+        } catch (_) { /* 查詢失敗靜默忽略 */ }
+    }
 }
 
 function addSpatialNode(index) {
@@ -1125,55 +1278,114 @@ async function updateITGrade(idx, val) {
     renderPathFlowchart();
 }
 
+// tol_type (SFA) → ISO 2768-2 characteristic name
+const _TOL_TYPE_TO_ISO2768 = {
+    fla: 'flatness',
+    per: 'perpendicularity',
+    sym: 'symmetry',
+    run: 'circular_runout',
+    tot: 'circular_runout',
+    co:  'coaxiality',
+    cir: 'circularity',
+    par: 'parallelism',
+    cyl: 'cylindricity',
+};
+
+// ISO 2768-2 幾何公差等級識別（純字母，無數字）
+const _ISO2768_GEO_CLASSES = new Set(['H','K','L','GH','GK','GL','GTH','GTK','GTL']);
+
 async function triggerISOLookup(idx) {
     const item = editorPathData[idx];
     if (!item.nominal_size || !item.it_grade) return;
-    
-    const gradeRaw = item.it_grade.trim();
-    const size = item.nominal_size;
-    
-    let url = '/api/lookup/tolerance';
-    let body = { size_mm: size, it_grade: gradeRaw.toUpperCase() };
 
-    // Regex to match Hole (H7) or Shaft (h6)
-    const holeMatch = gradeRaw.match(/^([A-Z]{1,2})(\d+)$/);
+    const gradeRaw = String(item.it_grade).trim();
+    const gradeUpper = gradeRaw.toUpperCase();
+    const size = item.nominal_size;
+
+    const table = document.getElementById('editor-list-container');
+    const scrollPos = table ? table.scrollTop : 0;
+
+    // ── 路徑 1：ISO 2768-2 幾何公差等級（H / K / L / GH / GK / GL）────────
+    if (_ISO2768_GEO_CLASSES.has(gradeUpper)) {
+        const characteristic = _TOL_TYPE_TO_ISO2768[item.tol_type];
+        if (!characteristic) return;   // pos 等無一般公差的類型，不查表
+
+        // 組裝 ISO 2768-2 請求 Body（各特徵所需參數不同）
+        const geoBody = { characteristic, geo_class: gradeUpper };
+        if (['flatness','straightness','symmetry','parallelism','cylindricity'].includes(characteristic)) {
+            geoBody.length_mm = size;
+        }
+        if (['perpendicularity','symmetry'].includes(characteristic)) {
+            geoBody.shorter_side_mm = size;
+            geoBody.length_mm = size;   // symmetry 用 length_mm
+        }
+        if (characteristic === 'parallelism' || characteristic === 'cylindricity') {
+            geoBody.size_tolerance_mm    = item.val || 0.01;
+            geoBody.diameter_tolerance_mm = item.val || 0.01;
+        }
+        if (characteristic === 'circularity') {
+            geoBody.diameter_tolerance_mm = item.val || 0.01;
+        }
+
+        try {
+            const resp = await fetch('/api/iso2768/geometric', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(geoBody),
+            });
+            const res = await resp.json();
+            if (res.ok && res.result) {
+                const val = res.result.value_mm ?? res.result.combined_upper_bound ?? res.result.fallback_circular_runout;
+                if (val != null) {
+                    editorPathData[idx].val = val;
+                    editorPathData[idx].bias = 0;
+                    renderEditorList();
+                    if (table) table.scrollTop = scrollPos;
+                }
+            }
+        } catch (e) {
+            console.error('[ISO 2768] Lookup Error:', e);
+        }
+        return;
+    }
+
+    // ── 路徑 2：ISO 286 配合代號（H7 / h6）或 IT 等級（IT7）────────────────
+    let url = '/api/lookup/tolerance';
+    let body = { size_mm: size, it_grade: gradeUpper };
+
+    const holeMatch  = gradeRaw.match(/^([A-Z]{1,2})(\d+)$/);
     const shaftMatch = gradeRaw.match(/^([a-z]{1,2})(\d+)$/);
 
     if (holeMatch) {
-        url = '/api/lookup/hole';
+        url  = '/api/lookup/hole';
         body = { size_mm: size, tolerance_code: holeMatch[1], it_grade: 'IT' + holeMatch[2] };
     } else if (shaftMatch) {
-        url = '/api/lookup/shaft';
+        url  = '/api/lookup/shaft';
         body = { size_mm: size, tolerance_code: shaftMatch[1], it_grade: 'IT' + shaftMatch[2] };
     }
 
     try {
-        const resp = await fetch(url, { 
-            method: 'POST', 
+        const resp = await fetch(url, {
+            method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(body) 
+            body: JSON.stringify(body),
         });
         const res = await resp.json();
-        
+
         if (res.ok) {
-            if (res.tolerance_μm !== undefined) {
-                editorPathData[idx].val = res.tolerance_μm / 1000.0;
+            if (res['tolerance_μm'] !== undefined) {
+                editorPathData[idx].val  = res['tolerance_μm'] / 1000.0;
                 editorPathData[idx].bias = 0;
             } else if (res.upper_dev_um !== undefined && res.lower_dev_um !== undefined) {
                 const tol_um = Math.abs(res.upper_dev_um - res.lower_dev_um);
-                editorPathData[idx].val = tol_um / 1000.0;
+                editorPathData[idx].val  = tol_um / 1000.0;
                 editorPathData[idx].bias = (res.upper_dev_um + res.lower_dev_um) / 2000.0;
             }
-            
-            // Re-render only the inputs to avoid focus loss if possible, 
-            // but for simplicity we re-render the whole list.
-            const table = document.getElementById('editor-list-container');
-            const scrollPos = table.scrollTop;
             renderEditorList();
-            document.getElementById('editor-list-container').scrollTop = scrollPos;
+            if (table) table.scrollTop = scrollPos;
         }
     } catch (e) {
-        console.error("ISO Lookup Error:", e);
+        console.error('[ISO 286] Lookup Error:', e);
     }
 }
 

@@ -1,0 +1,22 @@
+process_en,process_zh,it_grade_min,it_grade_max,it_circ_min,it_circ_max,it_par_perp_min,it_par_perp_max,it_concentric_min,it_concentric_max,Ra_min_um,Ra_max_um,category,typical_equipment,feature_types,external,note
+Lapping,研磨拋光,3,5,1,3,1,4,1,4,0.012,0.05,finishing,平面研磨機/拋光機,P;S,TRUE,超精密表面處理 適用於密封面與基準面（外部設備）
+Honing,搪磨,4,6,3,5,3,6,3,5,0.025,1.27,finishing,搪磨機,H,TRUE,內孔精加工 改善圓柱度與表面粗糙度（外部設備）
+Cylindrical Grinding,外圓磨削（粗）,5,7,5,6,4,6,4,6,0.4,1.6,grinding,外圓磨床,S,TRUE,軸類粗磨削（外部磨床）
+Cylindrical Grinding (Fine),外圓磨削（細）,4,6,3,5,2,5,2,5,0.1,0.8,grinding,外圓磨床,S,TRUE,軸類細磨削（外部磨床）
+Cylindrical Grinding (Precision),外圓磨削（精）,3,5,1,3,1,4,1,4,0.05,0.4,grinding,精密外圓磨床,S,TRUE,軸類精磨（外部精密磨床）
+Internal Grinding,內圓磨削（細）,5,7,4,5,3,6,3,5,0.2,0.8,grinding,內圓磨床,H,TRUE,內孔細磨（外部磨床）
+Internal Grinding (Precision),內圓磨削（精）,4,6,3,4,2,5,2,4,0.1,0.4,grinding,精密內圓磨床,H,TRUE,內孔精磨（外部磨床）
+Surface Grinding,平面磨削,5,7,5,7,3,6,3,6,0.05,1.6,grinding,平面磨床,P,TRUE,平面精加工 適用於基準面
+Broaching,拉削,5,8,5,7,4,7,4,7,0.4,3.2,machining,拉床,H;S,TRUE,鍵槽與異形孔（外部拉床）
+Reaming,鉸孔,6,8,6,8,4,9,5,7,0.4,3.2,machining,鑽床/CNC加工中心,H,FALSE,孔的半精加工 IT6-8 配合孔
+Boring,搪孔（粗）,8,10,7,10,5,9,7,9,1.6,6.3,machining,搪床/CNC加工中心,H,FALSE,大孔徑粗加工
+Boring (Fine),搪孔（細）,6,8,5,6,4,7,5,7,0.4,3.2,machining,搪床/CNC加工中心,H,FALSE,大孔徑半精加工
+Boring (Precision),搪孔（精/金剛鏜）,4,6,1,3,2,5,2,5,0.1,0.8,machining,精密搪床/金剛鏜床,H,TRUE,金剛鏜精加工 達 IT4 軸承座孔（外部設備）
+Turning (Rough),車削（粗）,9,11,7,10,4,9,7,10,3.2,12.5,machining,車床,S;H,TRUE,軸類粗車削（外部車床）
+Turning (Fine),車削（精）,7,9,5,7,3,8,5,8,0.8,3.2,machining,車床/CNC車床,S;H,TRUE,軸類精車削（外部車床）
+Turning (Precision),精密車削,5,7,3,5,2,7,3,6,0.4,1.6,machining,精密車床/CNC精密車床,S;H,TRUE,軸類精密車削（外部車床）
+Milling,銑削,7,11,5,8,4,7,5,8,0.8,6.3,machining,銑床/CNC加工中心,P;S,FALSE,平面與外形基本加工
+Drilling,鑽孔,10,13,8,12,6,9,8,11,1.6,12.5,roughing,鑽床/CNC加工中心,H,FALSE,孔的粗加工 後續需鉸孔或搪孔
+Sawing,鋸切,12,16,12,16,10,12,12,16,6.3,25,roughing,帶鋸機/圓鋸機,S;P,TRUE,下料用粗加工
+Casting,鑄造,12,16,12,16,10,12,12,16,6.3,25,forming,鑄造設備,S;P;H,TRUE,毛坯成型 後續需機加工
+Forging,鍛造,12,16,12,16,10,12,12,16,3.2,12.5,forming,鍛壓設備,S,TRUE,毛坯成型 適用於高強度零件

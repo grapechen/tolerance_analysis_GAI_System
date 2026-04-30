@@ -4,6 +4,264 @@ try:
 except ImportError:
     genai = None
 
+# 零件名稱 → 組裝編號對應（公差網路顯示用）
+_PART_NUM_MAP = [
+    ('工作臺心軸', '5'), ('編碼器心軸', '8'), ('馬達水套', '7'),
+    ('馬達座', '10'), ('軸承座', '2'), ('工作臺', '1'),
+    ('軸承', '3'), ('轉動軸', '4'), ('馬達', '6'),
+    ('分流座', '9'), ('編碼器', '11'),
+]
+
+# 零件編號 → 中文名稱（反向查詢）
+_PART_NAME_MAP = {num: name for name, num in _PART_NUM_MAP}
+
+# ═══════════════════════════════════════════════════
+# 結構化公差調整指令解析器
+# ═══════════════════════════════════════════════════
+_TOL_TYPE_MAP = {
+    '直徑': 'Dia', '半徑': 'Rad', '圓柱度': 'Cyl',
+    '平面度': 'Fla', '真圓度': 'Cir', '真直度': 'Str',
+    '距離': 'Dis', '平行度': 'Par', '垂直度': 'Per',
+    '位置度': 'Pos', '同心度': 'Co',  '對稱度': 'Sym',
+    '角度': 'Ang', '圓偏轉度': 'Run', '總偏轉度': 'Tot',
+}
+
+# 公差類型 → 中文名稱（反向查詢）
+_TOL_NAME_MAP = {v: k for k, v in _TOL_TYPE_MAP.items()}
+
+def parse_structured_command(user_msg: str):
+    """
+    解析結構化公差調整指令，支援多種口語格式。
+
+    支援範例：
+      「請將編號5零件第6特徵面的第1個直徑公差由IT6放寬至IT7」
+      「收緊3號零件第2個位置度公差到IT5」
+      「5號零件的Dia-1放寬到IT8」
+      「放寬 5-Dia-1 到 IT7」
+
+    Returns:
+        dict with keys: part_id, tol_code, tol_index, action, target_it,
+                        target_name, target_grade, part_name_zh, tol_type_zh
+        or None if not a structured command
+    """
+    # ── 模式 A：直接指定公差名稱 (e.g. "5-Dia-1" 或 "放寬 5-Dia-1 到 IT7") ──
+    direct_pattern = (
+        r'(\d{1,2})-([A-Z][a-z]{1,2})-(\d+)'   # group 1,2,3: 公差名稱
+        r'.*?(?:放寬|收緊|調整)'                   # 動作
+        r'.*?IT\s*(\d+)'                           # group 4: 目標IT
+    )
+    # 也支援動作在前面的格式
+    direct_pattern_alt = (
+        r'(放寬|收緊|調整)'                        # group 1: 動作
+        r'\s*(\d{1,2})-([A-Z][a-z]{1,2})-(\d+)'  # group 2,3,4: 公差名稱
+        r'.*?IT\s*(\d+)'                           # group 5: 目標IT
+    )
+    m = re.search(direct_pattern, user_msg)
+    if m:
+        part_id, tol_code, tol_idx, target_it = m.group(1), m.group(2), m.group(3), m.group(4)
+        action = '放寬' if '放寬' in user_msg else ('收緊' if '收緊' in user_msg else '調整')
+        return _build_command_result(part_id, tol_code, int(tol_idx), action, int(target_it))
+
+    m = re.search(direct_pattern_alt, user_msg)
+    if m:
+        action, part_id, tol_code, tol_idx, target_it = m.group(1), m.group(2), m.group(3), m.group(4), m.group(5)
+        return _build_command_result(part_id, tol_code, int(tol_idx), action, int(target_it))
+
+    # ── 模式 B：中文口語格式 (e.g. "編號5零件第6特徵面的第1個直徑公差由IT6放寬至IT7") ──
+    tol_types_re = '|'.join(_TOL_TYPE_MAP.keys())
+    natural_pattern = (
+        r'(?:編號\s*)?(\d{1,2})\s*號?\s*零件'     # group 1: 零件編號
+        r'(?:.*?第\s*(\d+)\s*特徵面)?'              # group 2: 特徵面編號 (optional)
+        r'.*?(?:第\s*(\d+)\s*個)?'                  # group 3: 公差序號 (optional)
+        r'\s*(' + tol_types_re + r')'               # group 4: 公差類型
+        r'\s*公差'
+        r'.*?(放寬|收緊|調整)'                      # group 5: 動作
+        r'.*?IT\s*(\d+)'                            # group 6: 目標IT等級
+    )
+    m = re.search(natural_pattern, user_msg)
+    if m:
+        part_id     = m.group(1)
+        # feature_idx = m.group(2)  # 特徵面編號 — 僅供顯示參考
+        tol_index   = int(m.group(3)) if m.group(3) else 1
+        tol_type_zh = m.group(4)
+        action      = m.group(5)
+        target_it   = int(m.group(6))
+        tol_code    = _TOL_TYPE_MAP[tol_type_zh]
+        return _build_command_result(part_id, tol_code, tol_index, action, target_it)
+
+    # ── 模式 C：簡易格式 (e.g. "收緊3號零件第2個位��度公差到IT5") ──
+    simple_pattern = (
+        r'(放寬|收緊|調整)'                        # group 1: 動作
+        r'.*?(\d{1,2})\s*號?\s*零件'               # group 2: 零件編號
+        r'.*?(?:第\s*(\d+)\s*個)?'                  # group 3: 公差序號 (optional)
+        r'\s*(' + tol_types_re + r')'               # group 4: 公差類型
+        r'\s*公差'
+        r'.*?IT\s*(\d+)'                            # group 5: 目標IT等級
+    )
+    m = re.search(simple_pattern, user_msg)
+    if m:
+        action      = m.group(1)
+        part_id     = m.group(2)
+        tol_index   = int(m.group(3)) if m.group(3) else 1
+        tol_type_zh = m.group(4)
+        target_it   = int(m.group(5))
+        tol_code    = _TOL_TYPE_MAP[tol_type_zh]
+        return _build_command_result(part_id, tol_code, tol_index, action, target_it)
+
+    # ── 模式 D：中文零件名直接格式 (e.g. "軸承座-Dia-2由IT6放寬至IT7") ──
+    # 較長的零件名要排在前面，避免「軸承」吃掉「軸承座」的前綴
+    _zh_names_sorted = sorted((n for n, _ in _PART_NUM_MAP), key=len, reverse=True)
+    zh_names_re = '|'.join(re.escape(n) for n in _zh_names_sorted)
+    _name_to_num = {n: num for n, num in _PART_NUM_MAP}
+
+    zh_direct_pattern = (
+        r'(' + zh_names_re + r')-([A-Za-z]{1,3})-?(\d+)'   # group 1,2,3: 零件-tol_code-序號（橫線可省）
+        r'.*?(?:放寬|收緊|調整)'                              # 動作
+        r'.*?IT\s*(\d+)'                                     # group 4: 目標 IT
+    )
+    m = re.search(zh_direct_pattern, user_msg)
+    if m:
+        zh_name, tol_code, tol_idx, target_it = m.group(1), m.group(2), m.group(3), m.group(4)
+        action = '放寬' if '放寬' in user_msg else ('收緊' if '收緊' in user_msg else '調整')
+        part_id = _name_to_num.get(zh_name, zh_name)
+        tol_code = tol_code.capitalize()
+        return _build_command_result(part_id, tol_code, int(tol_idx), action, int(target_it))
+
+    zh_direct_pattern_alt = (
+        r'(放寬|收緊|調整)'                                  # group 1: 動作
+        r'\s*(' + zh_names_re + r')-([A-Za-z]{1,3})-?(\d+)' # group 2,3,4
+        r'.*?IT\s*(\d+)'                                     # group 5: 目標 IT
+    )
+    m = re.search(zh_direct_pattern_alt, user_msg)
+    if m:
+        action, zh_name, tol_code, tol_idx, target_it = m.group(1), m.group(2), m.group(3), m.group(4), m.group(5)
+        part_id = _name_to_num.get(zh_name, zh_name)
+        tol_code = tol_code.capitalize()
+        return _build_command_result(part_id, tol_code, int(tol_idx), action, int(target_it))
+
+    return None
+
+
+def _build_command_result(part_id: str, tol_code: str, tol_index: int, action: str, target_it: int) -> dict:
+    """組裝解析結果 dict"""
+    part_name_zh = _PART_NAME_MAP.get(str(part_id), f'{part_id}號零件')
+    tol_type_zh  = _TOL_NAME_MAP.get(tol_code, tol_code)
+    # target_name 必須與 editorPathData 的 name 欄位一致：
+    # CSV 公差代號格式為「零件名稱-TYPE大寫+序號」，e.g. "工作臺心軸-DIA1"
+    target_name  = f"{part_name_zh}-{tol_code.upper()}{tol_index}"
+    return {
+        'part_id':      str(part_id),
+        'tol_code':     tol_code,
+        'tol_index':    tol_index,
+        'action':       action,         # 放寬 / 收緊 / 調整
+        'target_it':    target_it,
+        'target_name':  target_name,    # e.g. "工作臺心軸-DIA1"
+        'target_grade': f"IT{target_it}",
+        'part_name_zh': part_name_zh,   # e.g. "工作臺心軸"
+        'tol_type_zh':  tol_type_zh,    # e.g. "直徑"
+    }
+
+def _handle_process_query(user_msg: str, current_path: list = None):
+    """
+    處理製程相關查詢，確定性回答。
+
+    支援格式：
+      - 「IT6 需要什麼製程？」「IT6 怎麼加工？」
+      - 「車削能達到什麼精度？」「磨削的能力？」
+      - 「5-Dia-1 建議怎麼加工？」
+      - 「列出所有製程」
+    """
+    from recommendation.process_advisor import (
+        suggest_processes, estimate_capability, recommend_full,
+        get_all_processes, recommend_for_path
+    )
+
+    # ── 模式 A：「IT6 需要什麼製程」「IT7 怎麼加工」 ──
+    it_match = re.search(r'IT\s*(\d+)\s*.*?(?:需要|用|怎麼|如何|建議|可以|適合|製程|加工|process)', user_msg, re.IGNORECASE)
+    if not it_match:
+        it_match = re.search(r'(?:需要|用|怎麼|如何|建議|可以|適合|製程|加工).*?IT\s*(\d+)', user_msg, re.IGNORECASE)
+    if it_match:
+        it_grade = int(it_match.group(1))
+        # 嘗試判斷特徵類型
+        feat_type = None
+        if any(k in user_msg for k in ['孔', '內孔', '內圓', 'hole', 'bore']):
+            feat_type = 'H'
+        elif any(k in user_msg for k in ['軸', '外圓', 'shaft', 'cylinder']):
+            feat_type = 'S'
+        elif any(k in user_msg for k in ['平面', '端面', 'plane', 'flat']):
+            feat_type = 'P'
+
+        rec = recommend_full(it_grade, feat_type)
+        reply = f"### IT{it_grade} 製程建議\n\n{rec['summary_zh']}\n\n"
+
+        # 詳細製程鏈
+        if rec['process_chain']:
+            reply += "**製程鏈明細：**\n"
+            for i, step in enumerate(rec['process_chain'], 1):
+                reply += f"  {i}. {step['process_zh']}（{step['process_en']}）— {step['reason']}\n"
+
+        return reply
+
+    # ── 模式 B：「車削能達到什麼精度」「磨削的能力」 ──
+    process_names = ['車削', '銑削', '鑽孔', '鉸孔', '搪孔', '搪磨', '外圓磨削', '內圓磨削',
+                     '平面磨削', '研磨拋光', '拉削', '鋸切', '鑄造', '鍛造', '磨削',
+                     'turning', 'milling', 'drilling', 'reaming', 'boring', 'honing',
+                     'grinding', 'lapping', 'broaching']
+    for pn in process_names:
+        if pn in user_msg.lower():
+            desc = estimate_capability(pn)
+            if '找不到' not in desc:
+                return f"### 製程能力查詢\n\n{desc}"
+
+    # ── 模式 C：「5-Dia-1 怎麼加工」「工作臺心軸-Dia-1 建議製程」 ──
+    feat_match = re.search(r'(\d{1,2}-[A-Z][a-z]{1,2}-\d+)', user_msg)
+    if feat_match and current_path:
+        target = feat_match.group(1)
+        for item in current_path:
+            if item.get('name') == target:
+                it_str = item.get('it_grade', '')
+                nominal = item.get('nominal_size')
+                try:
+                    it_grade = int(str(it_str).replace('IT', '').strip())
+                except (ValueError, TypeError):
+                    return f"**{target}** 尚未設定 IT 等級，無法推薦製程。請先填入 IT 等級。"
+
+                feat_type = None
+                if '-H-' in target or 'Dia' in target:
+                    # 判斷是孔還是軸需要看特徵面
+                    feat_type = 'S'
+                if '-P-' in target or 'Fla' in target or 'Dis' in target:
+                    feat_type = 'P'
+
+                rec = recommend_full(it_grade, feat_type, nominal)
+                reply = f"### {target} 製程建議\n\n{rec['summary_zh']}\n\n"
+                if rec['process_chain']:
+                    reply += "**製程鏈：**\n"
+                    for i, step in enumerate(rec['process_chain'], 1):
+                        reply += f"  {i}. {step['process_zh']}（{step['process_en']}）\n"
+                return reply
+        return f"在目前的公差路徑中找不到 **{target}**。"
+
+    # ── 模式 D：「列出所有製程」「製程清單」 ──
+    if any(k in user_msg for k in ['所有製程', '製程清單', '列出製程', '有哪些製程', 'all process']):
+        all_proc = get_all_processes()
+        reply = "### 製程能力一覽表\n\n"
+        reply += "| 製程 | IT範圍 | Ra (μm) | 分類 | 設備 |\n"
+        reply += "|------|--------|---------|------|------|\n"
+        for p in all_proc:
+            reply += f"| {p['process_zh']} | IT{p['it_min']}~{p['it_max']} | {p['Ra_min']}~{p['Ra_max']} | {p['category']} | {p['equipment']} |\n"
+        return reply
+
+    # 未匹配到明確模式 → 回傳 None，走正常 LLM 流程
+    return None
+
+
+def _shorten_names(text: str) -> str:
+    """將 零件名稱-特徵代號 縮短為 編號-特徵代號，用於公差網路輸出。"""
+    for name, num in _PART_NUM_MAP:
+        text = re.sub(re.escape(name) + r'-', num + '-', text)
+    return text
+
 def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhost:11434", history=None, lang="zh-TW", current_analysis=None, current_path=None, current_allocation=None, current_pmi_session=None):
     """
     統一管理 RAG 的查詢邏輯、Prompt 封裝、以及遇到無資料時的 Fallback 機制。
@@ -22,6 +280,7 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
         "analysis": False,
         "allocation": False,
         "adjust_tolerance": False,
+        "process_query": False,
         "target_part": None,
         "pmi_highlight": False,
         "pmi_label": None,
@@ -61,6 +320,12 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
         bom_intent["adjust_tolerance"] = True
         bom_intent["edit"] = True
 
+    # [Phase 5] 意圖分析：製程建議
+    if any(k in user_msg for k in ["製程", "加工", "磨削", "車削", "銑削", "鑽孔", "鉸孔", "搪孔", "搪磨",
+                                     "研磨", "拋光", "拉削", "怎麼做", "怎麼加工", "製造", "粗糙度", "Ra",
+                                     "process", "machining", "grinding", "turning", "milling"]):
+        bom_intent["process_query"] = True
+
     # [Phase 4] 意圖分析：PMI 高亮與 3D 查看器
     if any(k in user_msg for k in ["高亮", "標註", "GD&T", "highlight", "pmi"]):
         bom_intent["pmi_highlight"] = True
@@ -71,7 +336,7 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
             bom_intent["pmi_label"] = f"{pmi_code_match.group(1).lower()}{pmi_code_match.group(2)}"
 
     # 意圖分析：特定零件標定
-    want_all = any(k in user_msg for k in ["完整", "全部", "所有", "每個", "整體", "系統", "架構", "零件", "特徵", "公差", "精密迴轉滑台"])
+    want_all = any(k in user_msg for k in ["完整", "全部", "所有", "每個", "整體", "系統", "架構", "零件", "特徵", "公差", "精密迴轉滑台", "RAS400", "ras400"])
     if not want_all:
         part_id_match = re.search(r'(\d+)[\-－]([\u4e00-\u9fa5a-zA-Z\d]+)', user_msg)
         if part_id_match:
@@ -226,6 +491,69 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
     needs_features  = bom_intent['layout'] == 'grid' or bom_intent['contact'] or bom_intent['edit'] or is_diagnostic
     needs_dsl = True  # 永遠由後端自動生成 DSL，不依賴 AI
 
+    # ══════════════════════════════════════════════════════════════
+    # [Fast Path] 結構化公差調整指令 — 跳過 LLM，確定性解析直接執行
+    # ══════════════════════════════════════════════════════════════
+    voice_cmd = parse_structured_command(user_msg)
+    if voice_cmd:
+        bom_intent["adjust_tolerance"] = True
+        bom_intent["edit"] = True
+        bom_intent["network"] = True
+        bom_intent["features"] = True
+        bom_intent["layout"] = "grid"
+
+        action_zh   = voice_cmd['action']
+        part_zh     = voice_cmd['part_name_zh']
+        tol_zh      = voice_cmd['tol_type_zh']
+
+        if not current_path:
+            reply = (
+                f"⚠️ 目前沒有公差累積路徑可供調整。\n\n"
+                f"請先執行公差分析（輸入「畫出公差網路」），再執行調整指令。"
+            )
+            return reply, bom_intent
+
+        # 委派給 PlanService 做正規化匹配 + ISO 286 查表 + 回填路徑
+        from services.plan_service import PlanService
+        result = PlanService().apply_command(current_path, user_msg)
+
+        if 'error' in result:
+            reply = f"⚠️ {result['error']}"
+            print(f"[CMD] 結構化指令失敗 → {result.get('error')}")
+            return reply, bom_intent
+
+        change       = result['change']
+        matched_name = result['target_name']
+        before       = change['before']
+        after        = change['after']
+        arrow        = '↑' if action_zh == '放寬' else '↓'
+
+        bom_intent["modified_path"] = result['path_data']
+
+        reply = (
+            f"✅ 已{action_zh} **{part_zh}** 的{tol_zh}公差 **{matched_name}**：\n"
+            f"- IT 等級：**{before['it_grade']}** → **{after['it_grade']}** {arrow}\n"
+            f"- 公差值：**{before['val_mm']:.4f} mm** → **{after['val_mm']:.4f} mm**（{after['val_um']:.1f} μm）\n\n"
+            f"已自動回填修改後的公差累積路徑。"
+        )
+        print(f"[CMD] 結構化指令 → {action_zh} {matched_name} → {after['it_grade']} (val {before['val_mm']:.4f}→{after['val_mm']:.4f})")
+        return reply, bom_intent
+
+    # ══════════════════════════════════════════════════════════════
+    # [Fast Path] 製程查詢 — 確定性回答，不需 LLM
+    # ══════════════════════════════════════════════════════════════
+    if bom_intent.get("process_query"):
+        try:
+            from recommendation.process_advisor import (
+                suggest_processes, estimate_capability, recommend_full, get_all_processes
+            )
+            process_reply = _handle_process_query(user_msg, current_path)
+            if process_reply:
+                print(f"[CMD] 製程查詢 fast path 命中")
+                return process_reply, bom_intent
+        except Exception as e:
+            print(f"[WARN] 製程查詢失敗: {e}")
+
     model_lower = model_name.lower()
 
     # 取得 RAG Context
@@ -337,6 +665,9 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
 
                 answer_match = re.search(r'<FINAL_ANSWER>([\s\S]*?)<\/FINAL_ANSWER>', summary)
                 answer_content = answer_match.group(1).strip() if answer_match else ""
+                # contact 模式保留完整零件名稱（分流座-H-3），只有純 network 模式才縮短
+                if bom_intent.get('network') and not bom_intent.get('contact'):
+                    answer_content = _shorten_names(answer_content)
 
                 # 編輯模式：只顯示固定系統提示，省略 AI 生成內容
                 if summary_mode == 'edit':

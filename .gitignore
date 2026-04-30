@@ -46,7 +46,7 @@ logs/
 Thumbs.db
 
 # 不需要的資料檔案
-*.csv
+server/data/*.csv.tmp
 test.xlsx
 ISO_286_1_test.xlsx
 
@@ -82,3 +82,46 @@ convert_machines.py
 test_api.py
 cleanup.bat
 PURGE_PROJECT.bat
+
+# 使用者上傳的 STEP 檔案（可達 GB 級）
+server/data/step_uploads/
+
+# FAISS 向量索引（執行時重建）
+server/data/index.faiss
+*.faiss
+
+# Pickle 快取
+*.pkl
+
+# 壓縮檔備份
+*.zip
+
+# 暫時 import wrapper / 一次性腳本
+server/scripts/_*.py
+
+# === 簡報相關工件（不影響程式邏輯） ===
+# 簡報檔
+*.pptx
+*.docx
+# 根目錄 slide 圖片（不擋 server/static/ 內的 UI 圖）
+/*.jpg
+/*.png
+# 根目錄簡報生成腳本
+/build_*.py
+/gen_*.py
+/gen_*.js
+/fix_*.py
+/mod_*.py
+/add_*.py
+/rebuild_*.py
+/condense.py
+/merge_kb_slide.py
+
+# === 本機大型二進位 / 工具設定 / 暫存目錄 ===
+單機版/
+115單一C軸 (2)/
+新增資料夾/
+test_3d_viz/
+tmp/
+~/
+claude-skills/

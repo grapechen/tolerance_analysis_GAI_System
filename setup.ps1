@@ -1,4 +1,4 @@
-<#
+﻿<#
 .SYNOPSIS
   Tolerance Project — 一次性環境建置腳本（適用於另一台 Windows 電腦）
 
@@ -34,7 +34,7 @@ $ErrorActionPreference = "Stop"
 $ProjectRoot = $PSScriptRoot
 $ServerDir   = Join-Path $ProjectRoot "server"
 $DbHost      = "127.0.0.1"
-$DbPort      = 3306
+$DbPort      = 3307   # 本機 MySQL 聽 3307（非預設 3306）
 $DbUser      = "root"
 $DbPass      = "Bb88710307"
 $DbName      = "tolerance_db"
@@ -93,7 +93,12 @@ if ($null -eq $svc) {
 }
 Write-Ok "MySQL service running: $($svc.Name)"
 
-$pyTest = "import pymysql; c=pymysql.connect(host='$DbHost',port=$DbPort,user='$DbUser',password='$DbPass',connect_timeout=5); print('Server:', c.get_server_info()); c.close()"
+$pyTest = @'
+import pymysql
+c = pymysql.connect(host='{0}', port={1}, user='{2}', password='{3}', connect_timeout=5)
+print('Server:', c.get_server_info())
+c.close()
+'@ -f $DbHost, $DbPort, $DbUser, $DbPass
 & $PythonExe -c $pyTest
 if ($LASTEXITCODE -ne 0) {
     Write-Err "pymysql 連不上 MySQL。請確認 root 密碼為 '$DbPass' 且 port $DbPort 開啟。"
@@ -114,10 +119,17 @@ try {
 }
 
 # 驗證 DB 與表
-$verifyTables = "import pymysql; c=pymysql.connect(host='$DbHost',port=$DbPort,user='$DbUser',password='$DbPass',database='$DbName'); cur=c.cursor(); cur.execute('SHOW TABLES'); print('Tables:', sorted(r[0] for r in cur.fetchall())); c.close()"
+$verifyTables = @'
+import pymysql
+c = pymysql.connect(host='{0}', port={1}, user='{2}', password='{3}', database='{4}')
+cur = c.cursor()
+cur.execute('SHOW TABLES')
+print('Tables:', sorted(r[0] for r in cur.fetchall()))
+c.close()
+'@ -f $DbHost, $DbPort, $DbUser, $DbPass, $DbName
 & $PythonExe -c $verifyTables
 if ($LASTEXITCODE -ne 0) { Write-Err "DB / 表驗證失敗"; exit 1 }
-Write-Ok "Database & tables ready"
+Write-Ok "Database and tables ready"
 
 # ── 5. 檢查 ISO 286 Excel ──────────────────────────────────────────────
 Write-Step "Checking ISO 286 source files"
@@ -148,7 +160,16 @@ try {
 }
 
 # 驗證 IT 表至少有資料
-$verifyIT = "import pymysql; c=pymysql.connect(host='$DbHost',port=$DbPort,user='$DbUser',password='$DbPass',database='$DbName'); cur=c.cursor(); cur.execute('SELECT COUNT(*) FROM iso286_tolerance'); n=cur.fetchone()[0]; c.close(); print(f'iso286_tolerance rows: {n}'); exit(0 if n > 0 else 1)"
+$verifyIT = @'
+import pymysql
+c = pymysql.connect(host='{0}', port={1}, user='{2}', password='{3}', database='{4}')
+cur = c.cursor()
+cur.execute('SELECT COUNT(*) FROM iso286_tolerance')
+n = cur.fetchone()[0]
+c.close()
+print('iso286_tolerance rows:', n)
+exit(0 if n > 0 else 1)
+'@ -f $DbHost, $DbPort, $DbUser, $DbPass, $DbName
 & $PythonExe -c $verifyIT
 if ($LASTEXITCODE -ne 0) { Write-Err "IT 公差表沒有資料，匯入失敗"; exit 1 }
 Write-Ok "ISO 286 data imported"

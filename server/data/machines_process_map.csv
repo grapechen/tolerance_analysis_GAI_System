@@ -18,5 +18,6 @@ machine_attr,process_en_list,note
 金剛鏜床,Boring (Precision),金剛鏜精加工（外部設備）
 精密搪床,Boring (Precision);Boring (Fine),精密搪孔（外部設備）
 鑄造設備,Casting,鑄造毛坯（外部設備）
+複合式車削中心機,Turning (Rough);Turning (Fine);Turning (Precision);Milling;Drilling,複合式車銑中心（車削+銑削+鑽孔；可一次完成正反面加工）
 鍛壓設備,Forging,鍛造毛坯（外部設備）
 帶鋸機/圓鋸機,Sawing,下料（外部設備）

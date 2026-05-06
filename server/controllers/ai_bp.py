@@ -57,13 +57,14 @@ def home_en():
 def api_chat():
     data   = request.get_json(force=True)
     msg    = data.get('message', '')
-    model  = data.get('model', 'llama3:8b-instruct-q4_K_M')
+    model  = data.get('model', 'llama3.1:8b')
     history        = data.get('history', [])
     lang           = data.get('lang', 'zh-TW')
     current_analysis    = data.get('current_analysis')
     current_path        = data.get('current_path')
     current_allocation  = data.get('current_allocation')
     current_pmi_session = data.get('current_pmi_session_id')
+    wf_state            = data.get('wf_state') or {}
 
     if not msg:
         return jsonify({'reply': '請輸入訊息' if lang != 'en' else 'Please enter a message'}), 400
@@ -83,6 +84,7 @@ def api_chat():
             msg, model_name=model, base_url=base_url, history=history, lang=lang,
             current_analysis=current_analysis, current_path=current_path,
             current_allocation=current_allocation, current_pmi_session=current_pmi_session,
+            wf_state=wf_state,
         )
     except Exception as e:
         import sys
@@ -93,22 +95,20 @@ def api_chat():
     return jsonify({'reply': reply, 'intent': bom_intent})
 
 
-# ── 公差分析串流 ──────────────────────────────────────────────────────────────
+# ── 公差分析串流 (POST，避免 pathData 超過 URL 長度上限) ─────────────────────
 
-@ai_bp.get('/api/analyze_tolerance_stream')
+@ai_bp.post('/api/analyze_tolerance_stream')
 def analyze_tolerance_stream():
-    import json as _json
-    raw = request.args.get('pathData', '[]')
-    try:
-        path_data = _json.loads(raw)
-    except Exception:
-        return jsonify({'error': 'pathData JSON 解析失敗'}), 400
+    body = request.get_json(silent=True) or {}
+    path_data = body.get('pathData', [])
+    if not isinstance(path_data, list):
+        return jsonify({'error': 'pathData 必須為陣列'}), 400
 
     try:
-        mc_samples = int(request.args.get('n_samples', 10000))
-        mc_sigma   = float(request.args.get('sigma', 3.0))
-        mc_dist    = int(request.args.get('dist_type', 0))
-    except ValueError:
+        mc_samples = int(body.get('n_samples', 10000))
+        mc_sigma   = float(body.get('sigma', 3.0))
+        mc_dist    = int(body.get('dist_type', 0))
+    except (ValueError, TypeError):
         mc_samples, mc_sigma, mc_dist = 10000, 3.0, 0
 
     try:

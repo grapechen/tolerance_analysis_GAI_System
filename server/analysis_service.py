@@ -55,6 +55,8 @@ class ToleranceData:
 
         # 只有純空間平移/旋轉才算 spatial
         PURE_SPATIAL_AXES = {'traX', 'traY', 'traZ', 'rotX', 'rotY', 'rotZ'}
+        # SFA CSV importer 用 'X'/'Y'/'Z' 作為軸向簡寫，對應到 traX/traY/traZ
+        _AXIS_ALIAS = {'X': 'traX', 'Y': 'traY', 'Z': 'traZ'}
 
         for j, item in enumerate(path_items):
             raw_val = float(item.get('val', 0.0))
@@ -63,6 +65,7 @@ class ToleranceData:
             self.it_grades.append(item.get('it_grade'))
 
             axis = item.get('axis', '')
+            axis = _AXIS_ALIAS.get(axis, axis)
             is_pure_spatial = (item.get('type') == 'spatial') and (axis in PURE_SPATIAL_AXES)
 
             if is_pure_spatial:
@@ -151,6 +154,7 @@ def _build_skeleton_col_map(headers):
         'val':     ['數值', '公差值', 'val'],
         'bias':    ['偏差值', '偏差', 'bias'],
         'dist':    ['角度公差', '距離', '角度', 'dist'],
+        'part':    ['所屬零件', '零件名稱', '零件', 'part'],   # G 所屬零件
     }
     col_map = {}
     used = set()
@@ -229,12 +233,14 @@ def _parse_skeleton_csv(text):
         if dist == 0:
             dist = 1.0
         nominal  = _num(row, 'nominal')
+        part     = _cell(row, 'part', '')     or ''   # G 所屬零件
 
         is_spatial = sym in PURE_SPATIAL_AXES
         item = {
             'type':         'spatial' if is_spatial else 'feature',
             'val':          val, 'bias': bias, 'dist': dist,
             'nominal_size': nominal, 'it_grade': it_grade,
+            'part':         part,
         }
         if is_spatial:
             item['axis'] = sym
@@ -398,96 +404,113 @@ def analyze_stream(path_data: list, run_mc: bool = True, mc_samples: int = 10000
     """
     Generator，以 SSE 格式 yield 進度與結果。
 
-    [v3] 同步執行，避免 Windows + conda numpy/MKL + threading 組合的 segfault。
-    每個分析階段完成後 yield 一次進度。
+    [v4] 在獨立子程序執行，避免 PythonOCC 載入的 MKL DLL 與 numpy MKL 版本衝突
+    （Windows fatal exception: 0xc06d007f PROCEDURE_NOT_FOUND）。
+    子程序崩潰時主程序不受影響，前端收到錯誤訊息。
     """
+    import subprocess
+    import sys
+    import os
 
-    def _safe_yield(payload_dict):
-        """Yield 一條 SSE 訊息，若客戶端斷線則靜默返回。"""
+    def _sse(payload_dict):
         try:
             return f"data: {json.dumps(payload_dict, default=str)}\n\n"
         except Exception:
             return f"data: {json.dumps({'error': 'JSON 序列化失敗'})}\n\n"
 
+    worker_path = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        'analysis_engine', 'subprocess_worker.py'
+    )
+
+    input_payload = json.dumps({
+        'path_data':  path_data,
+        'mc_samples': mc_samples,
+        'mc_sigma':   mc_sigma,
+        'mc_dist':    mc_dist,
+        'run_mc':     run_mc,
+        'mc_raw_cap': MC_RAW_CAP,
+    }, default=str).encode('utf-8')
+
     try:
-        # 階段 0：建立公差資料物件
-        try:
-            tol_data = ToleranceData(path_data)
-        except Exception as e:
-            import traceback
-            yield _safe_yield({'error': f'ToleranceData 建立失敗: {e}\n{traceback.format_exc()}'})
-            return
+        proc = subprocess.Popen(
+            [sys.executable, worker_path],
+            stdin=subprocess.PIPE,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            cwd=os.path.dirname(os.path.abspath(__file__)),
+        )
+    except Exception as e:
+        yield _sse({'error': f'無法啟動分析子程序: {e}'})
+        return
 
-        if len(tol_data.tol_names) == 0:
-            yield _safe_yield({'error': '路徑中沒有任何公差特徵（feature），無法進行分析。'})
-            return
-
-        yield _safe_yield({'progress': 5})
-
-        # 階段 1：Jacobian（不用 progress_cb，避免 thread 互動）
-        try:
-            t_ideal = compute_jacobian(tol_data)
-        except Exception as e:
-            import traceback
-            yield _safe_yield({'error': f'compute_jacobian 失敗: {e}\n{traceback.format_exc()}'})
-            return
-        yield _safe_yield({'progress': 60})
-
-        # 階段 2：RSS / Worst Case
-        try:
-            rss = compute_rss(tol_data)
-        except Exception as e:
-            import traceback
-            yield _safe_yield({'error': f'compute_rss 失敗: {e}\n{traceback.format_exc()}'})
-            return
-        yield _safe_yield({'progress': 75})
-
-        # 階段 3：蒙地卡羅
-        mc = {}
-        if run_mc:
-            try:
-                mc = compute_monte_carlo(tol_data, n_samples=mc_samples, sigma=mc_sigma, dist_type=mc_dist)
-                # 截斷 mc_raw 避免 SSE 大 JSON 失敗（統計值仍照完整樣本算）
-                if 'mc_raw' in mc and len(mc['mc_raw']) > MC_RAW_CAP:
-                    mc['mc_raw'] = mc['mc_raw'][:MC_RAW_CAP]
-                    mc['mc_raw_truncated_from'] = mc_samples
-            except Exception as e:
-                import traceback
-                yield _safe_yield({'error': f'compute_monte_carlo 失敗: {e}\n{traceback.format_exc()}'})
-                return
-        yield _safe_yield({'progress': 90})
-
-        # 階段 4：敏感度 / 貢獻度
-        try:
-            sc = compute_sensitivity_contribution(tol_data)
-        except Exception as e:
-            import traceback
-            yield _safe_yield({'error': f'compute_sensitivity_contribution 失敗: {e}\n{traceback.format_exc()}'})
-            return
-        yield _safe_yield({'progress': 99})
-
-        # 階段 5：組合結果
-        result = {
-            'tol_names':  tol_data.tol_names,
-            'tol_values': tol_data.tol_values,
-            't_ideal_matrix': t_ideal,
-            'sens_X':  tol_data.sens_X,
-            'sens_Y':  tol_data.sens_Y,
-            'sens_Z':  tol_data.sens_Z,
-            'sens_aX': tol_data.sens_aX,
-            'sens_aY': tol_data.sens_aY,
-            'sens_aZ': tol_data.sens_aZ,
-            **rss,
-            **mc,
-            **sc,
-        }
-        yield _safe_yield({'result': result})
-
+    # 用 communicate(timeout) 避免子程序 DLL 卡死時無限阻塞
+    # 若 30 秒內無輸出則殺掉子程序並切換備援
+    _SUBPROCESS_TIMEOUT = 30
+    stdout_data = b''
+    stderr_data = b''
+    proc_ok = False
+    try:
+        stdout_data, stderr_data = proc.communicate(input=input_payload, timeout=_SUBPROCESS_TIMEOUT)
+        proc_ok = (proc.returncode == 0)
+    except subprocess.TimeoutExpired:
+        proc.kill()
+        stdout_data, stderr_data = proc.communicate()
     except GeneratorExit:
+        proc.kill()
         return
     except Exception as e:
-        import traceback
-        yield _safe_yield({'error': f'analyze_stream 例外: {e}\n{traceback.format_exc()}'})
+        proc.kill()
+        yield _sse({'error': f'讀取子程序輸出失敗: {e}'})
+        return
+
+    # 解析子程序輸出（若成功）
+    if proc_ok and stdout_data:
+        for raw_line in stdout_data.splitlines():
+            line = raw_line.strip()
+            if not line:
+                continue
+            try:
+                payload = json.loads(line)
+            except Exception:
+                continue
+            yield _sse(payload)
+            if 'result' in payload or 'error' in payload:
+                return
+
+    # 子程序失敗（崩潰 0xC0000005 或 DLL 卡死 timeout）→ 備援：主程序直接計算
+    # 主程序的 numpy 已正確載入，不會有 DLL 版本衝突
+    yield _sse({'progress': 5})
+    try:
+        from analysis_engine.jacobian   import compute_jacobian
+        from analysis_engine.statistics import compute_rss, compute_monte_carlo, compute_sensitivity_contribution
+        tol_data = ToleranceData(path_data)
+        if len(tol_data.tol_names) == 0:
+            yield _sse({'error': '路徑中沒有任何公差特徵（feature），無法進行分析。'})
+            return
+        t_ideal = compute_jacobian(tol_data)
+        yield _sse({'progress': 60})
+        rss = compute_rss(tol_data)
+        yield _sse({'progress': 75})
+        mc = {}
+        if run_mc:
+            mc = compute_monte_carlo(tol_data, n_samples=mc_samples, sigma=mc_sigma, dist_type=mc_dist)
+            if 'mc_raw' in mc and len(mc['mc_raw']) > MC_RAW_CAP:
+                mc['mc_raw'] = mc['mc_raw'][:MC_RAW_CAP]
+        yield _sse({'progress': 90})
+        sc = compute_sensitivity_contribution(tol_data)
+        yield _sse({'progress': 99})
+        result = {
+            'tol_names': tol_data.tol_names, 'tol_values': tol_data.tol_values,
+            't_ideal_matrix': t_ideal,
+            'sens_X': tol_data.sens_X, 'sens_Y': tol_data.sens_Y, 'sens_Z': tol_data.sens_Z,
+            'sens_aX': tol_data.sens_aX, 'sens_aY': tol_data.sens_aY, 'sens_aZ': tol_data.sens_aZ,
+            **rss, **mc, **sc,
+        }
+        yield _sse({'result': result})
+    except Exception as fallback_err:
+        stderr_text = stderr_data.decode('utf-8', errors='replace') if stderr_data else ''
+        yield _sse({'error': f'備援分析失敗: {fallback_err}\n{stderr_text}'})
 
 
 def analyze_tolerance_path(path_data: list, mc_samples: int = 10000, mc_sigma: float = 3.0, mc_dist: int = 0):
@@ -660,3 +683,213 @@ def compare_allocation(baseline: dict, current: dict) -> dict:
             'wc_improve_pct':  _pct(wc_b, wc_a),
         }
     return result
+
+
+# ─── 配合建議生成 ──────────────────────────────────────────────────────────────
+
+_TOL_TYPE_FITS = {
+    # 直徑/徑向公差 → ISO 孔/軸配合建議
+    'Dia': {
+        'Q1': ('H5/js4 或 H5/k4', '精密定位配合，考慮升一等級至 IT5（外環壓入或過渡配合）'),
+        'Q2': ('維持現值',          '高敏感低貢獻，規格嚴守，不可放寬'),
+        'Q3': ('H6/j5 或 H7/k6',   '公差值偏大，建議收緊一個 IT 等級，可大幅改善徑向誤差'),
+        'Q4': ('H7/h6',             '影響小，可依成本考量放寬至 IT7'),
+    },
+    'Cir': {
+        'Q1': ('圓度 ≤ IT5/2',      '收緊真圓度至現值一半，搭配 P5 級軸承'),
+        'Q2': ('維持現值',           '高敏感低貢獻，嚴守即可'),
+        'Q3': ('圓度 ≤ 現值×0.4',   '真圓度公差過大，建議收緊至現值 40%'),
+        'Q4': ('可維持現值',         '影響小'),
+    },
+    'Par': {
+        'Q1': ('平行度 ≤ 現值×0.5', '收緊平行度，搭配精密研磨加工面'),
+        'Q2': ('維持現值',           '高敏感低貢獻，不可放寬'),
+        'Q3': ('平行度 ≤ 現值×0.1', '平行度公差嚴重偏大（為貢獻度主因），至少收緊至現值 10%'),
+        'Q4': ('可維持現值',         '影響小，可酌情放寬'),
+    },
+    'Per': {
+        'Q1': ('垂直度 ≤ 現值×0.5', '收緊垂直度，使用精密夾具與研磨'),
+        'Q2': ('維持現值',           '高敏感低貢獻，嚴守'),
+        'Q3': ('垂直度 ≤ 現值×0.5', '垂直度值偏大，收緊可改善角度誤差'),
+        'Q4': ('可維持現值',         '影響小'),
+    },
+    'Fla': {
+        'Q1': ('平面度 ≤ 現值×0.5', '收緊平面度，搭配表面研磨'),
+        'Q2': ('維持現值',           '嚴守'),
+        'Q3': ('平面度 ≤ 現值×0.5', '平面度值偏大，建議收緊'),
+        'Q4': ('可維持現值',         '影響小'),
+    },
+    'Dis': {
+        'Q1': ('位置偏差 ≤ 現值×0.7', '收緊位置公差，確認基準面'),
+        'Q2': ('維持現值',             '嚴守'),
+        'Q3': ('位置偏差 ≤ 現值×0.5', '位置偏差值過大，建議收緊'),
+        'Q4': ('可維持現值',           '影響小'),
+    },
+}
+
+_PRIORITY_LABEL = {1: '★★★ 優先收緊', 2: '★★☆ 次要改善', 3: '★☆☆ 規格嚴守', 4: '☆☆☆ 可放寬/維持'}
+_QUADRANT_DESC  = {
+    1: '高敏感 × 高貢獻 → 優先收緊目標',
+    2: '高敏感 × 低貢獻 → 規格嚴守，不可放寬',
+    3: '低敏感 × 高貢獻 → 公差偏大，低成本改善點',
+    4: '低敏感 × 低貢獻 → 成本優化候選',
+}
+
+
+def _detect_tol_type(name: str) -> str:
+    nl = name.lower()
+    for t in ('dia', 'cir', 'par', 'per', 'fla', 'dis', 'str', 'pos', 'con'):
+        if t in nl:
+            return t.capitalize()
+    return 'Other'
+
+
+def _quadrant_from_pct(s_pct: float, c_pct: float, s_avg: float, c_avg: float) -> int:
+    if s_pct >= s_avg and c_pct >= c_avg: return 1
+    if s_pct >= s_avg:                    return 2
+    if c_pct >= c_avg:                    return 3
+    return 4
+
+
+def generate_fit_recommendation(path_data: list, analysis_result: dict) -> dict:
+    """
+    根據公差分析結果，生成組裝鏈概況、誤差摘要、象限分析與配合建議排序。
+    直接使用前端已有的 analysis_result JSON，無需重跑分析。
+    """
+    tol_names  = analysis_result.get('tol_names', [])
+    tol_values = analysis_result.get('tol_values', [])
+    n = len(tol_names)
+    if n == 0:
+        return {'error': '無公差項目，請先執行分析。'}
+
+    # ── 1. 組裝鏈概況 ─────────────────────────────────────────────────────────
+    feature_items = [i for i in path_data if i.get('type') == 'feature']
+    spatial_items = [i for i in path_data if i.get('type') == 'spatial']
+    t_ideal = analysis_result.get('t_ideal_matrix',
+                                  [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]])
+    total_y = round(t_ideal[1][3], 4) if len(t_ideal) >= 2 else 0
+
+    # 從路徑名稱萃取零件名（去掉 -TolType-N 後綴）
+    import re as _re
+    parts_seen, part_list = set(), []
+    for it in feature_items:
+        m = _re.match(r'^(.+?)[-_](Dia|Fla|Par|Per|Cir|Dis|Str|Pos|Con|Cra|Sym)\b', it.get('name',''), _re.IGNORECASE)
+        part = m.group(1) if m else it.get('name','')
+        if part not in parts_seen:
+            parts_seen.add(part)
+            part_list.append(part)
+
+    assembly_overview = {
+        'total_path_items': len(path_data),
+        'feature_count':    n,
+        'spatial_count':    len(spatial_items),
+        'total_y_mm':       total_y,
+        'parts':            part_list,
+    }
+
+    # ── 2. 誤差摘要 ───────────────────────────────────────────────────────────
+    sigma = 3.0
+    error_summary = {}
+    for ax in ('X', 'Y', 'Z', 'aX', 'aY', 'aZ'):
+        rss = analysis_result.get(f'rss_{ax}', 0) or 0
+        wc  = analysis_result.get(f'wc_{ax}',  0) or 0
+        unit = 'arc_sec' if ax.startswith('a') else 'mm'
+        error_summary[ax] = {
+            'rss_3sigma': round(rss * sigma, 6),
+            'wc':         round(wc, 6),
+            'unit':       unit,
+        }
+
+    # ── 3. 決定主要誤差軸（RSS 最大的位置軸 + 角度軸）────────────────────────
+    pos_rss = {a: abs(analysis_result.get(f'rss_{a}', 0) or 0) for a in ('X','Y','Z')}
+    ang_rss = {a: abs(analysis_result.get(f'rss_a{a}', 0) or 0) for a in ('X','Y','Z')}
+    dom_pos = max(pos_rss, key=lambda k: pos_rss[k])
+    dom_ang = 'a' + max(ang_rss, key=lambda k: ang_rss[k])
+
+    # ── 4. 從 contribution / sensitivity 結果建立快查 dict ────────────────────
+    def _build_maps(sens_list, cont_list):
+        s_map = {item['name']: item for item in (sens_list or [])}
+        c_map = {item['name']: item for item in (cont_list or [])}
+        return s_map, c_map
+
+    s_pos_map, c_pos_map = _build_maps(
+        analysis_result.get('sensitivity', []),
+        analysis_result.get('contribution', [])
+    )
+    s_ang_map, c_ang_map = _build_maps(
+        analysis_result.get('angle_sensitivity', []),
+        analysis_result.get('angle_contribution', [])
+    )
+
+    def _get_val(d, name, ax_key):
+        item = d.get(name, {})
+        return float(item.get(ax_key, 0) or 0)
+
+    # ── 5. 象限分析（位置主軸 + 角度主軸）────────────────────────────────────
+    pos_ax_key = dom_pos.lower()     # 'x' / 'y' / 'z'
+    ang_ax_key = dom_ang[1].lower()  # 'x' / 'y' / 'z'
+
+    s_pos_vals = [_get_val(s_pos_map, nm, pos_ax_key) for nm in tol_names]
+    c_pos_vals = [_get_val(c_pos_map, nm, pos_ax_key) for nm in tol_names]
+    s_ang_vals = [_get_val(s_ang_map, nm, ang_ax_key) for nm in tol_names]
+    c_ang_vals = [_get_val(c_ang_map, nm, ang_ax_key) for nm in tol_names]
+
+    s_pos_avg = (sum(s_pos_vals) / n) if n else 0
+    c_pos_avg = (sum(c_pos_vals) / n) if n else 0
+    s_ang_avg = (sum(s_ang_vals) / n) if n else 0
+    c_ang_avg = (sum(c_ang_vals) / n) if n else 0
+
+    # ── 6. 生成每個公差項的建議 ───────────────────────────────────────────────
+    recommendations = []
+    for i, name in enumerate(tol_names):
+        val = tol_values[i] if i < len(tol_values) else 0
+        tol_type = _detect_tol_type(name)
+
+        sp = s_pos_vals[i]; cp = c_pos_vals[i]
+        sa = s_ang_vals[i]; ca = c_ang_vals[i]
+
+        q_pos = _quadrant_from_pct(sp, cp, s_pos_avg, c_pos_avg)
+        q_ang = _quadrant_from_pct(sa, ca, s_ang_avg, c_ang_avg)
+
+        # 以影響較大的象限決定最終象限與優先度
+        # Q1 > Q3 > Q2 > Q4（依改善潛力排序）
+        _q_priority = {1: 1, 3: 2, 2: 3, 4: 4}
+        if _q_priority[q_pos] <= _q_priority[q_ang]:
+            q_final, dom_axis_label = q_pos, dom_pos
+            s_pct, c_pct = sp, cp
+        else:
+            q_final, dom_axis_label = q_ang, dom_ang
+            s_pct, c_pct = sa, ca
+
+        priority = _q_priority[q_final]
+
+        # 取得配合建議文字
+        type_fits = _TOL_TYPE_FITS.get(tol_type, _TOL_TYPE_FITS.get('Dis', {}))
+        qkey = f'Q{q_final}'
+        fit_title, fit_note = type_fits.get(qkey, ('—', '—'))
+
+        recommendations.append({
+            'name':          name,
+            'val':           round(val, 6),
+            'tol_type':      tol_type,
+            'priority':      priority,
+            'priority_label': _PRIORITY_LABEL[priority],
+            'quadrant':      q_final,
+            'quadrant_desc': _QUADRANT_DESC[q_final],
+            'dom_axis':      dom_axis_label,
+            'sens_pct':      round(s_pct, 2),
+            'cont_pct':      round(c_pct, 2),
+            'fit_title':     fit_title,
+            'fit_note':      fit_note,
+        })
+
+    # 依優先度排序，同優先度內依貢獻度降序
+    recommendations.sort(key=lambda x: (x['priority'], -x['cont_pct']))
+
+    return {
+        'assembly_overview': assembly_overview,
+        'error_summary':     error_summary,
+        'dom_pos_axis':      dom_pos,
+        'dom_ang_axis':      dom_ang,
+        'recommendations':   recommendations,
+    }

@@ -7,6 +7,10 @@ import re
 from repositories.tolerance_repo import ToleranceRepository
 
 
+# 非 ISO 代號白名單（YRT 等螺栓鎖附型軸承用語），遇到時跳過 ISO lookup，改回 spec_only
+NON_ISO_FIT_TOKENS = {'軸承孔基準', '軸承外徑基準'}
+
+
 class FitService:
     def __init__(self):
         self._repo = ToleranceRepository()
@@ -76,7 +80,21 @@ class FitService:
     def get_fit_details_for_matchmaking(
         self, size_mm: float, hole_str: str, shaft_str: str
     ) -> dict:
-        """供 MatchmakingService 使用，回傳精簡的配合詳情 dict（失敗時回傳空 dict）。"""
+        """供 MatchmakingService 使用，回傳精簡的配合詳情 dict（失敗時回傳空 dict）。
+
+        若 hole_str 或 shaft_str 落在 NON_ISO_FIT_TOKENS（YRT100 軸承基準等），
+        改回傳 spec_only=True 的 payload，下游報表將顯示規格而非 ISO 偏差數值。
+        """
+        h_token, s_token = (hole_str or '').strip(), (shaft_str or '').strip()
+        if h_token in NON_ISO_FIT_TOKENS or s_token in NON_ISO_FIT_TOKENS:
+            return {
+                'spec_only': True,
+                'fit_type':  '螺栓鎖附固定',
+                'hole':      {'code': h_token, 'spec_note': '軸承基準' if h_token in NON_ISO_FIT_TOKENS else h_token},
+                'shaft':     {'code': s_token, 'spec_note': '軸承基準' if s_token in NON_ISO_FIT_TOKENS else s_token},
+                'note':      'YRT100 螺栓鎖附固定，不依賴 ISO 配合公差',
+            }
+
         hole_code, hole_it   = self.parse_notation(hole_str, is_hole=True)
         shaft_code, shaft_it = self.parse_notation(shaft_str, is_hole=False)
         if not hole_code or not shaft_code:

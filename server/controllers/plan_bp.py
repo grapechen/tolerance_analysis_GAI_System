@@ -1,11 +1,8 @@
-"""plan_bp.py - 方案一/方案二 驗證測試 Blueprint
+"""plan_bp.py - 公差配合推薦 Blueprint
 
 路由：
   POST /api/plan1/recommend_one   方案一（單對輸入）：零件+功能+尺寸 → fit + 機台
-  POST /api/plan2/analyze_path    方案二步驟①：對既有路徑做公差分析（不調整）
-  POST /api/plan2/apply_command   方案二步驟②：套用使用者指令（手動 IT 變更）
   POST /api/plan1/recommend       方案一（批次版，內部測試保留）
-  POST /api/plan2/adjust          方案二（自動調配版，保留）
   GET  /api/plan/mating_pairs     列出所有配對（驗證資料）
 """
 
@@ -14,7 +11,6 @@ from flask import Blueprint, jsonify, request
 from services.plan_service import (
     PlanService,
     DEFAULT_FOCUS_PARTS,
-    DEFAULT_STACK_CHAIN,
 )
 
 plan_bp = Blueprint('plan', __name__)
@@ -31,7 +27,6 @@ def list_mating_pairs():
         'pairs':           pairs,
         'focused_ids':     [p['pair_id'] for p in focused],
         'default_focus':   list(DEFAULT_FOCUS_PARTS),
-        'default_chain':   list(DEFAULT_STACK_CHAIN),
     })
 
 
@@ -99,49 +94,41 @@ def recommend_one():
     return jsonify({'ok': True, 'result': result})
 
 
-@plan_bp.post('/api/plan2/analyze_path')
-def analyze_path():
-    """方案二步驟①：對使用者編輯的公差累積路徑（editorPathData）做分析。
 
-    Request JSON:
-      {
-        "path_data": [...]   // 來自前端 editorPathData
-      }
-    """
+
+
+@plan_bp.get('/api/plan1/parts_list')
+def parts_list():
+    parts = _svc.get_parts_list()
+    return jsonify({'ok': True, 'parts': parts})
+
+
+@plan_bp.post('/api/plan1/advanced_recommend')
+def advanced_recommend():
     p = request.get_json(silent=True) or {}
-    path_data = p.get('path_data')
-    if not isinstance(path_data, list):
-        return jsonify({'ok': False, 'msg': '請提供 path_data（editorPathData）陣列'}), 400
-
-    result = _svc.analyze_path(path_data)
-    if 'error' in result:
-        return jsonify({'ok': False, 'msg': result['error']}), 400
+    focus_part   = (p.get('focus_part') or '').strip()
+    current_path = p.get('current_path') or []
+    if not focus_part:
+        return jsonify({'ok': False, 'msg': '請提供 focus_part'}), 400
+    result = _svc.advanced_recommend(focus_part, current_path)
     return jsonify({'ok': True, **result})
 
 
-@plan_bp.post('/api/plan2/apply_command')
-def apply_command():
-    """方案二步驟②：解析使用者指令並套用到路徑（其他項不動）。
-
-    Request JSON:
-      {
-        "path_data": [...],            // editorPathData
-        "command":   "請將編號5零件...IT7"
-      }
-    """
+@plan_bp.post('/api/plan1/apply_fit')
+def apply_fit():
     p = request.get_json(silent=True) or {}
-    command = (p.get('command') or '').strip()
-    if not command:
-        return jsonify({'ok': False, 'msg': '請提供 command'}), 400
-    path_data = p.get('path_data')
-    if not isinstance(path_data, list):
-        return jsonify({'ok': False, 'msg': '請提供 path_data（editorPathData）陣列'}), 400
-
-    result = _svc.apply_command(path_data, command)
-    if 'error' in result:
-        return jsonify({'ok': False, 'msg': result['error'],
-                        'parsed': result.get('parsed')}), 400
-    return jsonify({'ok': True, **result})
+    pair_id      = (p.get('pair_id') or '').strip()
+    fit_hole     = (p.get('fit_hole') or '').strip()
+    fit_shaft    = (p.get('fit_shaft') or '').strip()
+    current_path = p.get('current_path') or []
+    try:
+        nominal_dia = float(p.get('nominal_dia', 0))
+    except (TypeError, ValueError):
+        return jsonify({'ok': False, 'msg': 'nominal_dia 必須是數字'}), 400
+    if not pair_id or not fit_hole or not fit_shaft:
+        return jsonify({'ok': False, 'msg': '缺少必要參數'}), 400
+    result = _svc.apply_fit_to_path(pair_id, fit_hole, fit_shaft, nominal_dia, current_path)
+    return jsonify(result)
 
 
 @plan_bp.post('/api/plan1/recommend')
@@ -168,41 +155,3 @@ def recommend_plan1():
         'meta':    {'focus_parts': focus_parts or 'all'},
     })
 
-
-@plan_bp.post('/api/plan2/adjust')
-def adjust_plan2():
-    """方案二：對 Plan 1 結果做緊/鬆調配。
-
-    Request JSON:
-      {
-        "plan1": [...],                 # 方案一輸出（必填）
-        "chain": ["MP03", "MP02", ...], # 選擇要做 stack-up 的鏈，預設 DEFAULT_STACK_CHAIN
-        "target_um": 50,                # 目標累積（μm），不給則用門檻法
-        "high_threshold": 25,           # 高貢獻門檻 %（預設 25）
-        "low_threshold":  8             # 低貢獻門檻 %（預設 8）
-      }
-    """
-    p = request.get_json(silent=True) or {}
-    plan1 = p.get('plan1')
-    if not plan1:
-        return jsonify({'ok': False, 'msg': '請提供 plan1（方案一輸出）'}), 400
-
-    chain = p.get('chain') or DEFAULT_STACK_CHAIN
-    try:
-        target_um = float(p['target_um']) if p.get('target_um') is not None else None
-    except (TypeError, ValueError):
-        return jsonify({'ok': False, 'msg': 'target_um 必須是數值'}), 400
-    try:
-        high_th = float(p.get('high_threshold', 25.0))
-        low_th  = float(p.get('low_threshold', 8.0))
-    except (TypeError, ValueError):
-        return jsonify({'ok': False, 'msg': 'threshold 必須是數值'}), 400
-
-    result = _svc.adjust_plan2(
-        plan1, chain=chain, target_um=target_um,
-        high_threshold=high_th, low_threshold=low_th,
-    )
-    if 'error' in result:
-        return jsonify({'ok': False, 'msg': result['error']}), 400
-
-    return jsonify({'ok': True, **result})

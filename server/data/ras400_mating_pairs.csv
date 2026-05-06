@@ -1,12 +1,13 @@
-﻿pair_id,hole_part,hole_feature,shaft_part,shaft_feature,nominal_dia,function_desc,priority
+pair_id,hole_part,hole_feature,shaft_part,shaft_feature,nominal_dia,function_desc,priority
 MP01,工作臺,H-2,工作臺心軸,S-3,30,工作臺定位於心軸頂部，需精密定位且可組裝,high
 MP02,工作臺心軸,H-4,編碼器心軸,S-4,10,兩心軸對接，傳遞旋轉訊號,high
 MP03,編碼器,H-1,編碼器心軸,S-2,8,編碼器讀取心軸角度，要求高旋轉精度,high
 MP04,軸承,H-4,工作臺心軸,S-1,25,軸承內圈隨心軸旋轉，過盈固定,high
 MP05,軸承座,H-1,軸承,S-3,47,軸承外圈固定於軸承座，承受徑向負載,high
-MP06,軸承座,H-2,馬達水套,S-2,60,水套與軸承座定位連接,medium
+MP06,軸承座,H-2,馬達水套,S-2,275,水套與軸承座定位連接,medium
 MP07,轉動軸,H-1,工作臺心軸,S-4,22,轉動軸與心軸對接，傳遞旋轉扭矩,high
 MP08,馬達,H-5,轉動軸,S-2,18,馬達輸出端與轉動軸連接，傳遞扭矩,high
-MP09,馬達座,H-2,分流座,S-1,35,分流座定位於馬達座（第一段）,medium
-MP10,馬達座,H-2,分流座,S-3,30,分流座定位於馬達座（第二段）,medium
-MP11,馬達水套,H-1,馬達,S-1,80,水套套於馬達外殼，承擔冷卻與密封定位,medium
+MP09,馬達座,H-2,分流座,S-1,135,分流座定位於馬達座（第一段 ⌀135）,medium
+MP10,馬達座,H-1,分流座,S-3,165,分流座定位於馬達座（第二段 ⌀165）,medium
+MP11,馬達水套,H-1,馬達,S-1,230,水套套於馬達外殼，承擔冷卻與密封定位,medium
+MP12,馬達座,H-1,分流座,S-2,165,分流座定位於馬達座（⌀165 半面A）,medium

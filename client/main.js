@@ -293,19 +293,103 @@ async function analyzeFit() {
 
 // --- [Smart Fit 與智慧推薦] 負責呼叫後端推薦系統與橋接機台資料 ---
 
-async function querySmartFit() {
-    // 取得 Select2 的陣列值
-    let keywords = $('#smart-keywords').val();
+// 全域維度狀態：{ '中速旋轉': 'required', '精確': 'optional', ... }
+window._dimState = window._dimState || {};
 
-    // 如果是單選模式，值會是字串，需轉為陣列以符合後端需求
-    if (keywords && !Array.isArray(keywords)) {
-        keywords = [keywords];
+async function _initDimensions() {
+    const container = document.getElementById('smart-dim-groups');
+    if (!container || container.dataset.loaded === 'true') return;
+    try {
+        const res = await fetch(getApiUrl('/api/matchmaking/dimensions'));
+        const data = await res.json();
+        if (!data.ok) return;
+        let html = '';
+        data.groups.forEach(g => {
+            html += `<div class="smart-dim-group">
+              <span class="smart-dim-group-label">${g.group_zh}</span>
+              <div class="smart-dim-chips">`;
+            g.items.forEach(it => {
+                const safeZh = it.zh.replace(/"/g, '&quot;');
+                html += `<button type="button" class="dim-chip"
+                          data-zh="${safeZh}" data-en="${it.en}"
+                          onclick="cycleDim(this)" title="${it.en}">
+                          ${it.zh}
+                        </button>`;
+            });
+            html += `</div></div>`;
+        });
+        container.innerHTML = html;
+        container.dataset.loaded = 'true';
+    } catch (e) {
+        console.error('[main] 載入維度失敗:', e);
     }
+}
 
-    // 如果沒有選取任何項目或是陣列為空
-    if (!keywords || keywords.length === 0) {
-        showResult('smart-result', '請選擇至少一個關鍵字', true);
-        return;
+function cycleDim(btn) {
+    const zh = btn.dataset.zh;
+    const cur = window._dimState[zh] || '';
+    const next = cur === '' ? 'required' : (cur === 'required' ? 'optional' : '');
+    if (next === '') delete window._dimState[zh];
+    else window._dimState[zh] = next;
+    btn.classList.remove('dim-state-required', 'dim-state-optional');
+    if (next) btn.classList.add('dim-state-' + next);
+    _updateDimSummary();
+}
+
+function _updateDimSummary() {
+    const required = Object.keys(window._dimState).filter(k => window._dimState[k] === 'required');
+    const optional = Object.keys(window._dimState).filter(k => window._dimState[k] === 'optional');
+    const summary  = document.getElementById('smart-dim-summary');
+    const clearBtn = document.getElementById('smart-dim-clear-btn');
+    if (!required.length && !optional.length) {
+        summary.textContent = '未選擇維度';
+        summary.classList.remove('has-selection');
+        if (clearBtn) clearBtn.style.display = 'none';
+    } else {
+        const parts = [];
+        if (required.length) parts.push(`必選 ${required.length}`);
+        if (optional.length) parts.push(`可選 ${optional.length}`);
+        summary.textContent = '已選 ' + parts.join(' / ');
+        summary.classList.add('has-selection');
+        if (clearBtn) clearBtn.style.display = 'inline-block';
+    }
+}
+
+function toggleDimPanel() {
+    const panel = document.getElementById('smart-dim-panel');
+    const arrow = document.getElementById('smart-dim-toggle-arrow');
+    const open  = panel.style.display === 'none' || !panel.style.display;
+    panel.style.display = open ? 'block' : 'none';
+    if (arrow) arrow.textContent = open ? '▾' : '▸';
+    if (open) _initDimensions();
+}
+
+function clearAllDims() {
+    window._dimState = {};
+    document.querySelectorAll('#smart-dim-panel .dim-chip').forEach(c => {
+        c.classList.remove('dim-state-required', 'dim-state-optional');
+    });
+    _updateDimSummary();
+}
+
+function _getDimensions() {
+    const required = Object.keys(window._dimState).filter(k => window._dimState[k] === 'required');
+    const optional = Object.keys(window._dimState).filter(k => window._dimState[k] === 'optional');
+    return { required, optional };
+}
+
+async function querySmartFit() {
+    const dims = _getDimensions();
+    const useDims = (dims.required.length || dims.optional.length) > 0;
+
+    let keywords = [];
+    if (!useDims) {
+        keywords = $('#smart-keywords').val();
+        if (keywords && !Array.isArray(keywords)) keywords = [keywords];
+        if (!keywords || keywords.length === 0) {
+            showResult('smart-result', '請選擇關鍵字或勾選維度', true);
+            return;
+        }
     }
 
     const resultDiv = document.getElementById('smart-result');
@@ -313,46 +397,48 @@ async function querySmartFit() {
     resultDiv.innerHTML = '<div style="color:#94a3b8">搜尋中...</div>';
 
     try {
+        const body = useDims ? { dimensions: dims } : { keywords };
         const response = await fetch(getApiUrl('/api/recommend/smart_fit'), {
             method: 'POST',
-            body: JSON.stringify({ keywords: keywords }),
+            body: JSON.stringify(body),
             headers: { 'Content-Type': 'application/json' }
         });
         const data = await response.json();
 
-        if (!data.ok) {
-            showResult('smart-result', data.msg || '搜尋失敗', true);
-            return;
-        }
+        if (!data.ok) { showResult('smart-result', data.msg || '搜尋失敗', true); return; }
+        if (data.results.length === 0) { showResult('smart-result', '找不到符合條件的配合建議', true); return; }
 
-        if (data.results.length === 0) {
-            showResult('smart-result', '找不到符合條件的配合建議', true);
-            return;
-        }
-
-        let html = '<div class="success">✅ 找到 ' + data.results.length + ' 筆建議</div>';
+        const modeLabel = data.mode === 'dimensions' ? '維度' : '關鍵字';
+        let html = `<div class="success">✅ ${modeLabel}模式：找到 ${data.results.length} 筆建議</div>`;
         data.results.forEach(item => {
-            // 為了安全性轉義引號
-            const h = (item.hole || '').replace(/'/g, "\\'");
-            const s = (item.shaft || '').replace(/'/g, "\\'");
+            const hole  = item.hole_tol  || item.shaft || '';
+            const shaft = item.shaft_dev || item.hole  || '';
+            const h = hole.replace(/'/g, "\\'");
+            const s = shaft.replace(/'/g, "\\'");
+            const src = item.source || 'ANSI';
+            const srcBadge = ({
+                'ANSI':         '<span class="src-badge src-ansi">ANSI</span>',
+                'YRT100':       '<span class="src-badge src-yrt">YRT100</span>',
+                'RAS400_custom':'<span class="src-badge src-ras">RAS400</span>',
+            })[src] || '';
+            const approxWarn = item.is_approx ? ' <span class="approx-warn" title="軸偏差為近似值，不在 ABC 協議範圍">⚠ 近似值</span>' : '';
+            const scoreBadge = (item.score != null) ? `<span class="score-badge" title="必選+可選命中加權">${item.score}</span>` : '';
+            const matchedBadges = (item.matched_tags || []).map(t => `<span class="match-tag">${t}</span>`).join('');
+            const canBridge = !/基準/.test(hole) && !/基準/.test(shaft);
 
             html += `
                 <div class="result-item smart-result-item">
-                    <div class="smart-result-title">
-                        ${item.type} - ${item.function}
-                    </div>
+                    <div class="smart-result-title">${srcBadge} ${item.type} - ${item.function} ${scoreBadge}${approxWarn}</div>
                     <div class="smart-result-meta">
-                        <span>軸: <b style="color:#fff">${item.shaft || '-'}</b></span>
-                        <span>孔: <b style="color:#fff">${item.hole || '-'}</b></span>
-                        <span>ANSI: ${item.ansi}</span>
+                        <span>孔: <b style="color:#fff">${hole || '-'}</b></span>
+                        <span>軸: <b style="color:#fff">${shaft || '-'}</b></span>
+                        <span>ANSI/編碼: ${item.ansi}</span>
                     </div>
-                    <div class="smart-result-note">${item.note}</div>
-                    
-                    ${(h || s) ?
-                    `<button class="smart-bridge-btn" onclick="bridgeToMachine('${h}', '${s}')">
-                            帶入機台篩選 ↓
-                        </button>` : ''
-                }
+                    <div class="smart-result-note">${item.note || ''}</div>
+                    ${matchedBadges ? `<div class="match-tags">${matchedBadges}</div>` : ''}
+                    ${canBridge ?
+                        `<button class="smart-bridge-btn" onclick="bridgeToMachine('${h}', '${s}')">帶入機台篩選 ↓</button>` :
+                        '<div class="bridge-disabled">（YRT100 螺栓鎖附固定，跳過 ISO 機台精度推導）</div>'}
                 </div>
             `;
         });

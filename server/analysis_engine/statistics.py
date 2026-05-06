@@ -7,6 +7,8 @@
 import math
 import numpy as np
 
+RAD_TO_ARCSEC = (180.0 / math.pi) * 3600.0   # 206264.8 — 對應單機版 * (180/pi) * 3600
+
 
 def compute_rss(tol_data):
     """
@@ -63,9 +65,14 @@ def compute_rss(tol_data):
 
     return {
         "rss_X":  _sqrt(sum_rss_X),  "rss_Y":  _sqrt(sum_rss_Y),  "rss_Z":  _sqrt(sum_rss_Z),
-        "rss_aX": _sqrt(sum_rss_aX), "rss_aY": _sqrt(sum_rss_aY), "rss_aZ": _sqrt(sum_rss_aZ),
+        # 角度結果轉換為 arc_second（對應單機版 * (180/pi) * 3600）
+        "rss_aX": round(_sqrt(sum_rss_aX) * RAD_TO_ARCSEC, 8),
+        "rss_aY": round(_sqrt(sum_rss_aY) * RAD_TO_ARCSEC, 8),
+        "rss_aZ": round(_sqrt(sum_rss_aZ) * RAD_TO_ARCSEC, 8),
         "wc_X":  round(sum_wc_X, 8),  "wc_Y":  round(sum_wc_Y, 8),  "wc_Z":  round(sum_wc_Z, 8),
-        "wc_aX": round(sum_wc_aX, 8), "wc_aY": round(sum_wc_aY, 8), "wc_aZ": round(sum_wc_aZ, 8),
+        "wc_aX": round(sum_wc_aX * RAD_TO_ARCSEC, 8),
+        "wc_aY": round(sum_wc_aY * RAD_TO_ARCSEC, 8),
+        "wc_aZ": round(sum_wc_aZ * RAD_TO_ARCSEC, 8),
         "contributions": contribs,
     }
 
@@ -192,11 +199,14 @@ def compute_monte_carlo(tol_data, n_samples=10000, sigma=3.0, dist_type=0):
     res_matrix = _run_mc_core(n_samples, values, sX, sY, sZ, saX, saY, saZ,
                               biases=biases, dist_type=dist_type, sigma=float(sigma))
 
-    # 3. 統計計算
+    # 3. 角度欄位（cols 3,4,5）轉換為 arc_second（對應單機版 * (180/pi) * 3600）
+    res_matrix[:, 3] *= RAD_TO_ARCSEC
+    res_matrix[:, 4] *= RAD_TO_ARCSEC
+    res_matrix[:, 5] *= RAD_TO_ARCSEC
+
+    # 4. 統計計算
     def _get_stats(arr):
-        mean = np.mean(arr)
         std  = np.std(arr)
-        # Numba 計算的是標準差，但在公差分析中我們通常關心最大值 (Worst Case Sampled)
         max_abs = np.max(np.abs(arr))
         return round(std, 8), round(max_abs, 8)
 
@@ -204,7 +214,7 @@ def compute_monte_carlo(tol_data, n_samples=10000, sigma=3.0, dist_type=0):
     xstd, xmax   = _get_stats(res_matrix[:, 0])
     ystd, ymax   = _get_stats(res_matrix[:, 1])
     zstd, zmax   = _get_stats(res_matrix[:, 2])
-    axstd, axmax = _get_stats(res_matrix[:, 3])
+    axstd, axmax = _get_stats(res_matrix[:, 3])   # 已為 arc_second
     aystd, aymax = _get_stats(res_matrix[:, 4])
     azstd, azmax = _get_stats(res_matrix[:, 5])
 
@@ -213,5 +223,5 @@ def compute_monte_carlo(tol_data, n_samples=10000, sigma=3.0, dist_type=0):
         "mc_aX_std": axstd, "mc_aY_std": aystd, "mc_aZ_std": azstd,
         "mc_X_max": xmax,   "mc_Y_max": ymax,   "mc_Z_max": zmax,
         "mc_aX_max": axmax, "mc_aY_max": aymax, "mc_aZ_max": azmax,
-        "mc_raw": res_matrix.tolist() # 回傳原始 10,000 筆樣本數據供 3D 使用
+        "mc_raw": res_matrix.tolist()  # cols 0-2 mm, cols 3-5 arc_second
     }

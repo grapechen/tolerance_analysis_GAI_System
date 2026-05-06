@@ -346,11 +346,18 @@ def get_graph_rag_response(query: str, model_name: str = "llama3.1:8b", base_url
         final_prompt = QA_PROMPT.format(context=filtered_context, question=query)
 
         client = ollama.Client(host=base_url)
-        response = client.generate(
-            model=model_name,
-            prompt=final_prompt,
-            options={"temperature": 0.0, "num_ctx": 16384}
-        )
+        try:
+            response = client.generate(
+                model=model_name,
+                prompt=final_prompt,
+                options={"temperature": 0.0, "num_ctx": 16384}
+            )
+        except Exception as _ollama_err:
+            err_str = str(_ollama_err)
+            if '403' in err_str or 'subscription' in err_str.lower():
+                print(f"[ERROR] Ollama 模型 '{model_name}' 需要訂閱（403），請改用免費模型（如 llama3.1:8b）。")
+                return f"[模型錯誤] 目前選用的模型 **{model_name}** 需要 Ollama 訂閱。請在右上角切換模型為 **llama3.1:8b**。"
+            raise
 
         if hasattr(response, 'response'):
             draft_result = response.response or ''

@@ -6,8 +6,6 @@ function renderAnalysisResult(result) {
     const fmt   = (v) => (v != null ? Number(v).toFixed(4) : '0.0000');
     const fmt6  = (v) => (v != null ? Number(v).toFixed(6) : '0.000000');
     const fmtPct = (v) => (v != null ? Number(v).toFixed(2) + '%' : '—');
-    const RAD_TO_ARCSEC = 206264.8;
-
     // ── helper：產生數據區塊 HTML (現在改為白底黑框) ──────────────────────────────────
     function _dataBlock(title, rows, cols) {
         let tableRows = rows.map(r => `
@@ -51,21 +49,21 @@ function renderAnalysisResult(result) {
         ['Zerror', fmt(result.wc_Z * -1.0), fmt(result.wc_Z)]
     ], ['tol_range', 'min', 'max']);
 
-    // 4. Angle Statistics Model (arc_second)
+    // 4. Angle Statistics Model (arc_second) — backend 已輸出 arc_second
     const aStatsHtml = _dataBlock('Angle Statistics Model (arc_second)', [
-        ['Xerror', fmt(result.rss_aX * -3.0 * RAD_TO_ARCSEC), fmt(result.rss_aX * 3.0 * RAD_TO_ARCSEC)],
-        ['Yerror', fmt(result.rss_aY * -3.0 * RAD_TO_ARCSEC), fmt(result.rss_aY * 3.0 * RAD_TO_ARCSEC)],
-        ['Zerror', fmt(result.rss_aZ * -3.0 * RAD_TO_ARCSEC), fmt(result.rss_aZ * 3.0 * RAD_TO_ARCSEC)]
+        ['Xerror', fmt(result.rss_aX * -3.0), fmt(result.rss_aX * 3.0)],
+        ['Yerror', fmt(result.rss_aY * -3.0), fmt(result.rss_aY * 3.0)],
+        ['Zerror', fmt(result.rss_aZ * -3.0), fmt(result.rss_aZ * 3.0)]
     ], ['tol_range', '-3sigma', '+3sigma']);
 
-    // 5. Angle Worst Case Model (arc_second)
+    // 5. Angle Worst Case Model (arc_second) — backend 已輸出 arc_second
     const aWcHtml = _dataBlock('Angle Worst Case Model (arc_second)', [
-        ['Xerror', fmt(result.wc_aX * -1.0 * RAD_TO_ARCSEC), fmt(result.wc_aX * 1.0 * RAD_TO_ARCSEC)],
-        ['Yerror', fmt(result.wc_aY * -1.0 * RAD_TO_ARCSEC), fmt(result.wc_aY * 1.0 * RAD_TO_ARCSEC)],
-        ['Zerror', fmt(result.wc_aZ * -1.0 * RAD_TO_ARCSEC), fmt(result.wc_aZ * 1.0 * RAD_TO_ARCSEC)]
+        ['Xerror', fmt(result.wc_aX * -1.0), fmt(result.wc_aX)],
+        ['Yerror', fmt(result.wc_aY * -1.0), fmt(result.wc_aY)],
+        ['Zerror', fmt(result.wc_aZ * -1.0), fmt(result.wc_aZ)]
     ], ['tol_range', 'min', 'max']);
 
-    const title = isEn ? '📊 Tolerance Analysis Report' : '📊 公差分析報告';
+    const title = isEn ? 'Tolerance Analysis Report' : '公差分析報告';
     
     // --- 產生詳細表格 HTML (同樣改為白底黑框) ---
     const _tblHeader = (cols) => `<thead><tr style="border-bottom:2px solid #000000; background:#f1f5f9;">${cols.map(c => `<th style="text-align:left; padding:8px; font-size:0.75rem; color:#000000; border-right:1px solid #000000;">${c}</th>`).join('')}</tr></thead>`;
@@ -73,7 +71,7 @@ function renderAnalysisResult(result) {
     // 敏感度表格
     const sensX = result.sensitivity || [];
     const sensHtml = `
-        <div style="margin-top:10px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">📘 ${isEn ? 'Sensitivity Analysis' : '敏感度分析'}</div>
+        <div style="margin-top:10px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">${isEn ? 'Sensitivity Analysis' : '敏感度分析'}</div>
         <table style="width:100%; border-collapse:collapse; margin-top:5px; border:1px solid #000000; background:#ffffff;">
             ${_tblHeader([isEn?'Rank':'排名', 'tol_sym', 'X(%)', 'Y(%)', 'Z(%)'])}
             <tbody>
@@ -93,7 +91,7 @@ function renderAnalysisResult(result) {
     // 貢獻度表格 (平移)
     const contX = result.contribution || [];
     const contHtml = `
-        <div style="margin-top:10px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">📙 ${isEn ? 'Contribution Analysis' : '貢獻度分析'}</div>
+        <div style="margin-top:10px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">${isEn ? 'Contribution Analysis' : '貢獻度分析'}</div>
         <table style="width:100%; border-collapse:collapse; margin-top:5px; border:1px solid #000000; background:#ffffff;">
             ${_tblHeader([isEn?'Rank':'排名', 'tol_sym', 'X(%)', 'Y(%)', 'Z(%)'])}
             <tbody>
@@ -113,7 +111,7 @@ function renderAnalysisResult(result) {
     // 角度敏感度表格
     const sensA = result.angle_sensitivity || [];
     const sensAHtml = `
-        <div style="margin-top:10px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">📘 ${isEn ? 'Angle Sensitivity Analysis' : '角度敏感度分析'}</div>
+        <div style="margin-top:10px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">${isEn ? 'Angle Sensitivity Analysis' : '角度敏感度分析'}</div>
         <table style="width:100%; border-collapse:collapse; margin-top:5px; border:1px solid #000000; background:#ffffff;">
             ${_tblHeader([isEn?'Rank':'排名', 'tol_sym', 'X(%)', 'Y(%)', 'Z(%)'])}
             <tbody>
@@ -133,7 +131,7 @@ function renderAnalysisResult(result) {
     // 角度貢獻度表格
     const contA = result.angle_contribution || [];
     const contAHtml = `
-        <div style="margin-top:10px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">📙 ${isEn ? 'Angle Contribution Analysis' : '角度貢獻度分析'}</div>
+        <div style="margin-top:10px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">${isEn ? 'Angle Contribution Analysis' : '角度貢獻度分析'}</div>
         <table style="width:100%; border-collapse:collapse; margin-top:5px; border:1px solid #000000; background:#ffffff;">
             ${_tblHeader([isEn?'Rank':'排名', 'tol_sym', 'X(%)', 'Y(%)', 'Z(%)'])}
             <tbody>
@@ -152,7 +150,7 @@ function renderAnalysisResult(result) {
 
     // 累積誤差摘要表格
     const summaryHtml = `
-        <div style="margin-top:15px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">📋 ${isEn ? 'Accumulated Error Summary' : '累積誤差摘要'}</div>
+        <div style="margin-top:15px; font-size:0.85rem; font-weight:bold; color:#000000; text-transform:uppercase;">${isEn ? 'Accumulated Error Summary' : '累積誤差摘要'}</div>
         <div style="overflow-x:auto;">
             <table style="width:100%; border-collapse:collapse; margin-top:5px; border:1px solid #000000; background:#ffffff; font-size:0.75rem; min-width:350px;">
                 <thead>
@@ -167,10 +165,10 @@ function renderAnalysisResult(result) {
                     </tr>
                 </thead>
                 <tbody>
-                    <tr style="border-bottom:1px solid #000000;"><td>RSS</td><td style="text-align:right;">${fmt(result.rss_X)}</td><td style="text-align:right;">${fmt(result.rss_Y)}</td><td style="text-align:right;">${fmt(result.rss_Z)}</td><td style="text-align:right;">${fmt(result.rss_aX*RAD_TO_ARCSEC)}</td><td style="text-align:right;">${fmt(result.rss_aY*RAD_TO_ARCSEC)}</td><td style="text-align:right;">${fmt(result.rss_aZ*RAD_TO_ARCSEC)}</td></tr>
-                    <tr style="border-bottom:1px solid #000000;"><td>Worst Case</td><td style="text-align:right;">${fmt(result.wc_X)}</td><td style="text-align:right;">${fmt(result.wc_Y)}</td><td style="text-align:right;">${fmt(result.wc_Z)}</td><td style="text-align:right;">${fmt(result.wc_aX*RAD_TO_ARCSEC)}</td><td style="text-align:right;">${fmt(result.wc_aY*RAD_TO_ARCSEC)}</td><td style="text-align:right;">${fmt(result.wc_aZ*RAD_TO_ARCSEC)}</td></tr>
-                    <tr style="border-bottom:1px solid #000000;"><td>MC σ</td><td style="text-align:right;">${fmt(result.mc_X_std)}</td><td style="text-align:right;">${fmt(result.mc_Y_std)}</td><td style="text-align:right;">${fmt(result.mc_Z_std)}</td><td style="text-align:right;">${fmt(result.mc_aX_std*RAD_TO_ARCSEC)}</td><td style="text-align:right;">${fmt(result.mc_aY_std*RAD_TO_ARCSEC)}</td><td style="text-align:right;">${fmt(result.mc_aZ_std*RAD_TO_ARCSEC)}</td></tr>
-                    <tr><td>MC max</td><td style="text-align:right;">${fmt(result.mc_X_max)}</td><td style="text-align:right;">${fmt(result.mc_Y_max)}</td><td style="text-align:right;">${fmt(result.mc_Z_max)}</td><td style="text-align:right;">${fmt(result.mc_aX_max*RAD_TO_ARCSEC)}</td><td style="text-align:right;">${fmt(result.mc_aY_max*RAD_TO_ARCSEC)}</td><td style="text-align:right;">${fmt(result.mc_aZ_max*RAD_TO_ARCSEC)}</td></tr>
+                    <tr style="border-bottom:1px solid #000000;"><td>RSS</td><td style="text-align:right;">${fmt(result.rss_X)}</td><td style="text-align:right;">${fmt(result.rss_Y)}</td><td style="text-align:right;">${fmt(result.rss_Z)}</td><td style="text-align:right;">${fmt(result.rss_aX)}</td><td style="text-align:right;">${fmt(result.rss_aY)}</td><td style="text-align:right;">${fmt(result.rss_aZ)}</td></tr>
+                    <tr style="border-bottom:1px solid #000000;"><td>Worst Case</td><td style="text-align:right;">${fmt(result.wc_X)}</td><td style="text-align:right;">${fmt(result.wc_Y)}</td><td style="text-align:right;">${fmt(result.wc_Z)}</td><td style="text-align:right;">${fmt(result.wc_aX)}</td><td style="text-align:right;">${fmt(result.wc_aY)}</td><td style="text-align:right;">${fmt(result.wc_aZ)}</td></tr>
+                    <tr style="border-bottom:1px solid #000000;"><td>MC σ</td><td style="text-align:right;">${fmt(result.mc_X_std)}</td><td style="text-align:right;">${fmt(result.mc_Y_std)}</td><td style="text-align:right;">${fmt(result.mc_Z_std)}</td><td style="text-align:right;">${fmt(result.mc_aX_std)}</td><td style="text-align:right;">${fmt(result.mc_aY_std)}</td><td style="text-align:right;">${fmt(result.mc_aZ_std)}</td></tr>
+                    <tr><td>MC max</td><td style="text-align:right;">${fmt(result.mc_X_max)}</td><td style="text-align:right;">${fmt(result.mc_Y_max)}</td><td style="text-align:right;">${fmt(result.mc_Z_max)}</td><td style="text-align:right;">${fmt(result.mc_aX_max)}</td><td style="text-align:right;">${fmt(result.mc_aY_max)}</td><td style="text-align:right;">${fmt(result.mc_aZ_max)}</td></tr>
                 </tbody>
             </table>
         </div>
@@ -234,6 +232,106 @@ async function sendMessage() {
   const msg = input.value.trim();
   if (!msg) return;
 
+  // 攔截「進階版配合調整」指令 → 直接開啟 wizard，不送 AI
+  if (/進階版|adv.?fit|advanced.?fit/i.test(msg)) {
+    if (typeof openAdvFitPanel === 'function') {
+      input.value = '';
+      openAdvFitPanel();
+      return;
+    }
+  }
+
+  // 攔截「看路徑/累積路徑/公差路徑」查看指令 → 唯讀顯示 + 自動偵測當前路徑狀態
+  if (/看.*路徑|路徑.*看|查看.*路徑|顯示.*路徑|看累積路徑|看公差路徑|看完整.*路徑/i.test(msg)) {
+    input.value = '';
+    addMessage('user', msg);
+    const isEn = window.CURRENT_LANG === 'en';
+    // 自動偵測最新路徑：優先 editorPathData（含所有更新），次選 _lastPathData
+    const path = (typeof editorPathData !== 'undefined' && editorPathData.length)
+                   ? editorPathData
+                   : (window._lastPathData || []);
+    if (!path.length) {
+      addMessage('ai', isEn ? 'No path loaded yet.' : '尚未載入公差累積路徑，請先匯入 Excel/CSV。');
+      return;
+    }
+
+    // ── 計算路徑統計 ──────────────────────────────────────────────
+    const features  = path.filter(i => i.type === 'feature');
+    const spatials  = path.filter(i => i.type !== 'feature');
+    const maxItem   = features.reduce((m, i) =>
+      !m || Math.abs(Number(i.val) || 0) > Math.abs(Number(m.val) || 0) ? i : m, null);
+    const itSet     = [...new Set(features.map(i => i.it_grade).filter(Boolean))]
+                        .sort((a, b) => (parseInt(a.replace('IT',''))||0) - (parseInt(b.replace('IT',''))||0));
+    const updateInfo = window._pathUpdateInfo;  // 最後更新來源（由各操作設定）
+
+    // ── 狀態列 ────────────────────────────────────────────────────
+    let statusChips = `<span style="color:#374151;">共 <b>${path.length}</b> 項（${features.length} 公差特徵 / ${spatials.length} 空間轉換）</span>`;
+    if (maxItem) {
+      const maxVal = Math.abs(Number(maxItem.val) || 0).toFixed(4);
+      statusChips += `　<span style="color:#dc2626;">最寬鬆：<b>${maxItem.name || maxItem.axis}</b> ${maxVal} mm</span>`;
+    }
+    if (itSet.length) {
+      statusChips += `　<span style="color:#1d4ed8;">IT 等級：${itSet.join('、')}</span>`;
+    }
+    const updateBadge = updateInfo
+      ? `<div style="padding:5px 12px; background:#f0fdf4; border-top:1px solid #bbf7d0; font-size:0.72rem; color:#15803d;">
+           ◎ 最後更新：<b>${updateInfo.source}</b>（${updateInfo.time}）${updateInfo.desc ? '　' + updateInfo.desc : ''}
+         </div>`
+      : '';
+
+    // ── 生成唯讀表格 ──────────────────────────────────────────────
+    let rows = '';
+    path.forEach(item => {
+      const name  = item.name || item.axis || '—';
+      const val   = item.val != null ? Number(item.val).toFixed(4) : '—';
+      const bias  = item.bias != null ? item.bias : 0;
+      const dist  = item.dist != null ? item.dist : 1;
+      const nom   = item.nominal_size != null ? item.nominal_size : '—';
+      const it    = item.it_grade || '—';
+      const isSpatial = item.type === 'spatial';
+      const rowBg = isSpatial ? '#f0f9ff' : '#ffffff';
+      const nameColor = isSpatial ? '#6366f1' : '#000000';
+      rows += `<tr style="border-bottom:1px solid #e5e7eb; background:${rowBg};">
+        <td style="padding:5px 8px; color:${nameColor}; font-weight:${isSpatial?'normal':'600'};">${name}</td>
+        <td style="padding:5px 8px; text-align:right;">${val}</td>
+        <td style="padding:5px 8px; text-align:right; color:#6b7280;">${bias}</td>
+        <td style="padding:5px 8px; text-align:right; color:#6b7280;">${dist}</td>
+        <td style="padding:5px 8px; text-align:right; color:#6b7280;">${nom}</td>
+        <td style="padding:5px 8px; text-align:center; font-weight:bold; color:#1d4ed8;">${it}</td>
+      </tr>`;
+    });
+    const html = `
+      <div style="background:#fff; border:1px solid #e2e8f0; border-radius:8px; overflow:hidden; font-size:0.82rem; margin:4px 0;">
+        <div style="background:#f8fafc; padding:8px 12px; font-weight:700; color:#1e293b; border-bottom:1px solid #e2e8f0;">
+          ${isEn ? 'Tolerance Path' : '公差累積路徑（當前版本）'}
+        </div>
+        <div style="padding:6px 12px; background:#fffbeb; border-bottom:1px solid #fde68a; font-size:0.75rem; line-height:1.8;">
+          ${statusChips}
+        </div>
+        ${updateBadge}
+        <div style="max-height:400px; overflow-y:auto;">
+          <table style="width:100%; border-collapse:collapse;">
+            <thead style="background:#f1f5f9; position:sticky; top:0;">
+              <tr style="font-size:0.75rem; color:#6b7280;">
+                <th style="padding:5px 8px; text-align:left;">${isEn?'Path Code':'路徑代碼'}</th>
+                <th style="padding:5px 8px; text-align:right;">${isEn?'Value':'數值'}</th>
+                <th style="padding:5px 8px; text-align:right;">${isEn?'Bias':'偏差'}</th>
+                <th style="padding:5px 8px; text-align:right;">${isEn?'Dist':'角距'}</th>
+                <th style="padding:5px 8px; text-align:right;">${isEn?'Nominal':'公稱'}</th>
+                <th style="padding:5px 8px; text-align:center;">IT</th>
+              </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+          </table>
+        </div>
+        <div style="padding:6px 12px; font-size:0.72rem; color:#9ca3af; border-top:1px solid #e5e7eb;">
+          ${isEn?'Read-only view. Click "Edit Tolerance Path" to make changes.':'唯讀查看。如需修改請點選「編輯公差路徑」按鈕。'}
+        </div>
+      </div>`;
+    addMessage('ai', html);
+    return;
+  }
+
   input.disabled = true;
   sendBtn.disabled = true;
 
@@ -256,7 +354,8 @@ async function sendMessage() {
         current_analysis: window._lastAnalysisResult || null,
         current_path: (typeof editorPathData !== 'undefined') ? editorPathData : null,
         current_allocation: window._lastAllocationResult || null,
-        current_pmi_session_id: window._stepSessionId || null  // [Phase 4] PMI Session
+        current_pmi_session_id: window._stepSessionId || null,
+        wf_state: window._wf || {}
       })
     });
     const data = await r.json();
@@ -307,6 +406,24 @@ async function sendMessage() {
           editorPathData.push(...modifiedPath);
           if (typeof renderPathFlowchart === 'function') renderPathFlowchart();
           console.log(`[CMD] editorPathData replaced (${modifiedPath.length} items) and re-rendered`);
+          // 記錄更新來源（供「看路徑」顯示）
+          window._pathUpdateInfo = {
+              source: '公差調整指令',
+              time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+              desc: ''
+          };
+
+          // 更新 _wf 狀態
+          if (window._wf) {
+              if (data.intent.bearing_applied) {
+                  window._wf.bearingSet    = true;
+                  window._wf.readyForAlloc = window._wf.analysisRun;
+              }
+              // IT 調整或軸承後，如果分析已完成，標記可調配
+              if (window._wf.analysisRun && window._wf.bearingSet) {
+                  window._wf.readyForAlloc = true;
+              }
+          }
       }
 
       // 3. 處理診斷建議卡片 <DIAGNOSTIC_CARD>
@@ -355,8 +472,8 @@ async function sendMessage() {
       if (dslBlocks.length > 0 && typeof renderStructureDirectly === "function") {
         renderResult = renderStructureDirectly(dslBlocks[0], graphContainer, data.intent);
 
-        // 公差網路或組裝接觸意圖（非編輯）→ 自動開啟大圖彈窗
-        if (data.intent && (data.intent.network || data.intent.contact) && !data.intent.edit && renderResult) {
+        // 公差網路、組裝接觸或特徵面意圖（非編輯）→ 自動開啟大圖彈窗
+        if (data.intent && (data.intent.network || data.intent.contact || data.intent.features) && !data.intent.edit && renderResult) {
             setTimeout(() => {
                 if (typeof openBomModal === "function") {
                     openBomModal(renderResult.treeHtml, renderResult.b64Topology, renderResult.snapshotPairs || []);
@@ -369,13 +486,15 @@ async function sendMessage() {
       if (data.intent && data.intent.edit) {
         setTimeout(() => {
             if (dslBlocks.length > 0 && renderResult && renderResult.partsJson) {
-                if (typeof openEditorModal === "function") {
-                    // partsJson 是 URI-encoded 字串，需先解碼再傳入
+                if (typeof openEditorModal === 'function') {
                     openEditorModal(decodeURIComponent(renderResult.partsJson));
                 }
+            } else if (typeof openEditorModal === 'function') {
+                // 直接開啟編輯器（不帶 partsJson）
+                const overlay = document.getElementById('editor-modal-overlay');
+                if (overlay) overlay.style.display = 'flex';
             } else {
-                // 回退：找左側面板或最後一個消息中的編輯按鈕
-                const btn = document.querySelector('.open-editor-btn') || graphContainer.querySelector('.open-editor-btn');
+                const btn = document.querySelector('.open-editor-btn') || graphContainer?.querySelector('.open-editor-btn');
                 if (btn) btn.click();
             }
         }, 300);
@@ -393,6 +512,11 @@ async function sendMessage() {
         setTimeout(() => {
             if (typeof openAllocationModal === "function") openAllocationModal();
         }, 300);
+      }
+
+      // 配合建議引導 → 開啟 Modal
+      if (data.intent && data.intent.open_plan1) {
+        if (typeof openPlanCompareModal === 'function') openPlanCompareModal();
       }
 
       chatHistory.push({ role: 'assistant', content: data.reply });
@@ -532,6 +656,18 @@ document.querySelectorAll('.panel-btn').forEach(btn => {
 
     let prompt = panelBtnPrompts[action];
     
+    // [直接開啟] 公差路徑編輯器 → 不走 AI，直接開啟
+    if (action === 'edit_path') {
+        const overlay = document.getElementById('editor-modal-overlay');
+        if (overlay) {
+            overlay.style.display = 'flex';
+        } else if (typeof openEditorModal === 'function') {
+            openEditorModal();
+        }
+        btn.classList.remove('active');
+        return;
+    }
+
     // [直接開啟] STEP 3D 檢視器按鈕 → 不走 AI，直接開啟面板
     if (action === 'step_viewer') {
         if (typeof openStepViewerPanel === 'function') {
@@ -544,6 +680,13 @@ document.querySelectorAll('.panel-btn').forEach(btn => {
         return; // 攔截，不發送訊息
     }
 
+    // [直接開啟] 進階版配合調整 → 不走 AI，直接開啟 Wizard
+    if (action === 'adv_fit') {
+        if (typeof openAdvFitPanel === 'function') openAdvFitPanel();
+        btn.classList.remove('active');
+        return;
+    }
+
     // [直接開啟] 製程與機台媒合 → 不走 AI，直接開啟 Modal
     if (action === 'matchmaking' || !action) {
         if (typeof openMatchmakingModal === 'function') openMatchmakingModal();
@@ -551,7 +694,7 @@ document.querySelectorAll('.panel-btn').forEach(btn => {
         return;
     }
 
-    // [直接開啟] 方案一 vs 方案二 驗證 → 不走 AI，直接開啟 Modal
+    // [直接開啟] 配合建議
     if (action === 'plan_compare') {
         if (typeof openPlanCompareModal === 'function') openPlanCompareModal();
         btn.classList.remove('active');
@@ -566,6 +709,15 @@ document.querySelectorAll('.panel-btn').forEach(btn => {
         }
     }
     if (action === 'allocation' && typeof editorPathData !== 'undefined' && editorPathData.length > 0) {
+        // 狀態守衛：分析未完成時提醒
+        if (window._wf && !window._wf.analysisRun) {
+            if (typeof addMessage === 'function') {
+                addMessage('ai',
+                    '<div style="color:#f87171;">⚠️ 請先執行【公差分析】確認基線誤差，再進行公差調配。</div>'
+                );
+            }
+            return;
+        }
         if (typeof openAllocationModal === 'function') {
             openAllocationModal();
             return; // 攔截，不發送訊息
@@ -635,7 +787,7 @@ function applyAdjustment(targetName, newValue) {
         const reAnalyzeMsg = (window.CURRENT_LANG === 'en') ? 
             'Please click "Deep Analysis" in the editor to see the updated path error.' : 
             '請點擊編輯器中的「執行公差分析」以查看更新後的路徑誤差。';
-        setTimeout(() => addMessage('ai', `<div style="font-size:0.9rem; color:#94a3b8;">${reAnalyzeMsg}</div>`), 500);
+        setTimeout(() => addMessage('ai', `<div style="font-size:0.9rem; color:#000000;">${reAnalyzeMsg}</div>`), 500);
     } else {
         alert(window.CURRENT_LANG === 'en' ? "Target not found in current path." : "在目前的公差路徑中找不到該目標。");
     }
@@ -656,7 +808,7 @@ function renderAllocationResult(data) {
         subTitle = isEn ? `Targeting ${data.axis}-axis RSS ±${data.target} | Strategy: ${strategy}` 
                           : `目標軸向: ${data.axis}，期望 RSS ±${data.target} | 策略: ${strategy}`;
     } else {
-        title = isEn ? `📊 Manual Matching Analysis (Round #${round})` : `📊 手動匹配分析報告 (第 ${round} 次比對)`;
+        title = isEn ? `Manual Matching Analysis (Round #${round})` : `手動匹配分析報告 (第 ${round} 次比對)`;
         subTitle = isEn ? `Comparing current manual edits against baseline | Axis: ${data.axis || 'All'}`
                           : `手動修改後與基準比對分析 | 參考軸向: ${data.axis || '全軸向'}`;
     }
@@ -758,6 +910,13 @@ function renderAllocationResult(data) {
                         </thead>
                         <tbody>${changeRows}</tbody>
                     </table>
+                </div>
+                <!-- 四象限圖例 -->
+                <div style="margin-top:8px; display:flex; flex-wrap:wrap; gap:6px; font-size:0.72rem;">
+                    <div style="display:flex; align-items:center; gap:4px;"><span style="background:#dc2626;color:#fff;padding:1px 7px;border-radius:10px;font-weight:bold;">Q1</span><span style="color:#374151;">${isEn ? 'High sens × High contrib → Tighten first' : '高敏感 × 高貢獻 → 優先收緊'}</span></div>
+                    <div style="display:flex; align-items:center; gap:4px;"><span style="background:#2563eb;color:#fff;padding:1px 7px;border-radius:10px;font-weight:bold;">Q2</span><span style="color:#374151;">${isEn ? 'High sens × Low contrib → Guard, do not loosen' : '高敏感 × 低貢獻 → 規格嚴守，不可放寬'}</span></div>
+                    <div style="display:flex; align-items:center; gap:4px;"><span style="background:#d97706;color:#fff;padding:1px 7px;border-radius:10px;font-weight:bold;">Q3</span><span style="color:#374151;">${isEn ? 'Low sens × High contrib → Tolerance too large, easy win' : '低敏感 × 高貢獻 → 公差過大，收緊可大幅改善'}</span></div>
+                    <div style="display:flex; align-items:center; gap:4px;"><span style="background:#16a34a;color:#fff;padding:1px 7px;border-radius:10px;font-weight:bold;">Q4</span><span style="color:#374151;">${isEn ? 'Low sens × Low contrib → Can loosen to save cost' : '低敏感 × 低貢獻 → 可考慮放寬降低成本'}</span></div>
                 </div>
             </div>
 

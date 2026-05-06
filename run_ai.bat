@@ -1,25 +1,32 @@
 @echo off
 chcp 65001 >nul
 echo =========================================
-echo Starting ISO 286 AI Assistant (Port 7011)
+echo Starting AI Assistant (Port 7011)
 echo Environment: Conda - tol_env
 echo =========================================
 
-REM Use the conda environment Python directly
+REM Fix MKL/OpenMP DLL conflict (must be set BEFORE python.exe starts)
+set KMP_DUPLICATE_LIB_OK=TRUE
+set MKL_THREADING_LAYER=sequential
+set MKL_DISABLE_FAST_MM=1
+set MKL_NUM_THREADS=1
+set NUMEXPR_NUM_THREADS=1
+set OMP_NUM_THREADS=1
+set OPENBLAS_NUM_THREADS=1
+
 set PYTHON_EXE=C:\Users\User\anaconda3\envs\tol_env\python.exe
 
-REM Check if Python exists
 if not exist "%PYTHON_EXE%" (
     echo Error: Python not found at %PYTHON_EXE%
-    echo Please check your conda installation.
     pause
     exit /b 1
 )
 
-REM Change to server directory
+set PATH=C:\Users\User\anaconda3\envs\tol_env\Library\bin;%PATH%
+set PATH=C:\Users\User\anaconda3\envs\tol_env\Library\mingw-w64\bin;%PATH%
+
 cd /d "%~dp0server"
 
-REM Start Flask application
 "%PYTHON_EXE%" ai_app.py
 
 pause

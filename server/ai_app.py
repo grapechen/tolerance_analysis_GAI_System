@@ -1,5 +1,10 @@
 """ai_app.py - AI 公差諮詢系統入口（Port 7011）
 
+RAS400 公差分析 AI 系統
+Author    : Robert_Chen
+Version   : 2.0  (2026)
+Copyright : © 2026 Robert_Chen. All rights reserved.
+
 App factory 負責建立 Flask 應用並注冊所有 Blueprint。
 業務邏輯、資料存取、路由定義皆已分層至各自模組。
 """
@@ -7,6 +12,22 @@ App factory 負責建立 Flask 應用並注冊所有 Blueprint。
 import sys
 import io
 import os
+import faulthandler
+
+# ── 崩潰追蹤：segfault 時輸出 C-level traceback ─────────────────────────────
+faulthandler.enable()
+
+# ── Windows + Conda + MKL 安全設定（必須在 numpy 被 import 之前設定）──────────
+# waitress 的工作執行緒裡跑 numpy 矩陣運算時，MKL 嘗試啟動多執行緒 BLAS 會
+# 造成 segfault 並讓整個 Python 程式崩潰（exit code 非 0）。
+# 強制覆蓋（非 setdefault）確保 conda 環境已有值時也能生效。
+for _k in ('MKL_NUM_THREADS', 'NUMEXPR_NUM_THREADS',
+           'OMP_NUM_THREADS', 'OPENBLAS_NUM_THREADS'):
+    os.environ[_k] = '1'
+# 允許多份 MKL/OpenMP DLL 並存（子程序繼承此設定，解決 0xC0000005 崩潰）
+os.environ['KMP_DUPLICATE_LIB_OK'] = 'TRUE'
+os.environ['MKL_THREADING_LAYER'] = 'sequential'
+os.environ['MKL_DISABLE_FAST_MM'] = '1'
 
 # Windows 終端機編碼修正（line_buffering 讓 print 能即時寫到 log）
 sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace', line_buffering=True)
@@ -60,6 +81,10 @@ if __name__ == '__main__':
     debug_mode = os.environ.get('FLASK_DEBUG', '0') == '1'
     print('啟動 AI 聊天助手伺服器...')
     print('請訪問: http://127.0.0.1:7011')
+    # 確認 MKL 安全設定已生效
+    mkl_val = os.environ.get('MKL_NUM_THREADS', '未設定')
+    print(f'  numpy/MKL 執行緒限制: MKL_NUM_THREADS={mkl_val}'
+          + (' ✓' if mkl_val == '1' else ' ⚠ 未限制，公差分析可能崩潰！'))
 
     if debug_mode:
         use_reloader = os.environ.get('FLASK_RELOAD', '0') == '1'
@@ -69,4 +94,4 @@ if __name__ == '__main__':
     else:
         from waitress import serve
         print('  模式: waitress（生產 WSGI，SSE 穩定）')
-        serve(app, host='0.0.0.0', port=7011, threads=8)
+        serve(app, host='0.0.0.0', port=7011, threads=16, send_bytes=1)

@@ -509,7 +509,7 @@ function renderItem(x, rank, passed) {
     top.className = "top";
     top.innerHTML = `
         <div>
-          <div style="font-weight:800; color: #e2e8f0;">${passed ? `#${rank} ` : ""}${m.brand} ${m.model}</div>
+          <div style="font-weight:800; color:#000000;">${passed ? `#${rank} ` : ""}${m.brand} ${m.model}</div>
           <div class="tiny">${comp} ｜ ${ptype} </div>
         </div>
         <div style="text-align:right">
@@ -532,11 +532,11 @@ function renderItem(x, rank, passed) {
     mid.innerHTML = `
         <div class="kv"><div>軸數</div><div>${formatVal(axes)}</div></div>
         <div class="kv"><div>行程 X/Y/Z (mm)</div><div>${[X, Y, Z].map(v => v ?? "—").join(" / ")}</div></div>
-        <div class="kv"><div>主軸轉速 / 功率</div><div>${c?.spindle?.speed_max_rpm ?? "—"} rpm <span style="color:#d2a8ff">(${c?.spindle?.power_kw ?? "?"} kW)</span></div></div>
+        <div class="kv"><div>主軸轉速 / 功率</div><div>${c?.spindle?.speed_max_rpm ?? "—"} rpm <span style="color:#000000">(${c?.spindle?.power_kw ?? "?"} kW)</span></div></div>
         <div class="kv"><div>棒材能力</div><div>${formatVal(bar, " mm")}</div></div>
         <div class="kv"><div>Positioning Rep.</div><div>${repText}</div></div>
         <div class="kv"><div>Positioning Acc.</div><div>${posText}</div></div>
-        <div class="kv"><div>資料來源</div><div><a href="${m.source?.url || "#"}" target="_blank" style="color:#60a5fa;text-decoration:none">${m.source?.name || "—"}</a></div></div>
+        <div class="kv"><div>資料來源</div><div><a href="${m.source?.url || "#"}" target="_blank" style="color:#000000;text-decoration:underline">${m.source?.name || "—"}</a></div></div>
     `;
     item.appendChild(mid);
 

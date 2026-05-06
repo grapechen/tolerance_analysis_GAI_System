@@ -3,6 +3,8 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="author" content="Robert_Chen">
+  <meta name="copyright" content="© 2026 Robert_Chen. All rights reserved.">
   <title>{% if lang == 'en' %}RAS400 Tolerance Analysis Assistant{% else %}RAS400 公差分析助手{% endif %}</title>
   
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
@@ -59,8 +61,11 @@
 
       <!-- 左側快速按鈕區 -->
       <div class="left-btn-grid">
+
+        <!-- 分析工具 -->
+        <div class="btn-section-label">{% if lang == 'en' %}Analysis Tools{% else %}分析工具{% endif %}</div>
         <button class="panel-btn" data-action="parts"> {% if lang == 'en' %}BOM Tree{% else %}產品架構圖{% endif %}</button>
-        <button class="panel-btn" data-action="features"> {% if lang == 'en' %}Features{% else %}特徵結構圖{% endif %}</button>
+        <button class="panel-btn" data-action="features"> {% if lang == 'en' %}Feature Tree{% else %}特徵面架構圖{% endif %}</button>
         <button class="panel-btn" data-action="network"> {% if lang == 'en' %}Tolerance Net{% else %}公差網路圖{% endif %}</button>
         <button class="panel-btn" data-action="contact"> {% if lang == 'en' %}Assembly Contact{% else %}組裝接觸圖{% endif %}</button>
         <button class="panel-btn" style="grid-column: span 2;" data-action="step_viewer"> {% if lang == 'en' %}STEP 3D Viewer{% else %}STEP 3D 檢視器{% endif %}</button>
@@ -68,7 +73,15 @@
         <button class="panel-btn analysis-btn" data-action="analysis"> {% if lang == 'en' %}Analysis{% else %}公差分析{% endif %}</button>
         <button class="panel-btn allocation-btn" data-action="allocation"> {% if lang == 'en' %}Allocation{% else %}公差調配{% endif %}</button>
         <button class="panel-btn matchmaking-btn" data-action="matchmaking"> {% if lang == 'en' %}Process Matching{% else %}製程與機台媒合{% endif %}</button>
-        <button class="panel-btn plan-compare-btn" style="grid-column: span 2;" data-action="plan_compare"> {% if lang == 'en' %}Plan 1 vs Plan 2 Verify{% else %}方案一 vs 方案二 驗證{% endif %}</button>
+
+        <!-- 分隔線 -->
+        <div class="btn-section-divider"></div>
+
+        <!-- 配合建議 -->
+        <div class="btn-section-label btn-section-label--fit">{% if lang == 'en' %}Fit Recommendation{% else %}配合建議{% endif %}</div>
+        <button class="panel-btn plan-compare-btn" style="grid-column: span 2;" data-action="plan_compare"> {% if lang == 'en' %}Fit Recommendation{% else %}配合建議{% endif %}</button>
+        <button class="panel-btn adv-fit-btn" data-action="adv_fit" style="grid-column: span 2;"> {% if lang == 'en' %}Adv. Fit Recommendation{% else %}進階版配合建議{% endif %}</button>
+
       </div>
     </div>
 
@@ -133,8 +146,6 @@
 
       <!-- 工具列 - 第二列 -->
       <div style="padding:6px 10px; background:#eceff1; display:flex; align-items:center; gap:6px; border-bottom:1px solid #cbd5e1; flex-wrap:wrap;">
-        <button onclick="runAssemblyContactAnalysis()" style="padding:5px 11px; background:#f3e5f5; color:#1a202c; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;">🔩 組合件分析</button>
-        <button onclick="location.href='#'" style="padding:5px 11px; background:#e8f5e9; color:#1a202c; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;">📋 零件樹</button>
         <span style="font-size:11px; color:#666; margin-left:auto;">載入組合件 STP，偵測零件間接觸面</span>
       </div>
 
@@ -304,12 +315,21 @@
         </div>
       </div>
 
+      <!-- 四象限說明 -->
+      <div id="alloc-quadrant-legend" style="display:flex; flex-wrap:wrap; gap:6px; font-size:0.72rem; margin-bottom:10px; padding:8px; background:#f9fafb; border-radius:6px; border:1px solid #e5e7eb;">
+        <div style="width:100%; font-weight:700; color:#374151; margin-bottom:4px;">{% if lang == 'en' %}Quadrant Guide{% else %}四象限說明{% endif %}</div>
+        <div style="display:flex;align-items:center;gap:4px;"><span style="background:#dc2626;color:#fff;padding:1px 7px;border-radius:10px;font-weight:bold;font-size:0.7rem;">Q1</span><span style="color:#374151;">{% if lang == 'en' %}High sens × High contrib → Tighten first{% else %}高敏感 × 高貢獻 → 優先收緊{% endif %}</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><span style="background:#2563eb;color:#fff;padding:1px 7px;border-radius:10px;font-weight:bold;font-size:0.7rem;">Q2</span><span style="color:#374151;">{% if lang == 'en' %}High sens × Low contrib → Guard, do not loosen{% else %}高敏感 × 低貢獻 → 規格嚴守，不可放寬{% endif %}</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><span style="background:#d97706;color:#fff;padding:1px 7px;border-radius:10px;font-weight:bold;font-size:0.7rem;">Q3</span><span style="color:#374151;">{% if lang == 'en' %}Low sens × High contrib → Tolerance too large, easy win{% else %}低敏感 × 高貢獻 → 公差過大，收緊即可大幅改善{% endif %}</span></div>
+        <div style="display:flex;align-items:center;gap:4px;"><span style="background:#16a34a;color:#fff;padding:1px 7px;border-radius:10px;font-weight:bold;font-size:0.7rem;">Q4</span><span style="color:#374151;">{% if lang == 'en' %}Low sens × Low contrib → Can loosen to save cost{% else %}低敏感 × 低貢獻 → 可考慮放寬降低成本{% endif %}</span></div>
+      </div>
+
       <!-- 手動比對說明 -->
       <div id="alloc-compare-hint" style="display:none; padding:8px 12px; background:#f0f9ff; border:1px solid #bae6fd; border-radius:6px; font-size:0.85rem; color:#0369a1; margin-bottom:8px;">
         {% if lang == 'en' %}
-          Manually edit tolerance values in the editor, run Tolerance Analysis, then click below to compare with the baseline (first analysis).
+          The tolerance path has been updated with fit recommendations. Click below to compare the updated path against the baseline (first analysis result).
         {% else %}
-          請在路徑編輯器中手動修改公差值，執行公差分析後，點擊下方按鈕與基準（首次分析）進行比對。
+          公差路徑已依配合建議更新完成。點擊下方按鈕，將更新後的路徑與基準（首次分析結果）進行比對，確認誤差改善幅度。
         {% endif %}
       </div>
 
@@ -347,12 +367,12 @@
     <div class="dashboard-layout" style="height: 100%; border-radius: 0;">
       <!-- 左側標籤導覽 -->
       <div class="dashboard-sidebar">
-        <div class="sidebar-header">📊 {% if lang == 'en' %}Analytics{% else %}分析報告{% endif %}</div>
-        <button class="side-tab active" onclick="switchDashboardTab('summary')">📝 {% if lang == 'en' %}Summary{% else %}統計摘要{% endif %}</button>
-        <button class="side-tab" onclick="switchDashboardTab('dist')">📉 {% if lang == 'en' %}Distribution{% else %}誤差分佈{% endif %}</button>
-        <button class="side-tab" onclick="switchDashboardTab('sens')">📏 {% if lang == 'en' %}Sensitivity{% else %}敏感度{% endif %}</button>
-        <button class="side-tab" onclick="switchDashboardTab('cont')">💰 {% if lang == 'en' %}Contribution{% else %}貢獻度{% endif %}</button>
-        <button class="side-tab" onclick="switchDashboardTab('3d')">🌐 {% if lang == 'en' %}3D Scatter{% else %}3D 散點圖{% endif %}</button>
+        <div class="sidebar-header">{% if lang == 'en' %}Analytics{% else %}分析報告{% endif %}</div>
+        <button class="side-tab active" onclick="switchDashboardTab('summary')">{% if lang == 'en' %}Summary{% else %}統計摘要{% endif %}</button>
+        <button class="side-tab" onclick="switchDashboardTab('dist')">{% if lang == 'en' %}Distribution{% else %}誤差分佈{% endif %}</button>
+        <button class="side-tab" onclick="switchDashboardTab('sens')">{% if lang == 'en' %}Sensitivity{% else %}敏感度{% endif %}</button>
+        <button class="side-tab" onclick="switchDashboardTab('cont')">{% if lang == 'en' %}Contribution{% else %}貢獻度{% endif %}</button>
+        <button class="side-tab" onclick="switchDashboardTab('3d')">{% if lang == 'en' %}3D Scatter{% else %}3D 散點圖{% endif %}</button>
       </div>
 
       <!-- 右側主內容區 -->
@@ -428,6 +448,7 @@
                 <input id="smart-size" type="number" placeholder="mm" title="輸入尺寸以自動計算機台精度要求">
               </div>
             </div>
+
             <div class="row smart-settings-row">
               <div class="smart-cp-group">
                 <label for="smart-cp" class="smart-cp-label">製程能力指標 (Cp):</label>
@@ -555,158 +576,228 @@
     </div><!-- /.matchmaking-panel -->
   </div><!-- /.mm-overlay -->
 
-  <!-- 方案一 vs 方案二 驗證測試 Modal -->
+  <!-- 公差配合建議 Modal -->
   <div id="plan-compare-modal" class="mm-overlay">
     <div id="plan-compare-panel" class="plan-compare-panel">
       <div class="mm-header">
-        <span>🧪 {% if lang == 'en' %}Plan 1 vs Plan 2 Verification{% else %}方案一 vs 方案二 驗證測試{% endif %}</span>
+        <span>🎯 {% if lang == 'en' %}Fit Recommendation{% else %}配合建議{% endif %}</span>
         <button type="button" class="mm-close-btn" onclick="closePlanCompareModal()">&times;</button>
       </div>
 
       <div class="pc-body">
 
-        <!-- ════════ 方案一：特徵驅動推薦 ════════ -->
+        <!-- ════════ 方案一：依功能推薦 ════════ -->
         <section class="pc-section">
-          <h3 class="pc-section-title">{% if lang == 'en' %}Plan 1: Feature-driven recommendation{% else %}方案一：特徵面 → IT 等級 / 製程 / 機台推薦{% endif %}</h3>
-          <div class="pc-form">
-            <div class="pc-form-row">
-              <label class="pc-label" for="pc1-feature">{% if lang == 'en' %}Feature face{% else %}特徵面{% endif %}：</label>
-              <select id="pc1-feature" class="pc-input pc-input--wide">
-                <option value="">— {% if lang == 'en' %}Loading…{% else %}載入中…{% endif %} —</option>
-              </select>
-              <button id="pc1-go" class="pc-btn-primary">▶ {% if lang == 'en' %}Recommend{% else %}推薦{% endif %}</button>
-              <span id="pc1-status" class="pc-status"></span>
+          <h3 class="pc-section-title">{% if lang == 'en' %}Basic: Tolerance Fit Recommendation{% else %}初版：公差配合推薦{% endif %}</h3>
+
+          <!-- 零件配對快查（三部曲：選零件 → 選功能 → 輸出建議） -->
+          <div class="pc1-preset-wrap">
+            <div class="pc1-preset-label">
+              {% if lang == 'en' %}Step 1: Pick a part:{% else %}Step 1：點選零件：{% endif %}
             </div>
-            <div class="pc-form-row">
-              <span class="pc-hint" id="pc1-feature-info">
-                {% if lang == 'en' %}Select a feature to see its known tolerances.{% else %}選擇一個特徵面後，下方會顯示已標註的公差。{% endif %}
-              </span>
-            </div>
-            <div class="pc-form-row" id="pc1-overrides-row" style="display:none;">
-              <details style="width:100%;">
-                <summary style="cursor:pointer;color:#94a3b8;font-size:12px;">▸ {% if lang == 'en' %}Override tolerances{% else %}手動覆蓋公差值（可選）{% endif %}</summary>
-                <div class="pc-form-row" style="margin-top:6px;flex-wrap:wrap;">
-                  <span class="pc-label">Cir:</span><input id="ov-Cir" class="pc-input pc-input--num" type="number" step="0.001">
-                  <span class="pc-label">Cyl:</span><input id="ov-Cyl" class="pc-input pc-input--num" type="number" step="0.001">
-                  <span class="pc-label">Per:</span><input id="ov-Per" class="pc-input pc-input--num" type="number" step="0.001">
-                  <span class="pc-label">Par:</span><input id="ov-Par" class="pc-input pc-input--num" type="number" step="0.001">
-                  <span class="pc-label">Co:</span><input id="ov-Co" class="pc-input pc-input--num" type="number" step="0.001">
-                  <span class="pc-label">Fla:</span><input id="ov-Fla" class="pc-input pc-input--num" type="number" step="0.001">
-                  <span class="pc-label">IT:</span><input id="ov-it_dim" class="pc-input pc-input--num" type="number" step="1" min="1" max="13">
-                </div>
-              </details>
+            <div id="pc1-part-buttons" class="pc1-preset-buttons"></div>
+
+            <div id="pc1-pair-section" class="pc1-pair-section" style="display:none;">
+              <div class="pc1-preset-label" style="margin-top:10px;">
+                <span id="pc1-pair-label">{% if lang == 'en' %}Step 2: Pick common functions (Templates):{% else %}Step 2：快速勾選功能描述（範本）：{% endif %}</span>
+              </div>
+              <div id="pc1-pair-buttons" class="pc1-preset-buttons"></div>
             </div>
           </div>
 
-          <div id="pc1-result" class="pc-result-card" style="display:none;">
-            <div class="pc-result-head">
-              <span id="pc1-feature-title">—</span>
-              <span class="pc-result-input" id="pc1-feature-summary"></span>
+          <div class="pc-form" id="pc1-dim-form" style="display:none;">
+            <div class="pc-form-row">
+              <span class="pc-hint">
+                {% if lang == 'en' %}
+                  Step 3: Refine functions and search.
+                  Click each dimension to cycle: <span class="dim-chip dim-state-required">Required</span> →
+                  <span class="dim-chip dim-state-optional">Optional</span> → unset.
+                {% else %}
+                  Step 3：微調功能描述並輸出推薦結果。
+                  點選維度切換狀態：<span class="dim-chip dim-state-required">必選</span> →
+                  <span class="dim-chip dim-state-optional">可選</span> →
+                  <span class="dim-chip">取消</span>。
+                {% endif %}
+              </span>
+            </div>
+            <div class="pc-form-row" style="align-items:center;">
+              <span class="pc-label" id="pc1-dim-summary">{% if lang == 'en' %}No dimensions selected{% else %}未選擇維度{% endif %}</span>
+              <button type="button" id="pc1-dim-clear" class="pc-btn-secondary" onclick="pc1ClearDims()" style="display:none;">
+                {% if lang == 'en' %}Clear{% else %}清除{% endif %}
+              </button>
+              <button type="button" id="pc1-dim-go" class="pc-btn-primary" onclick="pc1RunDimSearch()">
+                🔍 {% if lang == 'en' %}Search alternative fits{% else %}搜尋替代配合結果{% endif %}
+              </button>
+              <span id="pc1-dim-status" class="pc-status"></span>
+            </div>
+            <div id="pc1-dim-groups" class="smart-dim-panel" style="background:transparent;border:none;padding:0;margin-top:6px;"></div>
+          </div>
+
+          <!-- ──────── 初版 · 批量配合報表 ──────── -->
+          <div class="pc1-section-title" style="margin-top:22px;">
+            {% if lang == 'en' %}Batch Report: select multiple part pairs → generate fit recommendation table{% else %}批量報表：選擇多個配對 → 一次輸出推薦表格{% endif %}
+          </div>
+          <div id="pc1-batch-wrap">
+            <div class="pc-form-row" style="gap:8px;flex-wrap:wrap;">
+              <button id="pc1-batch-load" class="pc-btn-secondary" onclick="pc1BatchLoad()">⟳ {% if lang == 'en' %}Load pairs{% else %}載入配對清單{% endif %}</button>
+              <button id="pc1-batch-selall"  class="pc-btn-secondary" onclick="pc1BatchSelectAll(true)"  style="display:none;">{% if lang == 'en' %}Select all{% else %}全選{% endif %}</button>
+              <button id="pc1-batch-clrall"  class="pc-btn-secondary" onclick="pc1BatchSelectAll(false)" style="display:none;">{% if lang == 'en' %}Clear all{% else %}全清{% endif %}</button>
+              <button id="pc1-export-txt" class="pc-btn-secondary" onclick="pc1ExportTxtReport()" style="display:none;background:#1e3a5f;border-color:#3b82f6;color:#93c5fd;">📄 {% if lang == 'en' %}Export Report (TXT){% else %}輸出建議記錄 (TXT){% endif %}</button>
+              <span id="pc1-batch-status" class="pc-status"></span>
             </div>
 
-            <!-- 區塊 A：幾何公差等級判定 -->
-            <div class="pc1-section-title">① {% if lang == 'en' %}Geometric tolerance grade estimate{% else %}幾何公差等級推估{% endif %}</div>
-            <table class="pc-table" id="pc1-grades-table" style="margin-bottom:12px;">
-              <thead>
-                <tr>
-                  <th>{% if lang == 'en' %}Type{% else %}公差類型{% endif %}</th>
-                  <th>{% if lang == 'en' %}Value (μm){% else %}公差值 (μm){% endif %}</th>
-                  <th>{% if lang == 'en' %}IT grade{% else %}估計等級{% endif %}</th>
-                  <th>{% if lang == 'en' %}Application{% else %}對應應用{% endif %}</th>
-                </tr>
-              </thead>
-              <tbody id="pc1-grades-tbody"></tbody>
-            </table>
+            <div id="pc1-batch-pairs" style="display:none;overflow-x:auto;margin-top:8px;">
+              <table class="pc-table" id="pc1-batch-table">
+                <thead>
+                  <tr>
+                    <th><input type="checkbox" id="pc1-batch-all" onchange="pc1BatchToggleAll(this.checked)" title="全選/全清"></th>
+                    <th>{% if lang == 'en' %}Pair ID{% else %}配對{% endif %}</th>
+                    <th>{% if lang == 'en' %}Hole part - Feature{% else %}孔件 - 特徵{% endif %}</th>
+                    <th>{% if lang == 'en' %}Shaft part - Feature{% else %}軸件 - 特徵{% endif %}</th>
+                    <th>Ø (mm)</th>
+                    <th>{% if lang == 'en' %}Function description{% else %}功能描述{% endif %}</th>
+                    <th>{% if lang == 'en' %}Priority{% else %}優先{% endif %}</th>
+                  </tr>
+                </thead>
+                <tbody id="pc1-batch-tbody"></tbody>
+              </table>
+            </div>
 
-            <!-- 區塊 B：推薦製程清單 -->
-            <div class="pc1-section-title">② {% if lang == 'en' %}Recommended processes & machines{% else %}推薦製程與機台{% endif %}</div>
-            <div id="pc1-processes" class="pc-process-list"></div>
+            <div id="pc1-batch-result" style="display:none;margin-top:14px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+                <strong>{% if lang == 'en' %}Recommendation Results{% else %}推薦結果{% endif %}</strong>
+                <button id="pc1-batch-csv-btn" class="pc-btn-secondary" onclick="pc1BatchDownloadCsv()">⬇ {% if lang == 'en' %}Download CSV{% else %}下載報表 (CSV){% endif %}</button>
+                <button class="pc-btn-secondary" onclick="pc1ExportTxtReport()" style="background:#1e3a5f;border-color:#3b82f6;color:#93c5fd;">📄 {% if lang == 'en' %}Export Report (TXT){% else %}輸出建議記錄 (TXT){% endif %}</button>
+              </div>
+              <div style="overflow-x:auto;">
+                <table class="pc-table" id="pc1-batch-result-table">
+                  <thead>
+                    <tr>
+                      <th>{% if lang == 'en' %}Pair{% else %}配對{% endif %}</th>
+                      <th>{% if lang == 'en' %}Hole-Feature{% else %}孔件-特徵{% endif %}</th>
+                      <th>{% if lang == 'en' %}Shaft-Feature{% else %}軸件-特徵{% endif %}</th>
+                      <th>Ø</th>
+                      <th>{% if lang == 'en' %}Fit{% else %}推薦配合{% endif %}</th>
+                      <th>{% if lang == 'en' %}Type{% else %}類型{% endif %}</th>
+                      <th>{% if lang == 'en' %}Hole IT{% else %}孔IT{% endif %}</th>
+                      <th>{% if lang == 'en' %}Shaft IT{% else %}軸IT{% endif %}</th>
+                      <th>{% if lang == 'en' %}Clearance (μm){% else %}間隙(μm){% endif %}</th>
+                      <th>{% if lang == 'en' %}Hole process{% else %}孔製程{% endif %}</th>
+                      <th>{% if lang == 'en' %}Shaft process{% else %}軸製程{% endif %}</th>
+                      <th>{% if lang == 'en' %}Source{% else %}來源{% endif %}</th>
+                    </tr>
+                  </thead>
+                  <tbody id="pc1-batch-result-tbody"></tbody>
+                </table>
+              </div>
+            </div>
+          </div><!-- /#pc1-batch-wrap -->
+
+          <div id="pc1-dim-result" class="pc-result-card" style="display:none;">
+            <div class="pc-result-head">
+              <span>{% if lang == 'en' %}Top fit recommendations{% else %}配合推薦結果{% endif %}</span>
+              <span class="pc-result-input" id="pc1-dim-summary-line"></span>
+            </div>
+            <!-- 文件 §四 預期推薦（由 preset 按鈕觸發時才顯示）-->
+            <div id="pc1-doc-expected" class="pc1-doc-expected" style="display:none;"></div>
+            <div id="pc1-dim-list"></div>
           </div>
         </section>
 
-        <!-- ════════ 方案二：路徑分析 → 指令 → 結果 ════════ -->
-        <section class="pc-section">
-          <h3 class="pc-section-title">{% if lang == 'en' %}Plan 2: Tolerance accumulation path → analysis → manual command{% else %}方案二：公差累積路徑分析 → 指令調整{% endif %}</h3>
-          <div class="pc-form">
-            <div class="pc-form-row">
-              <label class="pc-label">{% if lang == 'en' %}Path source{% else %}路徑來源{% endif %}：</label>
-              <span id="pc2-chain-display" class="pc-chain-pill">{% if lang == 'en' %}From editorPathData (use “Edit Path” first){% else %}使用「編輯公差路徑」建立的路徑（editorPathData）{% endif %}</span>
-            </div>
-            <div class="pc-form-row">
-              <button id="pc2-analyze" class="pc-btn-primary">① {% if lang == 'en' %}Analyze path{% else %}執行公差分析{% endif %}</button>
-              <span id="pc2-analyze-status" class="pc-status"></span>
-            </div>
-          </div>
-
-          <!-- 步驟①：分析結果 -->
-          <div id="pc2-analysis-card" class="pc-result-card" style="display:none;">
-            <div class="pc-result-head">
-              {% if lang == 'en' %}Analysis result{% else %}分析結果（調整前）{% endif %}
-              <span class="pc-result-input">RSS = <strong id="pc2-rss-before">—</strong> μm　WC = <strong id="pc2-wc-before">—</strong> μm</span>
-            </div>
-            <table class="pc-table" id="pc2-analysis-table">
-              <thead>
-                <tr>
-                  <th>{% if lang == 'en' %}Rank{% else %}排序{% endif %}</th>
-                  <th>{% if lang == 'en' %}Tolerance name{% else %}公差名稱{% endif %}</th>
-                  <th>{% if lang == 'en' %}Part{% else %}零件{% endif %}</th>
-                  <th>Φ {% if lang == 'en' %}/ size{% else %}/ 尺寸{% endif %}</th>
-                  <th>IT</th>
-                  <th>{% if lang == 'en' %}Type{% else %}公差類型{% endif %}</th>
-                  <th>μm</th>
-                  <th>Contrib %</th>
-                </tr>
-              </thead>
-              <tbody id="pc2-analysis-tbody"></tbody>
-            </table>
-          </div>
-
-          <!-- 步驟②：指令輸入 -->
-          <div id="pc2-command-block" class="pc-form" style="display:none; margin-top:14px;">
-            <div class="pc-form-row">
-              <label class="pc-label" for="pc2-command">{% if lang == 'en' %}Command{% else %}指令{% endif %}：</label>
-              <input id="pc2-command" class="pc-input pc-input--wide" type="text"
-                     value="請將編號5零件第6特徵面的第1個直徑公差由IT6放寬至IT7"
-                     placeholder="例如：請將編號5零件第6特徵面的第1個直徑公差由IT6放寬至IT7">
-            </div>
-            <div class="pc-form-row">
-              <button id="pc2-apply" class="pc-btn-secondary">② {% if lang == 'en' %}Parse & apply{% else %}解析並套用（其他環節不動）{% endif %}</button>
-              <span id="pc2-apply-status" class="pc-status"></span>
-            </div>
-          </div>
-
-          <!-- 步驟③：套用後結果 -->
-          <div id="pc2-result-card" class="pc-result-card" style="display:none;">
-            <div class="pc-result-head">
-              {% if lang == 'en' %}Allocated result{% else %}套用後結果{% endif %}
-              <span class="pc-result-input">
-                RSS：<strong id="pc2-rss-r-before">—</strong> → <strong id="pc2-rss-r-after">—</strong> μm
-                <span id="pc2-rss-delta" class="pc-result-delta"></span>
-              </span>
-            </div>
-            <div id="pc2-parsed-info" class="pc-parsed-box"></div>
-            <table class="pc-table" id="pc2-result-table">
-              <thead>
-                <tr>
-                  <th>{% if lang == 'en' %}Tolerance name{% else %}公差名稱{% endif %}</th>
-                  <th>{% if lang == 'en' %}Part{% else %}零件{% endif %}</th>
-                  <th>Φ</th>
-                  <th>{% if lang == 'en' %}IT before{% else %}原 IT{% endif %}</th>
-                  <th>{% if lang == 'en' %}μm before{% else %}原 μm{% endif %}</th>
-                  <th>{% if lang == 'en' %}New IT / μm{% else %}新 IT / μm{% endif %}</th>
-                  <th>Δ μm</th>
-                </tr>
-              </thead>
-              <tbody id="pc2-result-tbody"></tbody>
-            </table>
-          </div>
-        </section>
 
       </div>
     </div>
   </div>
 
   <script src="{{ url_for('static', filename='js/plan_compare.js') }}"></script>
+
+  <!-- ══ 進階版配合建議 Overlay ══ -->
+  <div id="adv-fit-overlay" class="adv-fit-overlay hidden" onclick="if(event.target===this)closeAdvFitPanel()">
+    <div class="adv-fit-modal">
+      <div class="adv-fit-modal-header">
+        <span>進階版配合建議</span>
+        <button class="adv-close-btn" onclick="closeAdvFitPanel()">&times;</button>
+      </div>
+
+      <!-- 模式切換 Tab -->
+      <div class="adv-mode-tabs">
+        <button id="adv-tab-rec"    class="adv-tab active"  onclick="advSwitchMode('rec')">配合建議報告</button>
+        <button id="adv-tab-wizard" class="adv-tab"         onclick="advSwitchMode('wizard')">更新公差路徑</button>
+      </div>
+
+      <!-- ── 配合建議報告模式 ── -->
+      <div id="adv-mode-rec">
+        <div id="adv-rec-status" class="adv-rec-status"></div>
+        <div id="adv-rec-result" class="adv-rec-result hidden"></div>
+        <div class="adv-step-actions" style="margin-top:12px;">
+          <button class="adv-btn-primary" onclick="advGenerateRec()">產生配合建議</button>
+          <button class="adv-btn-secondary" onclick="closeAdvFitPanel()">關閉</button>
+        </div>
+      </div>
+
+      <!-- ── 原有 Wizard 模式 ── -->
+      <div id="adv-mode-wizard" class="hidden">
+
+      <!-- Step 1: 路徑狀態 -->
+      <div id="adv-step1" class="adv-step">
+        <div class="adv-step-header">Step 1 ／ 公差累積路徑狀態</div>
+        <div id="adv-path-status" class="adv-path-status"></div>
+        <div class="adv-step-actions">
+          <button id="adv-btn-to-step2" class="adv-btn-primary" onclick="advGoStep2()" disabled>
+            下一步：選擇基準零件 →
+          </button>
+          <button class="adv-btn-secondary" onclick="closeAdvFitPanel()">取消</button>
+        </div>
+      </div>
+
+      <!-- Step 2: 選擇基準零件 -->
+      <div id="adv-step2" class="adv-step hidden">
+        <div class="adv-step-header">Step 2 ／ 選擇基準零件</div>
+        <label class="adv-label">以此零件為準：</label>
+        <select id="adv-part-select" class="adv-select" onchange="advLoadRecommend()">
+          <option value="">-- 請選擇零件 --</option>
+        </select>
+        <div id="adv-recommend-loading" class="hidden adv-loading">載入推薦中...</div>
+      </div>
+
+      <!-- Step 3: 推薦配合清單 -->
+      <div id="adv-step3" class="adv-step hidden">
+        <div class="adv-step-header">Step 3 ／ 選擇配合（請點選一列）</div>
+        <div class="adv-section-title">▸ 主要配合（直接涉及所選零件）</div>
+        <div id="adv-focus-pairs"></div>
+        <div class="adv-section-title">▸ 相關配合（連動零件）</div>
+        <div id="adv-related-pairs"></div>
+        <div class="adv-step-actions">
+          <button id="adv-btn-apply" class="adv-btn-primary" onclick="advApplyFit()" disabled>
+            ✅ 更新公差路徑
+          </button>
+          <button class="adv-btn-secondary" onclick="closeAdvFitPanel()">取消</button>
+        </div>
+      </div>
+
+      <!-- Step 4: 結果與下一步 -->
+      <div id="adv-step4" class="adv-step hidden">
+        <div class="adv-step-header">Step 4 ／ 更新完成</div>
+        <div id="adv-apply-result"></div>
+        <div class="adv-next-hint">
+          <strong>下一步：請執行公差調配</strong><br>
+          公差路徑已依配合建議更新完成，請直接執行「公差調配」最佳化各零件公差分配。
+        </div>
+        <div class="adv-step-actions">
+          <button class="adv-btn-primary" onclick="advGotoAllocation()">前往公差調配</button>
+          <button class="adv-btn-secondary" onclick="closeAdvFitPanel()">關閉面板</button>
+        </div>
+      </div>
+
+      </div><!-- /adv-mode-wizard -->
+    </div>
+  </div>
+  <!-- ══ /進階版配合建議 Overlay ══ -->
+
+  <!-- 版權聲明 -->
+  <div style="position:fixed; bottom:6px; right:12px; font-size:0.68rem; color:#9ca3af; pointer-events:none; z-index:1; letter-spacing:0.03em;">
+    © 2026 Robert_Chen &nbsp;|&nbsp; RAS400 Tolerance Analysis System
+  </div>
 
 </body>
 </html>

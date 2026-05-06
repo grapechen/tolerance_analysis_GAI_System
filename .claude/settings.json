@@ -83,7 +83,17 @@
       "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://127.0.0.1:7011/api/plan/mating_pairs --max-time 5)",
       "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F 'file=@D:/公差計畫/宏為_C軸/115單一C軸\\(簡化編碼器\\).STP_skeleton_chain.csv' -o C:/Users/User/AppData/Local/Temp/imp_out.json)",
       "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F file=@C:/Users/User/AppData/Local/Temp/sk.csv -o C:/Users/User/AppData/Local/Temp/imp_out.json)",
-      "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F file=@C:/Users/User/AppData/Local/Temp/sk.csv -o /dev/null -w 'HTTP %{http_code}\\\\n')"
+      "Bash(curl -s -X POST http://127.0.0.1:7011/api/import_excel -F file=@C:/Users/User/AppData/Local/Temp/sk.csv -o /dev/null -w 'HTTP %{http_code}\\\\n')",
+      "PowerShell(C:\\\\Users\\\\User\\\\anaconda3\\\\envs\\\\tol_env\\\\python.exe C:\\\\Tolerance_Project\\\\generate_manual.py 2>&1)",
+      "Bash(taskkill /F /IM python.exe)",
+      "Bash(python server/ai_app.py)",
+      "Bash(curl -s http://127.0.0.1:7011/ -o /dev/null -w \"%{http_code}\")",
+      "Bash(node --check C:/Tolerance_Project/server/static/js/bom_render.js)",
+      "Bash(node --check C:/Tolerance_Project/server/static/js/chat.js)",
+      "Bash(gh auth *)",
+      "Bash(gh repo *)",
+      "Bash(git remote *)",
+      "Bash(git add *)"
     ],
     "additionalDirectories": [
       "C:\\Users\\User\\.claude",

@@ -20,8 +20,7 @@ DATA_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', 'data'
 MATING_PAIRS_CSV = os.path.normpath(os.path.join(DATA_DIR, 'ras400_mating_pairs.csv'))
 FEATURE_TOL_CSV  = os.path.normpath(os.path.join(DATA_DIR, 'ras400_feature_tolerances.csv'))
 
-DEFAULT_FOCUS_PARTS = ('軸承座', '轉動軸', '工作臺心軸')
-DEFAULT_STACK_CHAIN = ('MP03', 'MP02', 'MP06', 'MP10', 'MP05', 'MP01')
+DEFAULT_FOCUS_PARTS = ('軸承座', '軸承', '轉動軸', '工作臺心軸')
 
 # IT 範圍：方案二可調區間
 IT_MIN = 5
@@ -77,6 +76,7 @@ DEFAULT_RULE = FitRule('H7', 'h6', 'LC2', '留隙配合', '預設定位配合')
 # ── IT 解析輔助 ────────────────────────────────────────────────────────────
 
 _IT_RE = re.compile(r'([A-Za-z]+)(\d+)')
+_SFA_CODE_RE = re.compile(r'^(.+)-([A-Za-z]+)(\d+)$')
 
 
 def _split_code(notation: str) -> tuple[str, int]:
@@ -382,364 +382,218 @@ class PlanService:
         s_band = abs(s.get('upper_um', 0) - s.get('lower_um', 0))
         return round(h_band + s_band, 3)
 
-    # ── Plan 2：步驟 ① 路徑分析（讀使用者編輯的 editorPathData） ──────────
-    def analyze_path(
-        self,
-        path_data: list[dict],
-    ) -> dict:
-        """對使用者編輯的公差累積路徑（editorPathData）做分析。
+    # ── 進階版配合調整 ─────────────────────────────────────────────────────────
 
-        path_data 來自前端的 editorPathData，每筆是獨立公差項：
-          { type: "feature", name: "軸承-Dia-1", val: 0.02 (mm),
-            nominal_size: 25, it_grade: "IT7", part: "軸承", tol_type: "dis" }
-        spatial 項（traX/Y/Z, rotX/Y/Z）不參與 RSS。
+    def get_parts_list(self, csv_path: str = MATING_PAIRS_CSV) -> list[str]:
+        """回傳所有唯一零件名稱（hole_part + shaft_part 合併去重，依字母排序）。"""
+        pairs = self.load_mating_pairs(csv_path)
+        parts = set()
+        for p in pairs:
+            parts.add(p['hole_part'])
+            parts.add(p['shaft_part'])
+        return sorted(parts)
+
+    @staticmethod
+    def _match_part_items(part_name: str, path: list[dict]) -> list[dict]:
+        """從 current_path 找屬於某零件的路徑項目。
+
+        Priority 1: item.get('part') == part_name（精確）
+        Priority 2: SFA 新格式前綴完全一致（regex group == part_name，非 substring）
+        Priority 3: fallback，回傳空串列
+        spatial 型 item 一律跳過。
         """
-        feats = [it for it in (path_data or []) if it.get('type') == 'feature']
-        if not feats:
-            return {'error': '路徑中沒有公差項，請先在「編輯公差路徑」建立路徑'}
+        matched = []
+        seen_names = set()
 
-        # mm → μm 統一在 μm 比較貢獻
-        vals_um = [float(it.get('val', 0)) * 1000.0 for it in feats]
-        rss_um = self._rss(vals_um)
-        wc_um = sum(vals_um)
-        contribs = self._contributions(vals_um)
+        for item in path:
+            if item.get('type') == 'spatial':
+                continue
 
-        items = []
-        for it, v_um, c in zip(feats, vals_um, contribs):
-            items.append({
-                'name':             it.get('name', ''),
-                'part':             it.get('part', ''),
-                'tol_type':         it.get('tol_type', ''),
-                'val_mm':           float(it.get('val', 0)),
-                'val_um':           round(v_um, 3),
-                'nominal_size':     it.get('nominal_size'),
-                'it_grade':         it.get('it_grade', ''),
-                'contribution_pct': round(c, 2),
-                'rank':             0,
-            })
-        order = sorted(range(len(items)), key=lambda i: items[i]['contribution_pct'], reverse=True)
-        for r, idx_ in enumerate(order, start=1):
-            items[idx_]['rank'] = r
+            item_name = item.get('name', '')
+
+            # Priority 1: 明確 part 欄位
+            item_part = (item.get('part') or '').strip()
+            if item_part and item_part == part_name:
+                if item_name not in seen_names:
+                    matched.append(item)
+                    seen_names.add(item_name)
+                continue
+
+            # Priority 2: SFA 新格式前綴（精確，非 substring）
+            m = _SFA_CODE_RE.match(item_name)
+            if m and m.group(1) == part_name:
+                if item_name not in seen_names:
+                    matched.append(item)
+                    seen_names.add(item_name)
+
+        return matched
+
+    @staticmethod
+    def _select_dia_items(items: list[dict]) -> list[dict]:
+        """篩選應被更新的路徑項目：優先 tol_type=='dia'，fallback 到無 tol_type。
+        幾何公差（fla/par/per/co/cyl/cir/run/tot/pos/ang/sym）及 dis 一律排除。
+        """
+        EXCLUDE_TYPES = {
+            'fla', 'par', 'per', 'co', 'cyl', 'cir', 'run', 'tot',
+            'pos', 'ang', 'sym', 'dis',
+        }
+        dia_items = [i for i in items if (i.get('tol_type') or '').lower() == 'dia']
+        if dia_items:
+            return dia_items
+        return [i for i in items if not (i.get('tol_type') or '').strip()]
+
+    def advanced_recommend(
+        self,
+        focus_part: str,
+        current_path: list[dict],
+        csv_path: str = MATING_PAIRS_CSV,
+    ) -> dict:
+        """以 focus_part 為基準，找相關配對並推薦配合，同時預覽路徑比對結果。"""
+        pairs = self.load_mating_pairs(csv_path)
+
+        focus_pairs = [
+            p for p in pairs
+            if p['hole_part'] == focus_part or p['shaft_part'] == focus_part
+        ]
+
+        related_part_names = {focus_part}
+        for p in focus_pairs:
+            related_part_names.add(p['hole_part'])
+            related_part_names.add(p['shaft_part'])
+        focus_ids = {p['pair_id'] for p in focus_pairs}
+        related_pairs = [
+            p for p in pairs
+            if p['pair_id'] not in focus_ids
+            and (p['hole_part'] in related_part_names or p['shaft_part'] in related_part_names)
+        ]
+
+        def enrich(p: dict, is_focus: bool) -> dict:
+            rule    = self.recommend_fit(p['function_desc'])
+            details = self._fit_details(p['nominal_dia'], rule.hole, rule.shaft)
+            return {
+                **p,
+                'fit_hole':    rule.hole,
+                'fit_shaft':   rule.shaft,
+                'fit_code':    f"{rule.hole}/{rule.shaft}",
+                'fit_type':    rule.fit_type,
+                'reason':      rule.reason,
+                'tol_band_um': self._fit_band(details),
+                'is_focus':    is_focus,
+            }
+
+        enriched_focus   = [enrich(p, True)  for p in focus_pairs]
+        enriched_related = [enrich(p, False) for p in related_pairs]
+
+        path_matches: dict[str, list[str]] = {}
+        for p in focus_pairs + related_pairs:
+            hole_items  = self._match_part_items(p['hole_part'],  current_path or [])
+            shaft_items = self._match_part_items(p['shaft_part'], current_path or [])
+            all_matched = hole_items + shaft_items
+            path_matches[p['pair_id']] = list(
+                dict.fromkeys(i.get('name') for i in all_matched if i.get('name'))
+            )
 
         return {
-            'rss_um':       round(rss_um, 3),
-            'wc_um':        round(wc_um, 3),
-            'items_count':  len(feats),
-            'spatial_count': sum(1 for it in path_data if it.get('type') == 'spatial'),
-            'items':        items,
+            'focus_pairs':   enriched_focus,
+            'related_pairs': enriched_related,
+            'path_matches':  path_matches,
         }
 
-    # ── Plan 2：步驟 ② 套用使用者指令 ────────────────────────────────
-    @staticmethod
-    def _ras400_part_id_to_name(part_id: str) -> str:
-        """編號 → 中文（與 test0402/face_namer.py COMP_NAMES 同步）。"""
-        m = {
-            '1': '工作臺',    '2': '馬達水套',  '3': '馬達座',
-            '4': '分流座',    '5': '工作臺心軸', '6': '軸承座',
-            '7': '編碼器',    '8': '轉動軸',    '9': '編碼器心軸',
-            '10': '軸承',    '11': '馬達',
-        }
-        return m.get(str(part_id), str(part_id))
-
-    @staticmethod
-    def _normalize_name(s: str) -> str:
-        """正規化公差名稱：去 hyphen、轉小寫，便於 '工作臺心軸-DIA1' vs '工作臺心軸-Dia-1' 比對。"""
-        return (s or '').replace('-', '').replace('_', '').lower()
-
-    def apply_command(
+    def apply_fit_to_path(
         self,
-        path_data: list[dict],
-        command: str,
+        pair_id: str,
+        fit_hole: str,
+        fit_shaft: str,
+        nominal_dia: float,
+        current_path: list[dict],
+        csv_path: str = MATING_PAIRS_CSV,
     ) -> dict:
-        """方案二步驟②：解析自然語言指令 → 對應到 editorPathData 中某筆公差項
-        → 透過 ISO 286 重新查表得到新的公差值（mm）→ 重算 RSS（其他項不動）。
-
-        指令範例:
-          "請將編號5零件第6特徵面的第1個直徑公差由IT6放寬至IT7"
-        指令解析結果中的 target_name 例如 "工作臺心軸-DIA1"，
-        會與 editorPathData[i].name (例如 "工作臺心軸-Dia-1") 做正規化比對。
-        """
-        from rag_engine import parse_structured_command
-        parsed = parse_structured_command(command)
-        if not parsed:
-            return {'error': '無法解析指令格式', 'command': command}
-
-        target_name_norm = self._normalize_name(parsed['target_name'])
-        target_part = parsed.get('part_name_zh') or self._ras400_part_id_to_name(parsed['part_id'])
-        target_it = int(parsed['target_it'])
-        tol_index = int(parsed.get('tol_index', 1))
-
-        feats = [(i, it) for i, it in enumerate(path_data or []) if it.get('type') == 'feature']
-        if not feats:
-            return {'error': '路徑中沒有公差項', 'parsed': parsed}
-
-        # 比對：先以 target_name 完整正規化匹配
-        candidates = [(i, it) for i, it in feats
-                      if self._normalize_name(it.get('name', '')) == target_name_norm]
-
-        # 找不到精確名稱 → 退回用 (part + tol_code) 模糊匹配，配合 tol_index 取第 N 個
-        if not candidates:
-            tol_code_lc = parsed['tol_code'].lower()
-            same_part = [(i, it) for i, it in feats
-                         if it.get('part') == target_part
-                         and tol_code_lc in self._normalize_name(it.get('name', ''))]
-            if not same_part:
-                return {
-                    'error':  f"路徑中找不到 {target_part} 的 {parsed['tol_code']} 公差項",
-                    'parsed': parsed,
-                }
-            if tol_index > len(same_part):
-                return {
-                    'error':  f"{parsed['tol_code']}-{tol_index} 超過該零件的公差數 ({len(same_part)})",
-                    'parsed': parsed,
-                    'candidates_count': len(same_part),
-                }
-            candidates = [same_part[tol_index - 1]]
-
-        idx, item = candidates[0]
-        nominal_size = item.get('nominal_size')
-        if not nominal_size:
+        """套用選定配合至公差累積路徑，只更新 DIA 型公差項目。"""
+        pairs = self.load_mating_pairs(csv_path)
+        pair  = next((p for p in pairs if p['pair_id'] == pair_id), None)
+        if not pair:
             return {
-                'error':  f"公差項 {item.get('name')} 無 nominal_size，無法重新查 ISO 286",
-                'parsed': parsed,
+                'ok': False, 'msg': f'找不到配對: {pair_id}',
+                'updated_path': current_path, 'changes': [],
             }
 
-        # 用 ISO 286 IT 等級表查新的公差值（μm → mm）
-        new_tol_um = self._lookup_it_um(float(nominal_size), target_it)
-        if new_tol_um is None:
+        details    = self._fit_details(nominal_dia, fit_hole, fit_shaft)
+        hole_info  = details.get('hole', {})
+        shaft_info = details.get('shaft', {})
+
+        if details.get('spec_only'):
             return {
-                'error':  f"找不到 IT{target_it} @ Φ{nominal_size}mm 的 ISO 286 對應值",
-                'parsed': parsed,
+                'ok': True,
+                'updated_path': current_path,
+                'changes': [],
+                'message': f'{pair_id} 為螺栓鎖附固定規格，不適用 ISO 配合公差自動更新。',
             }
-        new_val_mm = round(new_tol_um / 1000.0, 6)
 
-        # 計算 RSS（其他項維持）
-        old_val_mm = float(item.get('val', 0))
-        vals = [float(it.get('val', 0)) for _, it in feats]
-        vals_um_before = [v * 1000.0 for v in vals]
-        rss_before = self._rss(vals_um_before)
-        wc_before = sum(vals_um_before)
+        hole_tol_mm  = round(abs(hole_info.get('upper_um', 0)  - hole_info.get('lower_um', 0))  / 1000, 6)
+        shaft_tol_mm = round(abs(shaft_info.get('upper_um', 0) - shaft_info.get('lower_um', 0)) / 1000, 6)
 
-        vals_after = list(vals)
-        # 找 target item 在 feats 列表的位置
-        for k, (i, it) in enumerate(feats):
-            if i == idx:
-                vals_after[k] = new_val_mm
-                break
-        vals_um_after = [v * 1000.0 for v in vals_after]
-        rss_after = self._rss(vals_um_after)
-        wc_after = sum(vals_um_after)
-
-        # 回填修改後的完整 path（淺拷貝 + 替換目標 item）
-        new_path = list(path_data or [])
-        new_item = dict(item)
-        new_item['val']      = new_val_mm
-        new_item['it_grade'] = f"IT{target_it}"
-        new_path[idx] = new_item
-
-        return {
-            'parsed':         parsed,
-            'target_name':    item.get('name'),
-            'target_part':    target_part,
-            'target_index':   idx,
-            'change': {
-                'name':         item.get('name'),
-                'before': {
-                    'val_mm':    old_val_mm,
-                    'val_um':    round(old_val_mm * 1000.0, 3),
-                    'it_grade':  item.get('it_grade'),
-                },
-                'after': {
-                    'val_mm':    new_val_mm,
-                    'val_um':    round(new_tol_um, 3),
-                    'it_grade':  f"IT{target_it}",
-                },
-                'delta_um':      round((new_val_mm - old_val_mm) * 1000.0, 3),
-            },
-            'rss_before_um':  round(rss_before, 3),
-            'rss_after_um':   round(rss_after, 3),
-            'wc_before_um':   round(wc_before, 3),
-            'wc_after_um':    round(wc_after, 3),
-            'rss_delta_um':   round(rss_after - rss_before, 3),
-            'path_data':      new_path,
-        }
-
-    @staticmethod
-    def _lookup_it_um(nominal_mm: float, it_grade: int) -> float | None:
-        """查 ISO 286 IT 等級表，回傳該尺寸的公差（μm）。"""
-        from repositories.tolerance_repo import ToleranceRepository
-        repo = ToleranceRepository()
-        rows = repo.find_iso_by_size(nominal_mm)
-        if not rows:
-            return None
-        target = f"IT{it_grade}"
-        for r in rows:
-            if str(r.it_grade).upper() == target:
-                return float(r.tolerance_um) if r.tolerance_um is not None else None
-        return None
-
-    # ── Plan 2：自動調配版（保留） ────────────────────────────────────
-
-    def adjust_plan2(
-        self,
-        plan1: list[dict],
-        chain: Iterable[str] = DEFAULT_STACK_CHAIN,
-        target_um: float | None = None,
-        high_threshold: float = 25.0,
-        low_threshold: float = 8.0,
-    ) -> dict:
-        """跑方案二：依貢獻度分布，對 Plan 1 的 fit 做緊/鬆調配。
-
-        Args:
-            plan1: 方案一輸出（每筆需含 pair_id / nominal_dia / fit_hole / fit_shaft / tol_band_um / fit_type）
-            chain: 參與 stack-up 的 pair_id 順序
-            target_um: 累積目標（μm）；給定時，會嘗試調緊到目標內，再對未動的低貢獻放寬。
-                       未給定時用門檻法：> high_threshold% 調緊一級、 < low_threshold% 放寬一級。
-            high_threshold / low_threshold: 門檻法用百分比
-
-        Returns:
-            {
-              'chain': [...],           # 鏈中各環節原始與調整後資料
-              'rss_before_um': ...,
-              'rss_after_um': ...,
-              'wc_before_um': ...,
-              'wc_after_um': ...,
-              'changes': [...],         # 變動列表（含 pair_id / action / before / after / reason）
-            }
-        """
-        chain = list(chain)
-        idx = {r['pair_id']: r for r in plan1}
-        chain_rows = [idx[pid] for pid in chain if pid in idx]
-        if not chain_rows:
-            return {'error': 'chain pairs not in plan1'}
-
-        # 1. 原始貢獻
-        bands_before = [r['tol_band_um'] for r in chain_rows]
-        rss_before = self._rss(bands_before)
-        wc_before = sum(bands_before)
-        contribs = self._contributions(bands_before)
-
-        # 2. 決策每環的動作
+        updated_path = [dict(item) for item in (current_path or [])]
         changes: list[dict] = []
-        for r, b, c in zip(chain_rows, bands_before, contribs):
-            if c >= high_threshold:
-                action, delta, reason = 'tighten', -1, f"貢獻度 {c:.1f}% > {high_threshold}%，調緊一級"
-            elif c <= low_threshold:
-                action, delta, reason = 'loosen', +1, f"貢獻度 {c:.1f}% < {low_threshold}%，放寬一級"
-            else:
-                action, delta, reason = 'keep', 0, f"貢獻度 {c:.1f}%，維持"
 
-            new_hole  = _shift_grade(r['fit_hole'],  delta) if delta else r['fit_hole']
-            new_shaft = _shift_grade(r['fit_shaft'], delta) if delta else r['fit_shaft']
-
-            new_details = self._fit_details(r['nominal_dia'], new_hole, new_shaft) if delta else r['details']
-            new_band = self._fit_band(new_details) if delta else r['tol_band_um']
-
+        hole_candidates = self._match_part_items(pair['hole_part'], updated_path)
+        for item in self._select_dia_items(hole_candidates):
+            if hole_tol_mm <= 0:
+                continue
+            old_val   = item.get('val', 0)
+            item['val'] = hole_tol_mm
             changes.append({
-                'pair_id':           r['pair_id'],
-                'action':            action,
-                'contribution_pct':  round(c, 2),
-                '_nominal_dia':      r['nominal_dia'],
-                'before':            {
-                    'hole':         r['fit_hole'],
-                    'shaft':        r['fit_shaft'],
-                    'fit_code':     r['fit_code'],
-                    'tol_band_um':  r['tol_band_um'],
-                    'fit_type':     r['fit_type'],
-                },
-                'after':             {
-                    'hole':         new_hole,
-                    'shaft':        new_shaft,
-                    'fit_code':     f"{new_hole}/{new_shaft}",
-                    'tol_band_um':  new_band,
-                    'details':      new_details,
-                },
-                'delta_um':          round(new_band - r['tol_band_um'], 3),
-                'reason':            reason,
+                'name':     item.get('name'),
+                'part':     pair['hole_part'],
+                'role':     'hole',
+                'old_val':  old_val,
+                'new_val':  hole_tol_mm,
+                'source':   f'{fit_hole}@{nominal_dia}mm',
+                'tol_type': item.get('tol_type', '(未標記)'),
             })
 
-        bands_after = [c['after']['tol_band_um'] for c in changes]
-        rss_after = self._rss(bands_after)
-        wc_after = sum(bands_after)
+        shaft_candidates = self._match_part_items(pair['shaft_part'], updated_path)
+        for item in self._select_dia_items(shaft_candidates):
+            if shaft_tol_mm <= 0:
+                continue
+            old_val   = item.get('val', 0)
+            item['val'] = shaft_tol_mm
+            changes.append({
+                'name':     item.get('name'),
+                'part':     pair['shaft_part'],
+                'role':     'shaft',
+                'old_val':  old_val,
+                'new_val':  shaft_tol_mm,
+                'source':   f'{fit_shaft}@{nominal_dia}mm',
+                'tol_type': item.get('tol_type', '(未標記)'),
+            })
 
-        # 3. 若有 target，嘗試再加緊高貢獻直到達標（簡單迭代）
-        if target_um is not None and rss_after > target_um:
-            changes, rss_after, wc_after = self._iterate_to_target(changes, target_um)
+        if not changes:
+            if not hole_candidates and not shaft_candidates:
+                msg = (
+                    f'未能找到「{pair["hole_part"]}」或「{pair["shaft_part"]}」的對應路徑項目。\n'
+                    f'可能原因：路徑代碼為抽象格式（disZ1, co1 等），不含零件資訊。\n'
+                    f'解決方式：在 Excel G 欄填入「所屬零件」名稱後重新匯入，或使用 SFA CSV 格式（代碼如「工作臺心軸-DIA1」）。'
+                )
+            else:
+                matched_parts = []
+                if hole_candidates:
+                    matched_parts.append(pair['hole_part'])
+                if shaft_candidates:
+                    matched_parts.append(pair['shaft_part'])
+                msg = (
+                    f'找到「{"、".join(matched_parts)}」的路徑項目，但均非 DIA 型尺寸公差（可能為幾何公差）。\n'
+                    f'幾何公差（fla/par/per/co 等）不在自動更新範圍內，請手動確認。'
+                )
+            return {'ok': True, 'updated_path': current_path, 'changes': [], 'message': msg}
 
+        msg = (
+            f'已套用 {pair_id}（{pair["hole_part"]} ↔ {pair["shaft_part"]}）'
+            f'{fit_hole}/{fit_shaft} 配合，更新了 {len(changes)} 個路徑項目。'
+        )
         return {
-            'chain':           [c['pair_id'] for c in changes],
-            'rss_before_um':   round(rss_before, 3),
-            'rss_after_um':    round(rss_after, 3),
-            'wc_before_um':    round(wc_before, 3),
-            'wc_after_um':     round(wc_after, 3),
-            'changes':         changes,
-            'meta': {
-                'target_um':       target_um,
-                'high_threshold':  high_threshold,
-                'low_threshold':   low_threshold,
-            },
+            'ok':           True,
+            'updated_path': updated_path,
+            'changes':      changes,
+            'message':      msg,
         }
 
-    @staticmethod
-    def _rss(values: list[float]) -> float:
-        return (sum(v * v for v in values)) ** 0.5
-
-    @staticmethod
-    def _contributions(values: list[float]) -> list[float]:
-        denom = sum(v * v for v in values) or 1.0
-        return [(v * v) / denom * 100 for v in values]
-
-    def _iterate_to_target(self, changes: list[dict], target_um: float, max_iter: int = 5):
-        """達標迭代：再對最高貢獻的環節調緊，最多 max_iter 輪。"""
-        for _ in range(max_iter):
-            bands = [c['after']['tol_band_um'] for c in changes]
-            rss = self._rss(bands)
-            if rss <= target_um:
-                break
-            # 找目前貢獻最高、且還沒到 IT_MIN 的環節再調緊一級
-            order = sorted(range(len(changes)),
-                           key=lambda i: bands[i] * bands[i], reverse=True)
-            advanced = False
-            for i in order:
-                c = changes[i]
-                pair_id = c['pair_id']
-                cur_hole = c['after']['hole']
-                cur_shaft = c['after']['shaft']
-                _, hg = _split_code(cur_hole)
-                _, sg = _split_code(cur_shaft)
-                if hg <= IT_MIN or sg <= IT_MIN:
-                    continue
-                new_hole = _shift_grade(cur_hole, -1)
-                new_shaft = _shift_grade(cur_shaft, -1)
-                # 找回 nominal_dia
-                # 從 c['before'] 拿不到，需另存。改造：在 changes 裡記下 nominal
-                nominal = c.get('_nominal_dia')
-                if nominal is None:
-                    # bail out — 不知尺寸無法重算
-                    break
-                new_details = self._fit_details(nominal, new_hole, new_shaft)
-                new_band = self._fit_band(new_details)
-                c['after'] = {
-                    'hole': new_hole, 'shaft': new_shaft,
-                    'fit_code': f"{new_hole}/{new_shaft}",
-                    'tol_band_um': new_band, 'details': new_details,
-                }
-                c['action'] = 'tighten'
-                c['delta_um'] = round(new_band - c['before']['tol_band_um'], 3)
-                c['reason'] += f" → 進一步收緊以達目標 {target_um}μm"
-                advanced = True
-                break
-            if not advanced:
-                break
-        # 終局：依 before/after 帶寬重新判定 action 標籤，避免「先放寬後拉回」誤標
-        for c in changes:
-            db = c['after']['tol_band_um'] - c['before']['tol_band_um']
-            c['delta_um'] = round(db, 3)
-            if abs(db) < 1e-6:
-                c['action'] = 'keep'
-            elif db < 0:
-                c['action'] = 'tighten'
-            else:
-                c['action'] = 'loosen'
-        bands = [c['after']['tol_band_um'] for c in changes]
-        return changes, self._rss(bands), sum(bands)

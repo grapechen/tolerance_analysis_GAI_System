@@ -3,7 +3,20 @@ let _bomScrollEl = null;
 let _bomResizeObserver = null;
 let selectedContactNode = null;
 let contactPairs = [];
-let editorPathData = [];
+var editorPathData = [];  // var 讓 window.editorPathData 與此同步，plan_compare.js 才能正確存取
+
+// ── GAI 工作流程狀態機 ──────────────────────────────────────────────────────
+window._wf = {
+    pathLoaded:   false,  // 路徑已匯入
+    analysisRun:  false,  // 公差分析已完成
+    bearingSet:   false,  // 軸承配合已設定
+    readyForAlloc: false, // 可以按公差調配
+};
+window._wfNotify = function(msg) {
+    if (typeof addMessage === 'function') {
+        setTimeout(() => addMessage('ai', `<div style="font-size:0.9rem;color:#000000;">${msg}</div>`), 400);
+    }
+};
 
 // 處理自定義產品架構圖的函式
 function renderCustomBomTree(text, bubbleElement, intent) {
@@ -561,8 +574,12 @@ function renderStructureDirectly(dsl, container, intent) {
     }
     
     if (!btn) {
-        // 如果連按鈕都沒有，直接注入原始 HTML 並返回
+        // 如果連按鈕都沒有，直接注入原始 HTML
         container.innerHTML = tempEl.innerHTML;
+        // features intent：沒有 open-bom-btn 仍回傳結果讓 modal 能開啟
+        if (intent && (intent.features || intent.contact || intent.network)) {
+            return { treeHtml: tempEl.innerHTML, b64Topology: '', snapshotPairs: [] };
+        }
         return null;
     }
     
@@ -936,6 +953,8 @@ window.addEventListener('resize', () => {
 }, { passive: true });
 
 function openEditorModal(partsJsonStr) {
+    // 快照：關閉時用來判斷是否有手動變更
+    window._editorOpenSnapshot = JSON.stringify(editorPathData);
     try {
         // [修正] 如果目前已有數據 (例如剛匯入 Excel)，提示使用者是否要覆蓋
         if (editorPathData && editorPathData.length > 0) {
@@ -1019,7 +1038,21 @@ async function _fillFromRas400Lookup() {
 }
 
 function closeEditorModal() {
+    _recordManualEditIfChanged();
     document.getElementById('editor-modal-overlay').style.display = 'none';
+}
+
+/** 若路徑相較開啟快照有變動，記錄手動編輯來源 */
+function _recordManualEditIfChanged() {
+    if (typeof window._editorOpenSnapshot === 'undefined') return;
+    if (JSON.stringify(editorPathData) !== window._editorOpenSnapshot) {
+        window._pathUpdateInfo = {
+            source: '手動編輯路徑',
+            time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+            desc: `共 ${editorPathData.length} 項`
+        };
+    }
+    window._editorOpenSnapshot = undefined;
 }
 
 /**
@@ -1063,10 +1096,25 @@ async function uploadExcelPath(input) {
             renderEditorList();
             // [同步] 匯入成功後立即更新左側圖框
             renderPathFlowchart();
-            
-            const successMsg = window.CURRENT_LANG === 'en' ? "Excel path imported successfully!" : "Excel 路徑匯入成功！";
-            console.log("[INFO]", successMsg);
-            alert(successMsg);
+            // 記錄更新來源
+            window._pathUpdateInfo = {
+                source: 'Excel 匯入',
+                time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+                desc: `${editorPathData.length} 項`
+            };
+
+            const n = editorPathData.length;
+            // 更新工作流程狀態
+            window._wf.pathLoaded    = true;
+            window._wf.analysisRun   = false;
+            window._wf.bearingSet    = false;
+            window._wf.readyForAlloc = false;
+            window._wfNotify(
+                `✅ 路徑匯入成功（${n} 項）。<br>` +
+                `💡 <b>下一步</b>：請按【公差分析】執行公差累積分析
+                。`
+            );
+            console.log("[INFO]", `路徑匯入成功（${n} 項）`);
         }
     } catch (e) {
         console.error("Import failed:", e);
@@ -1086,6 +1134,7 @@ function closeAnalysisModal() {
 
 function openAllocationModal() {
     document.getElementById('allocation-modal-overlay').style.display = 'flex';
+    setAllocMode('auto');  // 每次正常開啟預設回自動調配模式
 }
 
 function closeAllocationModal() {
@@ -1093,7 +1142,8 @@ function closeAllocationModal() {
 }
 
 function exportToLeftPanel() {
-    closeEditorModal();
+    _recordManualEditIfChanged();
+    document.getElementById('editor-modal-overlay').style.display = 'none';
     renderPathFlowchart();
 }
 
@@ -1435,98 +1485,121 @@ function runDeepAnalysis() {
         statusBox.className = 'status-box analyzing';
     }
 
-    // [新] 讀取使用者設定的分析參數
-    const nSamples = document.getElementById('mc-samples')?.value || 10000;
-    const sigma    = document.getElementById('mc-sigma')?.value || 3.0;
-    const distType = document.getElementById('mc-dist')?.value || 0;
+    // 讀取使用者設定的分析參數
+    const nSamples = parseInt(document.getElementById('mc-samples')?.value) || 10000;
+    const sigma    = parseFloat(document.getElementById('mc-sigma')?.value) || 3.0;
+    const distType = parseInt(document.getElementById('mc-dist')?.value) || 0;
 
-    const encoded = encodeURIComponent(JSON.stringify(editorPathData));
-    const url = `/api/analyze_tolerance_stream?pathData=${encoded}&n_samples=${nSamples}&sigma=${sigma}&dist_type=${distType}`;
-    const es = new EventSource(url);
+    // 使用 POST 避免 pathData 超過 URL 長度上限（RAS400 路徑可達 11KB+）
+    let _analysisTimer = null;
+    let _abortCtrl = new AbortController();
 
-    es.onerror = () => {
-        es.close();
+    function _resetTimer(ms) {
+        clearTimeout(_analysisTimer);
+        _analysisTimer = setTimeout(() => {
+            _abortCtrl.abort();
+            _onAnalysisError(window.CURRENT_LANG === 'en' ? '❌ Timeout: analysis took too long.' : '❌ 逾時：分析耗時過長，請確認伺服器狀態。');
+        }, ms);
+    }
+
+    function _onAnalysisError(msg) {
+        clearTimeout(_analysisTimer);
+        console.error('[公差分析] 失敗:', msg);
         if (bar) { bar.style.width = '100%'; bar.style.background = '#ef4444'; }
-        if (label) label.textContent = window.CURRENT_LANG === 'en' ? '❌ Connection failed. Check server.' : '❌ 連線失敗，請確認伺服器狀態。';
+        if (label) label.textContent = msg;
+        if (statusBox) {
+            statusBox.title = msg;
+            statusBox.textContent = window.CURRENT_LANG === 'en' ? 'Error' : '分析失敗';
+            statusBox.className = 'status-box uncompleted';
+        }
         if (btn) btn.disabled = false;
-    };
+    }
 
-    es.onmessage = (e) => {
-        let payload;
-        try { payload = JSON.parse(e.data); } catch { return; }
-
+    function _handlePayload(payload) {
         if (payload.progress !== undefined) {
+            _resetTimer(60000);
             const pct = Math.min(100, payload.progress);
-            if (bar) bar.style.width   = pct + '%';
-            
+            if (bar) bar.style.width = pct + '%';
             const percentEl = document.getElementById('analyze-progress-percent');
             if (percentEl) percentEl.textContent = pct + '%';
-            
-            if (label) {
-                label.textContent = (window.CURRENT_LANG === 'en' ? 'Analyzing... ' : '分析中... ') + pct + '%';
-            }
-
-            // 🐎 馬到成功：同步更新馬匹位置
+            if (label) label.textContent = (window.CURRENT_LANG === 'en' ? 'Analyzing... ' : '分析中... ') + pct + '%';
             const horseRider = document.getElementById('horse-rider-wrapper');
-            if (horseRider) {
-                horseRider.style.left = `calc(${pct}% - ${pct * 1.1}px)`;
-            }
+            if (horseRider) horseRider.style.left = `calc(${pct}% - ${pct * 1.1}px)`;
         }
-
         if (payload.error) {
-            es.close();
-            if (bar) {
-                bar.style.width    = '100%';
-                bar.style.background = '#ef4444';
-            }
-            if (label) {
-                label.textContent  = (window.CURRENT_LANG === 'en' ? 'Error: ' : '錯誤：') + payload.error;
-            }
-            if (btn) btn.disabled = false;
+            _onAnalysisError((window.CURRENT_LANG === 'en' ? 'Error: ' : '錯誤：') + payload.error);
         }
-
         if (payload.result) {
-            es.close();
-            if (bar) bar.style.width   = '100%';
+            clearTimeout(_analysisTimer);
+            if (bar) bar.style.width = '100%';
             if (label) label.textContent = window.CURRENT_LANG === 'en' ? '✅ Analysis complete!' : '✅ 分析完成！';
-            
-            // 更新狀態方塊為「已完成」
             if (statusBox) {
                 statusBox.textContent = window.CURRENT_LANG === 'en' ? 'Completed' : '已完成';
                 statusBox.className = 'status-box completed';
             }
-
-            // 確保馬兒到達終點
             const horseRider = document.getElementById('horse-rider-wrapper');
             if (horseRider) horseRider.style.left = `calc(100% - 110px)`;
-
             if (btn) btn.disabled = false;
-
-            // 稍微停頓讓使用者看到「已完成」的快感
-            setTimeout(() => { 
-                if (wrap) wrap.classList.add('hidden-by-default'); 
+            setTimeout(() => {
+                if (wrap) wrap.classList.add('hidden-by-default');
                 closeAnalysisModal();
                 mountDashboardToLeftPanel();
-                if (typeof renderAnalysisResult === 'function') {
-                    renderAnalysisResult(payload.result);
-                }
+                // 更新左側 sidebar 標題為「分析報告」
+                const _sh = document.querySelector('.sidebar-header');
+                if (_sh) _sh.textContent = window.CURRENT_LANG === 'en' ? 'Analysis Report' : '分析報告';
+                if (typeof renderAnalysisResult === 'function') renderAnalysisResult(payload.result);
             }, 1000);
-
             window._lastAnalysisResult = payload.result;
             window._lastPathData = JSON.parse(JSON.stringify(editorPathData));
-            // 首次分析結果作為手動比對的基準（baseline）
             if (!window._baselineResult) {
                 window._baselineResult = payload.result;
                 window._baselinePathData = JSON.parse(JSON.stringify(editorPathData));
             }
+            // 更新工作流程狀態並主動提醒
+            window._wf.analysisRun   = true;
+            window._wf.readyForAlloc = window._wf.bearingSet;
+            window._wfNotify(
+                `✅ 公差分析完成。<br>` +
+                `💡 <b>下一步</b>：RAS400 使用 YRT 軸承（廠商規格，不加工）。` +
+                `請告訴我軸承配合，例如：「選用軸承配合 H6/js5」，系統將自動更新路徑公差值。`
+            );
         }
-    };
+    }
 
-    es.onerror = () => {
-        es.close();
-        label.textContent = window.CURRENT_LANG === 'en' ? 'Connection error.' : '連線中斷，請重試。';
-        btn.disabled = false;
-    };
+    _resetTimer(60000);
+
+    fetch('/api/analyze_tolerance_stream', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pathData: editorPathData, n_samples: nSamples, sigma, dist_type: distType }),
+        signal: _abortCtrl.signal,
+    }).then(resp => {
+        if (!resp.ok) {
+            return resp.json().then(e => { throw new Error(e.error || `HTTP ${resp.status}`); });
+        }
+        const reader = resp.body.getReader();
+        const decoder = new TextDecoder();
+        let buf = '';
+        function read() {
+            reader.read().then(({ done, value }) => {
+                if (done) return;
+                buf += decoder.decode(value, { stream: true });
+                const parts = buf.split('\n\n');
+                buf = parts.pop(); // 最後一段可能不完整，保留
+                for (const part of parts) {
+                    const line = part.replace(/^data:\s*/, '').trim();
+                    if (!line) continue;
+                    try { _handlePayload(JSON.parse(line)); } catch {}
+                }
+                read();
+            }).catch(err => {
+                if (err.name !== 'AbortError') _onAnalysisError('❌ ' + err.message);
+            });
+        }
+        read();
+    }).catch(err => {
+        if (err.name !== 'AbortError') _onAnalysisError('❌ ' + (err.message || '連線失敗'));
+    });
 }
 
 // ── Dashboard Logic ──
@@ -1706,21 +1779,21 @@ function renderCurrentChart() {
         const unitLabel = isAngle ? 'arc_second' : 'mm';
 
         let options = {
-            chart: { type: 'bar', height: '100%', toolbar: { show: true }, animations: { enabled: true } },
+            chart: { type: 'bar', height: '100%', toolbar: { show: true }, animations: { enabled: true }, foreColor: '#000000' },
             colors: ['#0ea5e9'],
             plotOptions: { bar: { borderRadius: 4, horizontal: false, columnWidth: '55%' } },
-            dataLabels: { enabled: true, formatter: (v) => (v != null ? Number(v).toFixed(1) : '0'), style: { fontSize: '10px' } },
-            xaxis: { 
+            dataLabels: { enabled: true, formatter: (v) => (v != null ? Number(v).toFixed(1) + '%' : '0'), style: { fontSize: '10px', colors: ['#000000'] } },
+            xaxis: {
                 type: 'category',
-                title: { text: isEn ? 'Path Code' : '路徑代號', style: { color: '#64748b' } },
-                labels: { style: { colors: '#94a3b8' }, rotate: -90, maxHeight: 120 }
+                title: { text: isEn ? 'Path Code' : '路徑代號', style: { color: '#000000' } },
+                labels: { style: { colors: '#000000' }, rotate: -90, maxHeight: 120 }
             },
-            yaxis: { 
-                title: { text: currentDashboardTab === 'sens' ? 'Sensitivity (%)' : 'Contribution (%)', style: { color: '#64748b' } },
-                labels: { style: { colors: '#94a3b8' } } 
+            yaxis: {
+                title: { text: currentDashboardTab === 'sens' ? 'Sensitivity (%)' : 'Contribution (%)', style: { color: '#000000' } },
+                labels: { style: { colors: '#000000' } }
             },
-            tooltip: { theme: 'dark' },
-            grid: { borderColor: 'rgba(148, 163, 184, 0.1)' }
+            tooltip: { theme: 'light' },
+            grid: { borderColor: 'rgba(0,0,0,0.1)' }
         };
 
         if (currentDashboardTab === 'dist') {
@@ -1728,52 +1801,58 @@ function renderCurrentChart() {
             const ptIdx = axisIdxMap[currentAxis] !== undefined ? axisIdxMap[currentAxis] : 0;
             const rawData = res.mc_raw ? res.mc_raw.map(row => row[ptIdx]) : [];
             const { labels, counts } = calculateHistogram(rawData);
-            
+            const totalSamples = counts.reduce((s, c) => s + c, 0);
+            const pctData = counts.map(c => totalSamples > 0 ? parseFloat((c / totalSamples * 100).toFixed(2)) : 0);
+
             const distTitle = `${currentAxis}-distribution${isAngle ? '(angle)' : ''}`;
             options = {
-                chart: { type: 'area', height: '100%', toolbar: { show: true } },
-                title: { text: distTitle, style: { color: '#e2e8f0', fontSize: '16px' } },
+                chart: { type: 'area', height: '100%', toolbar: { show: true }, foreColor: '#000000' },
+                title: { text: distTitle, style: { color: '#000000', fontSize: '16px' } },
                 colors: ['#0ea5e9'],
-                series: [{ name: isEn ? 'times' : '次數', data: counts }],
+                series: [{ name: isEn ? 'Frequency (%)' : '頻率 (%)', data: pctData }],
                 stroke: { curve: 'smooth', width: 2 },
                 fill: { type: 'gradient', gradient: { shadeIntensity: 1, opacityFrom: 0.5, opacityTo: 0.05 } },
-                xaxis: { 
-                    categories: labels, 
+                xaxis: {
+                    categories: labels,
                     tickAmount: 8,
-                    title: { text: `tolerance(${unitLabel})`, style: { color: '#64748b' } },
-                    labels: { style: { colors: '#94a3b8' } }
+                    title: { text: `deviation(${unitLabel})`, style: { color: '#000000' } },
+                    labels: { style: { colors: '#000000' } }
                 },
-                yaxis: { title: { text: isEn ? 'times' : '次數', style: { color: '#64748b' } } },
-                grid: { borderColor: 'rgba(148, 163, 184, 0.1)' }
+                yaxis: {
+                    title: { text: '%', style: { color: '#000000' } },
+                    labels: { style: { colors: '#000000' }, formatter: (v) => Number(v).toFixed(1) }
+                },
+                tooltip: { theme: 'light' },
+                grid: { borderColor: 'rgba(0,0,0,0.1)' }
             };
         } else if (currentDashboardTab === 'sens' || currentDashboardTab === 'cont') {
-            const key = currentDashboardTab === 'sens' ? 
-                        (isAngle ? 'angle_sensitivity' : 'sensitivity') : 
+            const key = currentDashboardTab === 'sens' ?
+                        (isAngle ? 'angle_sensitivity' : 'sensitivity') :
                         (isAngle ? 'angle_contribution' : 'contribution');
-            
+
             const dataArr = res[key] || [];
-            // 如果是 aX, aY, aZ，對準 x, y, z 到小寫
-            const axisKey = isAngle ? currentAxis.substring(1).toLowerCase() : currentAxis.toLowerCase(); 
-            
+            const axisKey = isAngle ? currentAxis.substring(1).toLowerCase() : currentAxis.toLowerCase();
+
             const chartTitle = `${currentAxis}-${currentDashboardTab === 'sens' ? 'sensitivity' : 'contribution'}${isAngle ? '(angle)' : ''}`;
-            
+
             const sortedData = dataArr.map(item => ({
                 name: item.name,
                 val: parseFloat(item[axisKey] || item.value || 0)
             })).sort((a,b) => b.val - a.val).slice(0, 15);
 
-            options.title = { text: chartTitle, style: { color: '#e2e8f0', fontSize: '16px' } };
+            options.title = { text: chartTitle, style: { color: '#000000', fontSize: '16px' } };
             options.series = [{
-                name: currentDashboardTab === 'sens' ? 'Sensitivity' : 'Contribution (%)',
+                name: currentDashboardTab === 'sens' ? 'Sensitivity (%)' : 'Contribution (%)',
                 data: sortedData.map(d => d.val)
             }];
             options.xaxis.categories = sortedData.map(d => d.name);
+            options.yaxis.labels = { style: { colors: '#000000' }, formatter: (v) => Number(v).toFixed(1) };
         } else if (currentDashboardTab === '3d') {
             container.innerHTML = `
                 <div id="three-scatter-loading" style="position:absolute; top:50%; left:50%; transform:translate(-50%, -50%); color:#94a3b8; font-family:sans-serif;">
                     ${isEn ? 'Initializing 3D Scatter View...' : '正在初始化 3D 散點圖...'}
                 </div>
-                <div id="three-scatter-canvas" style="width:100%; height:500px; background:#f8fafc; border-radius:8px; overflow:hidden;"></div>
+                <div id="three-scatter-canvas" style="position:relative; width:100%; height:500px; background:#f8fafc; border-radius:8px; overflow:hidden;"></div>
             `;
             // 強制延遲執行，確保 DOM 完全渲染且寬高計算完成
             setTimeout(() => {
@@ -1818,43 +1897,74 @@ function calculateHistogram(data, bins = 100) {
 function render3DScatter(canvasCont, res) {
     const isEn = window.CURRENT_LANG === 'en';
     if (!canvasCont || !res || !res.mc_raw) {
-        if (canvasCont) canvasCont.innerHTML = '<div style="color:#94a3b8; padding:20px;">' + 
-            (window.CURRENT_LANG==='en'?'No raw Monte Carlo data available for 3D view.':'無 Monte Carlo 原始數據，無法顯示 3D 散點圖。') + '</div>';
+        if (canvasCont) canvasCont.innerHTML = '<div style="color:#94a3b8; padding:20px;">' +
+            (isEn ? 'No raw Monte Carlo data available for 3D view.' : '無 Monte Carlo 原始數據，無法顯示 3D 散點圖。') + '</div>';
         return;
     }
 
-    // 取得寬高，若為 0 則延遲再試一次
     let width = canvasCont.offsetWidth;
     let height = canvasCont.offsetHeight;
     if (width === 0 || height === 0) {
-        console.warn("Canvas dimensions are zero. Retrying in 100ms...");
         setTimeout(() => render3DScatter(canvasCont, res), 100);
         return;
     }
 
     const loadingEl = document.getElementById('three-scatter-loading');
     if (loadingEl) loadingEl.style.display = 'none';
-
     canvasCont.innerHTML = '';
-    console.log(`Initializing 3D Scatter: ${width}x${height}, Points: ${res.mc_raw.length}`);
-    const RAD_TO_ARCSEC = 206264.8;
 
-    // 判斷當前是「平移」還是「旋轉」模式
-    // currentAxis 來自全局變量 (X, Y, Z, aX, aY, aZ)
     const isRotationMode = ['aX', 'aY', 'aZ'].includes(window.currentAxis);
-    const unit = isRotationMode ? (isEn ? 'arc_sec' : '角秒') : 'mm';
-    const titleText = isRotationMode ? (isEn ? '(Rotation Error) 3D Distribution' : '(旋轉誤差) 3D 分佈') : (isEn ? '(Translation Error) 3D Distribution' : '(平移誤差) 3D 分佈');
+    const unit = isRotationMode ? 'arc_sec' : 'mm';
+    const titleText = isRotationMode
+        ? (isEn ? '(Fixed Angle_XYZ) Error Points Distribution' : '旋轉誤差 3D 分佈')
+        : (isEn ? 'Error Points Distribution' : '平移誤差 3D 分佈');
 
     if (!window.THREE) {
-        canvasCont.innerHTML = `<div class="error-msg">${isEn ? 'Three.js library not loaded.' : '尚未載入 Three.js 函式庫。'}</div>`;
+        canvasCont.innerHTML = `<div style="color:#ef4444;padding:20px;">${isEn ? 'Three.js not loaded.' : 'Three.js 未載入。'}</div>`;
         return;
     }
 
-    const scene = new THREE.Scene();
-    scene.background = null; // 透明背景
+    // ── 取出公差資料 [tolX, tolY, tolZ] ──────────────────────────────
+    // mc_raw cols 0-2: mm, cols 3-5: arc_second（backend 已換算）
+    const rawData = res.mc_raw;
+    const count = rawData.length;
+    const tolPts = rawData.map(row =>
+        isRotationMode ? [row[3], row[4], row[5]] : [row[0], row[1], row[2]]
+    );
 
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 1000);
-    const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+    const getStats = (vals) => {
+        const n = vals.length;
+        if (n === 0) return { mean: 0, sigma: 0.00001 };
+        const mean = vals.reduce((a, b) => a + b, 0) / n;
+        const sigma = Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / n) || 0.00001;
+        return { mean, sigma };
+    };
+
+    // 計算各軸統計（公差座標系）
+    const stX = getStats(tolPts.map(p => p[0]));   // tolX
+    const stY = getStats(tolPts.map(p => p[1]));   // tolY
+    const stZ = getStats(tolPts.map(p => p[2]));   // tolZ
+
+    // 對應單機版：B = max(sigmas) * 5，所有軸用相同顯示範圍
+    const maxSigma = Math.max(stX.sigma, stY.sigma, stZ.sigma);
+    const B        = maxSigma * 5;                    // 外框半徑（顯示範圍）
+    const scl      = 5.0 / (maxSigma * 3.5);         // 均勻縮放因子
+
+    // ── 座標映射 ─────────────────────────────────────────────────────
+    // 單機版：Z 軸向上。Three.js 預設 Y 向上。
+    // 映射：tolX → three.X, tolZ → three.Y(↑), tolY → three.Z(depth)
+    const toScene = (p) => [
+        (p[0] - stX.mean) * scl,   // tolX → three.X
+        (p[2] - stZ.mean) * scl,   // tolZ → three.Y (up)
+        (p[1] - stY.mean) * scl,   // tolY → three.Z
+    ];
+
+    // ── Three.js 初始化 ───────────────────────────────────────────────
+    const scene    = new THREE.Scene();
+    scene.background = new THREE.Color(0xffffff);   // 白底，與單機版一致
+
+    const camera   = new THREE.PerspectiveCamera(40, width / height, 0.001, 2000);
+    const renderer = new THREE.WebGLRenderer({ antialias: true });
     renderer.setSize(width, height);
     renderer.setPixelRatio(window.devicePixelRatio);
     canvasCont.appendChild(renderer.domElement);
@@ -1862,117 +1972,111 @@ function render3DScatter(canvasCont, res) {
     const controls = new THREE.OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
 
-    // 數據取樣：res.mc_raw 是 [10000, 6] 的陣列
-    // 索引 0,1,2 = X,Y,Z (mm); 3,4,5 = aX,aY,aZ (rad)
-    const rawData = res.mc_raw;
-    const count = rawData.length;
-    const geometry = new THREE.BufferGeometry();
-    const positions = new Float32Array(count * 3);
-    const colors = new Float32Array(count * 3);
+    // ── 散點雲 ────────────────────────────────────────────────────────
+    const geom = new THREE.BufferGeometry();
+    const posArr = new Float32Array(count * 3);
+    const colArr = new Float32Array(count * 3);
 
-    // 計算適當縮放
-    let pts = rawData.map(row => {
-        if (isRotationMode) {
-            return [row[3] * RAD_TO_ARCSEC, row[4] * RAD_TO_ARCSEC, row[5] * RAD_TO_ARCSEC];
-        } else {
-            return [row[0], row[1], row[2]];
-        }
-    });
+    tolPts.forEach((p, i) => {
+        const [sx, sy, sz] = toScene(p);
+        posArr[i * 3] = sx; posArr[i * 3 + 1] = sy; posArr[i * 3 + 2] = sz;
 
-    // --- 計算統計數據與比例 ---
-    const getStats = (vals) => {
-        const n = vals.length;
-        if (n === 0) return { mean: 0, sigma: 0 };
-        const mean = vals.reduce((a, b) => a + b, 0) / n;
-        const sigma = Math.sqrt(vals.reduce((a, b) => a + (b - mean) ** 2, 0) / n);
-        return { mean, sigma };
-    };
-
-    const statsX = getStats(pts.map(p => p[0]));
-    const statsY = getStats(pts.map(p => p[1]));
-    const statsZ = getStats(pts.map(p => p[2]));
-
-    // 設定場景縮放 (以最大 3-sigma 範圍為基準)
-    const maxSigma = Math.max(statsX.sigma, statsY.sigma, statsZ.sigma, 0.00001);
-    const maxVal = maxSigma * 3; // 3-sigma 顯示範圍
-    const boxScale = 5.0 / (maxSigma * 3.5); // 讓 3-sigma 框約佔場景一半
-
-    pts.forEach((p, i) => {
-        positions[i * 3]     = (p[0] - statsX.mean) * boxScale;
-        positions[i * 3 + 1] = (p[1] - statsY.mean) * boxScale;
-        positions[i * 3 + 2] = (p[2] - statsZ.mean) * boxScale;
-
-        // 二進位判定：任一軸超出 3-sigma 即為紅色 (法規與單機版邏輯)
-        const isOutlier = (Math.abs(p[0] - statsX.mean) > 3 * statsX.sigma) ||
-                          (Math.abs(p[1] - statsY.mean) > 3 * statsY.sigma) ||
-                          (Math.abs(p[2] - statsZ.mean) > 3 * statsZ.sigma);
+        const isOutlier =
+            Math.abs(p[0] - stX.mean) > 3 * stX.sigma ||
+            Math.abs(p[1] - stY.mean) > 3 * stY.sigma ||
+            Math.abs(p[2] - stZ.mean) > 3 * stZ.sigma;
 
         if (isOutlier) {
-            colors[i * 3]     = 1.0;  // R
-            colors[i * 3 + 1] = 0.28; // G (略暗的紅)
-            colors[i * 3 + 2] = 0.2;  // B
+            colArr[i*3]=1.0; colArr[i*3+1]=0.29; colArr[i*3+2]=0.2;  // red  (#FF4934)
         } else {
-            colors[i * 3]     = 0.13; // R
-            colors[i * 3 + 1] = 0.77; // G (綠色)
-            colors[i * 3 + 2] = 0.36; // B
+            colArr[i*3]=0.0; colArr[i*3+1]=0.50; colArr[i*3+2]=0.0;  // green
         }
     });
 
-    geometry.setAttribute('position', new THREE.BufferAttribute(positions, 3));
-    geometry.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geom.setAttribute('position', new THREE.BufferAttribute(posArr, 3));
+    geom.setAttribute('color',    new THREE.BufferAttribute(colArr, 3));
+    scene.add(new THREE.Points(geom, new THREE.PointsMaterial({ size: 0.05, vertexColors: true })));
 
-    const material = new THREE.PointsMaterial({ size: 0.06, vertexColors: true, transparent: true, opacity: 0.9 });
-    const cloud = new THREE.Points(geometry, material);
-    scene.add(cloud);
+    // ── 3-Sigma 公差框（6 個半透明面，對應單機版 plot_surface）────────
+    // 盒子半寬用各軸自己的 sigma，縮放因子相同 → 若 Z 遠大於 X/Y 則呈細柱形
+    const hX = stX.sigma * 3 * scl;   // tolX 方向（three.X）
+    const hY = stZ.sigma * 3 * scl;   // tolZ 方向（three.Y，↑）
+    const hZ = stY.sigma * 3 * scl;   // tolY 方向（three.Z）
 
-    // --- 繪製 3-Sigma 公差框 (Bounding Box) ---
-    const boxGeom = new THREE.BoxGeometry(
-        statsX.sigma * 6 * boxScale,
-        statsY.sigma * 6 * boxScale,
-        statsZ.sigma * 6 * boxScale
-    );
-    const boxEdges = new THREE.EdgesGeometry(boxGeom);
-    const boxLine  = new THREE.LineSegments(boxEdges, new THREE.LineBasicMaterial({ color: 0x475569, transparent: true, opacity: 0.6 }));
-    scene.add(boxLine);
+    const faceMat = new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.08, side: THREE.DoubleSide });
+    const addFace = (w, h, rx, ry, rz, px, py, pz) => {
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), faceMat.clone());
+        m.rotation.set(rx, ry, rz);
+        m.position.set(px, py, pz);
+        scene.add(m);
+    };
+    // 上下（垂直 three.Y = tolZ）
+    addFace(hX*2, hZ*2, -Math.PI/2, 0, 0,  0, +hY, 0);
+    addFace(hX*2, hZ*2, -Math.PI/2, 0, 0,  0, -hY, 0);
+    // 左右（垂直 three.X = tolX）
+    addFace(hZ*2, hY*2, 0, Math.PI/2, 0, +hX, 0, 0);
+    addFace(hZ*2, hY*2, 0, Math.PI/2, 0, -hX, 0, 0);
+    // 前後（垂直 three.Z = tolY）
+    addFace(hX*2, hY*2, 0, 0, 0,  0, 0, +hZ);
+    addFace(hX*2, hY*2, 0, 0, 0,  0, 0, -hZ);
 
-    // 填色平面 (與單機版一致，增加半透明感)
-    const boxMesh = new THREE.Mesh(boxGeom, new THREE.MeshBasicMaterial({ color: 0x000000, transparent: true, opacity: 0.05 }));
-    scene.add(boxMesh);
+    // 盒子邊框線
+    const bGeom = new THREE.BoxGeometry(hX*2, hY*2, hZ*2);
+    scene.add(new THREE.LineSegments(
+        new THREE.EdgesGeometry(bGeom),
+        new THREE.LineBasicMaterial({ color: 0x888888, transparent: true, opacity: 0.7 })
+    ));
 
-    // 輔助網格中心對齊
-    const grid = new THREE.GridHelper(10, 10, 0x94a3b8, 0xe2e8f0);
-    grid.rotation.x = Math.PI / 2;
-    grid.position.z = - (statsZ.sigma * 3 * boxScale); // 稍微沉到底部
+    // ── 外框（對應單機版三軸顯示範圍 ±B，uniform 縮放）──────────────────
+    // 畫三個背景灰色面（仿單機版座標軸背景面），uniform size = B*scl
+    const outerR = B * scl;   // ≈ maxSigma*5 * 5/(maxSigma*3.5) ≈ 7.14
+    const paneMat = new THREE.MeshBasicMaterial({ color: 0xd4d8dd, transparent: true, opacity: 0.45, side: THREE.BackSide });
+    // 底面（XZ plane, y=-outerR）
+    const bottom = new THREE.Mesh(new THREE.PlaneGeometry(outerR*2, outerR*2), paneMat.clone());
+    bottom.rotation.x = -Math.PI/2; bottom.position.y = -outerR; scene.add(bottom);
+    // 左側面（YZ plane, x=-outerR）
+    const left = new THREE.Mesh(new THREE.PlaneGeometry(outerR*2, outerR*2), paneMat.clone());
+    left.rotation.y = Math.PI/2; left.position.x = -outerR; scene.add(left);
+    // 後側面（XY plane, z=+outerR）
+    const back = new THREE.Mesh(new THREE.PlaneGeometry(outerR*2, outerR*2), paneMat.clone());
+    back.position.z = outerR; scene.add(back);
+
+    // 底部格線
+    const grid = new THREE.GridHelper(outerR*2, 10, 0x9ca3af, 0xd1d5db);
+    grid.position.y = -outerR;
     scene.add(grid);
 
-    // 如果是旋轉模式，加上一個灰色的參考平面 (像截圖中那樣)
-    if (isRotationMode) {
-        const planeGeom = new THREE.PlaneGeometry(10, 10);
-        const planeMat  = new THREE.MeshBasicMaterial({ color: 0x94a3b8, transparent: true, opacity: 0.2, side: THREE.DoubleSide });
-        const plane = new THREE.Mesh(planeGeom, planeMat);
-        scene.add(plane);
-    }
+    // 三條軸線（從外框角落延伸，對應單機版的軸）
+    const axMat = new THREE.LineBasicMaterial({ color: 0x000000 });
+    const mkLine = (x1,y1,z1,x2,y2,z2) =>
+        new THREE.Line(
+            new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(x1,y1,z1), new THREE.Vector3(x2,y2,z2)]),
+            axMat
+        );
+    scene.add(mkLine(-outerR, -outerR,  outerR,  outerR, -outerR,  outerR));  // X 軸（底，後）
+    scene.add(mkLine(-outerR, -outerR,  outerR, -outerR,  outerR,  outerR));  // Z 軸（左，後）→ three.Y = tolZ
+    scene.add(mkLine(-outerR, -outerR,  outerR, -outerR, -outerR, -outerR));  // Y 軸（左，底）→ three.Z = tolY
 
-    // 座標軸輔助 (紅色 X, 綠色 Y, 藍色 Z)
-    const axes = new THREE.AxesHelper(6);
-    scene.add(axes);
-
-    camera.position.set(10, 10, 12);
+    // ── 相機位置（模擬單機版預設 3D 視角：仰角 30°，方位角 -60°）──────
+    // three.X = tolX, three.Y = tolZ(up), three.Z = tolY
+    camera.position.set(outerR * 1.6, outerR * 1.1, outerR * 1.8);
     camera.lookAt(0, 0, 0);
 
-    // 標題與軸標籤 (使用 Canvas 畫簡單貼圖或 CSS)
-    const labelDiv = document.createElement('div');
-    labelDiv.style.position = 'absolute';
-    labelDiv.style.top = '10px';
-    labelDiv.style.left = '10px';
-    labelDiv.style.color = '#1e293b';
-    labelDiv.style.fontFamily = "'Times New Roman', serif";
-    labelDiv.style.fontSize = '1.1rem';
-    labelDiv.style.fontWeight = 'bold';
-    labelDiv.style.pointerEvents = 'none';
-    labelDiv.innerHTML = `${titleText}<br><span style="font-size:0.8rem; color:#64748b;">(Units: ${unit}, Range: ±${maxVal.toFixed(4)})</span>`;
-    canvasCont.appendChild(labelDiv);
+    // ── CSS 標籤 ─────────────────────────────────────────────────────
+    const mkLabel = (html, css) => {
+        const d = document.createElement('div');
+        d.style.cssText = 'position:absolute; pointer-events:none; font-family:"Times New Roman",serif;' + css;
+        d.innerHTML = html;
+        canvasCont.appendChild(d);
+    };
+    const axisNames = isRotationMode ? ['aX', 'aY', 'aZ'] : ['X', 'Y', 'Z'];
+    mkLabel(`<b>${titleText}</b><br><span style="font-size:0.75rem;color:#555;">(${unit}, ±3σ: ${(maxSigma*3).toFixed(4)})</span>`,
+        'top:8px;left:8px;color:#1e293b;font-size:0.95rem;');
+    mkLabel(`${axisNames[0]}(${unit})`, 'bottom:24px;right:16px;color:#374151;font-size:0.8rem;font-style:italic;');
+    mkLabel(`${axisNames[2]}(${unit})`, 'bottom:12px;left:50%;transform:translateX(-50%);color:#374151;font-size:0.8rem;font-style:italic;');
+    mkLabel(`${axisNames[1]}(${unit})`, 'top:50%;left:8px;color:#374151;font-size:0.8rem;font-style:italic;');
 
+    // ── 動畫迴圈 ─────────────────────────────────────────────────────
     function animate() {
         if (!document.getElementById('three-scatter-canvas')) return;
         requestAnimationFrame(animate);
@@ -1981,11 +2085,9 @@ function render3DScatter(canvasCont, res) {
     }
     animate();
 
-    // 處理視窗縮放
     window.addEventListener('resize', () => {
         if (!canvasCont.isConnected) return;
-        const w = canvasCont.clientWidth;
-        const h = canvasCont.clientHeight;
+        const w = canvasCont.clientWidth, h = canvasCont.clientHeight;
         camera.aspect = w / h;
         camera.updateProjectionMatrix();
         renderer.setSize(w, h);
@@ -2127,6 +2229,11 @@ async function runAllocation() {
             // 更新 editorPathData 並重新渲染表格
             editorPathData = data.newPathData;
             renderEditorList();
+            window._pathUpdateInfo = {
+                source: '公差調配',
+                time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+                desc: ''
+            };
 
             // [新增] 迭代次數累加與即時報表
             window.__allocationRound = (window.__allocationRound || 0) + 1;
@@ -2157,6 +2264,9 @@ async function runAllocation() {
             };
 
             if (statusBox) { statusBox.textContent = isEn ? 'Completed' : '已完成'; statusBox.className = 'status-box completed'; }
+            // 更新左側 sidebar 標題為「調配報告」（自動調配）
+            const _sh3 = document.querySelector('.sidebar-header');
+            if (_sh3) _sh3.textContent = isEn ? 'Allocation Report' : '調配報告';
 
             // 顯示結果提示
             if (resultArea) {
@@ -2189,7 +2299,10 @@ async function runAllocation() {
             }
 
             if (statusBox) { statusBox.textContent = isEn ? 'Completed' : '已完成'; statusBox.className = 'status-box completed'; }
-            
+            // 更新左側 sidebar 標題為「調配報告」
+            const _sh2 = document.querySelector('.sidebar-header');
+            if (_sh2) _sh2.textContent = isEn ? 'Allocation Report' : '調配報告';
+
             // 儲存調配結果
             window._lastAllocationResult = { 
                 mode: 'compare', 
@@ -2343,3 +2456,381 @@ function redrawContactGraph() {
     // 如果有需要，可以在此處調用 renderCustomBomTree 或其他渲染函數
     console.log('[redrawContactGraph] Contact pairs updated, ready for rendering');
 }
+
+// ════════════════════════════════════════════════════════════════
+// 進階版配合建議（Advanced Fit Panel）
+// ════════════════════════════════════════════════════════════════
+
+let _advSelectedFit = null;
+
+// ── 模式切換 ──────────────────────────────────────────────────────────────────
+function advSwitchMode(mode) {
+    document.getElementById('adv-mode-rec')?.classList.toggle('hidden', mode !== 'rec');
+    document.getElementById('adv-mode-wizard')?.classList.toggle('hidden', mode !== 'wizard');
+    document.getElementById('adv-tab-rec')?.classList.toggle('active', mode === 'rec');
+    document.getElementById('adv-tab-wizard')?.classList.toggle('active', mode !== 'rec');
+}
+
+// ── 配合建議報告 ───────────────────────────────────────────────────────────────
+async function advGenerateRec() {
+    const isEn = window.CURRENT_LANG === 'en';
+    const statusEl = document.getElementById('adv-rec-status');
+    const resultEl = document.getElementById('adv-rec-result');
+
+    const res    = window._lastAnalysisResult;
+    const path   = typeof editorPathData !== 'undefined' ? editorPathData : [];
+
+    if (!res || !res.tol_names || res.tol_names.length === 0) {
+        statusEl.innerHTML = '<span style="color:#ef4444;">尚無分析結果，請先執行「深度公差分析」。</span>';
+        return;
+    }
+
+    statusEl.innerHTML = '分析中...';
+    resultEl.classList.add('hidden');
+
+    try {
+        const resp = await fetch('/api/fit_recommendation', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pathData: path, analysisResult: res }),
+        });
+        const data = await resp.json();
+        if (!data.ok) { statusEl.innerHTML = `<span style="color:#ef4444;">${data.msg}</span>`; return; }
+
+        statusEl.innerHTML = '<span style="color:#16a34a;">建議已產生，請參閱下方報告。</span>';
+        resultEl.innerHTML = _buildRecHTML(data);
+        resultEl.classList.remove('hidden');
+    } catch (e) {
+        statusEl.innerHTML = `<span style="color:#ef4444;">連線錯誤：${e.message}</span>`;
+    }
+}
+
+function _buildRecHTML(data) {
+    const ov  = data.assembly_overview || {};
+    const err = data.error_summary     || {};
+    const recs = data.recommendations  || [];
+    const domPos = data.dom_pos_axis || 'Z';
+    const domAng = data.dom_ang_axis || 'aZ';
+    const fmt4 = v => (v != null ? Number(v).toFixed(4) : '—');
+
+    // 1. 組裝鏈概況
+    const parts = (ov.parts || []).join(' → ');
+    const ovHTML = `
+      <div class="adv-rec-block">
+        <h4>組裝鏈概況</h4>
+        <table class="adv-err-table">
+          <tr><th>路徑項目數</th><td>${ov.total_path_items || 0}</td>
+              <th>公差特徵數</th><td>${ov.feature_count || 0}</td></tr>
+          <tr><th>名義 Y 全長</th><td>${ov.total_y_mm || 0} mm</td>
+              <th>零件數</th><td>${(ov.parts || []).length}</td></tr>
+          <tr><th>零件鏈</th><td colspan="3" style="font-size:.78rem;color:#374151;">${parts || '—'}</td></tr>
+        </table>
+      </div>`;
+
+    // 2. 累積誤差結果
+    const axes = ['X','Y','Z','aX','aY','aZ'];
+    const errRows = axes.map(ax => {
+        const e = err[ax] || {};
+        const unit = ax.startsWith('a') ? 'arc_sec' : 'mm';
+        const isDomPos = ax === domPos;
+        const isDomAng = ax === domAng;
+        const highlight = (isDomPos || isDomAng) ? 'style="background:#fef9c3;font-weight:700;"' : '';
+        return `<tr ${highlight}>
+          <td>${ax} (${unit})</td>
+          <td>${fmt4(e.rss_3sigma)}</td>
+          <td>${fmt4(e.wc)}</td>
+          ${isDomPos||isDomAng ? '<td style="color:#dc2626;font-size:.75rem;">主要誤差軸</td>' : '<td></td>'}
+        </tr>`;
+    }).join('');
+    const errHTML = `
+      <div class="adv-rec-block">
+        <h4>累積誤差結果</h4>
+        <table class="adv-err-table">
+          <tr><th>方向</th><th>RSS ±3σ</th><th>Worst Case</th><th></th></tr>
+          ${errRows}
+        </table>
+      </div>`;
+
+    // 3. 配合建議（優先度排序）
+    const _pLabel = { 1: '★★★ 優先收緊', 2: '★★☆ 次要改善', 3: '★☆☆ 規格嚴守', 4: '☆☆☆ 可放寬' };
+    const cards = recs.map(r => `
+      <div class="adv-rec-card p${r.priority}">
+        <div class="adv-rec-card-header">
+          <span class="adv-rec-name">${r.name}</span>
+          <span class="adv-rec-priority p${r.priority}">${_pLabel[r.priority] || ''}</span>
+        </div>
+        <div class="adv-rec-meta">
+          公差值：${r.val} mm　|　類型：${r.tol_type}　|　主要影響軸：${r.dom_axis}
+          　|　敏感度：${r.sens_pct}%　貢獻度：${r.cont_pct}%
+        </div>
+        <div class="adv-rec-quadrant">${r.quadrant_desc}</div>
+        <div class="adv-rec-fit">配合建議：${r.fit_title}</div>
+        <div class="adv-rec-note">${r.fit_note}</div>
+      </div>`).join('');
+
+    const recHTML = `
+      <div class="adv-rec-block">
+        <h4>配合建議（依優先度排序）</h4>
+        ${cards || '<div style="color:#9ca3af;padding:.5rem;">無公差項目。</div>'}
+      </div>`;
+
+    return ovHTML + errHTML + recHTML;
+}
+
+/** 開啟面板，預設進入「配合建議」模式；若有分析結果自動顯示 */
+function openAdvFitPanel() {
+    const panel = document.getElementById('adv-fit-overlay');
+    if (!panel) return;
+    panel.classList.remove('hidden');
+
+    // 預設顯示「配合建議」模式
+    advSwitchMode('rec');
+
+    // 若有分析結果，自動填充狀態提示
+    const res = window._lastAnalysisResult;
+    const statusEl = document.getElementById('adv-rec-status');
+    if (statusEl) {
+        if (res && res.tol_names && res.tol_names.length > 0) {
+            statusEl.innerHTML = `已偵測到 ${res.tol_names.length} 個公差項目的分析結果，點擊「產生配合建議」查看報告。`;
+        } else {
+            statusEl.innerHTML = '<span style="color:#f97316;">尚未執行分析，請先執行「深度公差分析」後再使用此功能。</span>';
+        }
+    }
+
+    // 重置 wizard
+    ['adv-step2', 'adv-step3', 'adv-step4'].forEach(id => {
+        document.getElementById(id)?.classList.add('hidden');
+    });
+    document.getElementById('adv-step1')?.classList.remove('hidden');
+    _advSelectedFit = null;
+
+    // Step 1：顯示目前路徑狀態
+    const pathStatusEl = document.getElementById('adv-path-status');
+    const btnNext      = document.getElementById('adv-btn-to-step2');
+    const path = (typeof editorPathData !== 'undefined') ? editorPathData : [];
+
+    if (!path || path.length === 0) {
+        if (pathStatusEl) pathStatusEl.innerHTML = `
+            <span class="adv-status-warn">
+                ⚠️ 尚未載入公差累積路徑。<br>
+                請先使用「匯入 Excel/CSV」載入路徑，再使用本功能。
+            </span>`;
+        if (btnNext) btnNext.disabled = true;
+    } else {
+        const featureItems = path.filter(i => i.type === 'feature');
+        const sampleNames  = featureItems.slice(0, 5).map(i => i.name || i.axis).join('、');
+        if (pathStatusEl) pathStatusEl.innerHTML = `
+            <span class="adv-status-ok">
+                ✅ 已載入 ${path.length} 個路徑項目（其中 ${featureItems.length} 個公差項）<br>
+                <span class="adv-path-preview">代碼範例：${sampleNames}${featureItems.length > 5 ? '...' : ''}</span>
+            </span>`;
+        if (btnNext) btnNext.disabled = false;
+    }
+}
+
+/** 關閉面板 */
+function closeAdvFitPanel() {
+    document.getElementById('adv-fit-overlay')?.classList.add('hidden');
+}
+
+/** Step 2：載入零件清單 */
+async function advGoStep2() {
+    try {
+        const res  = await fetch('/api/plan1/parts_list');
+        const data = await res.json();
+        const sel  = document.getElementById('adv-part-select');
+        if (!sel) return;
+
+        sel.innerHTML = '<option value="">-- 請選擇零件 --</option>';
+        (data.parts || []).forEach(p => {
+            const opt = document.createElement('option');
+            opt.value       = p;
+            opt.textContent = p;
+            sel.appendChild(opt);
+        });
+
+        document.getElementById('adv-step2')?.classList.remove('hidden');
+    } catch (e) {
+        alert('載入零件清單失敗：' + e.message);
+    }
+}
+
+/** Step 3：載入推薦配合 */
+async function advLoadRecommend() {
+    const part = document.getElementById('adv-part-select')?.value;
+    if (!part) return;
+
+    const loadingEl = document.getElementById('adv-recommend-loading');
+    const step3     = document.getElementById('adv-step3');
+    if (loadingEl) loadingEl.classList.remove('hidden');
+    if (step3) step3.classList.add('hidden');
+
+    _advSelectedFit = null;
+    const applyBtn = document.getElementById('adv-btn-apply');
+    if (applyBtn) applyBtn.disabled = true;
+
+    const path = (typeof editorPathData !== 'undefined') ? editorPathData : [];
+    try {
+        const res  = await fetch('/api/plan1/advanced_recommend', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ focus_part: part, current_path: path }),
+        });
+        const data = await res.json();
+        if (!data.ok) throw new Error(data.msg || '推薦失敗');
+
+        document.getElementById('adv-focus-pairs').innerHTML =
+            _renderAdvPairTable(data.focus_pairs || [], data.path_matches || {});
+        document.getElementById('adv-related-pairs').innerHTML =
+            _renderAdvPairTable(data.related_pairs || [], data.path_matches || {});
+
+        if (step3) step3.classList.remove('hidden');
+    } catch (e) {
+        alert('載入推薦配合失敗：' + e.message);
+    } finally {
+        if (loadingEl) loadingEl.classList.add('hidden');
+    }
+}
+
+/** 渲染配對表格 */
+function _renderAdvPairTable(pairs, pathMatches) {
+    if (!pairs.length) return '<p class="adv-empty">（無）</p>';
+
+    const rows = pairs.map(p => {
+        const matchedItems = pathMatches[p.pair_id] || [];
+        const matchHint = matchedItems.length > 0
+            ? `<span class="adv-match-found">✅ ${matchedItems.join('、')}</span>`
+            : `<span class="adv-match-none">— 無法自動比對</span>`;
+
+        return `
+        <tr id="adv-row-${p.pair_id}"
+            class="adv-pair-row ${p.is_focus ? 'adv-row-focus' : 'adv-row-related'}"
+            onclick="advSelectPair('${p.pair_id}','${p.fit_hole}','${p.fit_shaft}',${p.nominal_dia})">
+          <td><input type="radio" name="adv-pair-radio" value="${p.pair_id}"></td>
+          <td><strong>${p.hole_part}</strong>(${p.hole_feature}) ↔ <strong>${p.shaft_part}</strong>(${p.shaft_feature})</td>
+          <td class="adv-center">⌀${p.nominal_dia} mm</td>
+          <td class="adv-center"><strong>${p.fit_code}</strong></td>
+          <td class="adv-center">${p.fit_type}</td>
+          <td class="adv-reason">${p.reason}</td>
+          <td class="adv-center">${matchHint}</td>
+        </tr>`;
+    }).join('');
+
+    return `
+    <table class="adv-pair-table">
+      <thead>
+        <tr>
+          <th>選擇</th><th>配對</th><th>尺寸</th>
+          <th>推薦配合</th><th>類型</th><th>理由</th><th>對應路徑項目</th>
+        </tr>
+      </thead>
+      <tbody>${rows}</tbody>
+    </table>`;
+}
+
+/** 選擇某一配對列 */
+function advSelectPair(pairId, fitHole, fitShaft, nominalDia) {
+    _advSelectedFit = { pair_id: pairId, fit_hole: fitHole, fit_shaft: fitShaft, nominal_dia: nominalDia };
+
+    document.querySelectorAll('.adv-pair-row').forEach(r => r.classList.remove('adv-row-selected'));
+    const row = document.getElementById(`adv-row-${pairId}`);
+    if (row) {
+        row.classList.add('adv-row-selected');
+        const radio = row.querySelector('input[type=radio]');
+        if (radio) radio.checked = true;
+    }
+
+    const applyBtn = document.getElementById('adv-btn-apply');
+    if (applyBtn) applyBtn.disabled = false;
+}
+
+/** Step 4：套用配合 → 更新 editorPathData */
+async function advApplyFit() {
+    if (!_advSelectedFit) return;
+
+    const path = (typeof editorPathData !== 'undefined') ? editorPathData : [];
+    const applyBtn = document.getElementById('adv-btn-apply');
+    if (applyBtn) { applyBtn.disabled = true; applyBtn.textContent = '更新中...'; }
+
+    try {
+        const res  = await fetch('/api/plan1/apply_fit', {
+            method:  'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body:    JSON.stringify({ ..._advSelectedFit, current_path: path }),
+        });
+        const data = await res.json();
+
+        const resultEl = document.getElementById('adv-apply-result');
+        let html = '';
+
+        if (data.ok) {
+            if (data.changes && data.changes.length > 0) {
+                editorPathData = data.updated_path;
+                if (typeof renderPathFlowchart === 'function') renderPathFlowchart();
+                if (typeof renderEditorList    === 'function') renderEditorList();
+                // 記錄更新來源（供「看路徑」顯示）
+                const changeSummary = data.changes.slice(0, 2).map(c =>
+                    `${c.part_name || c.path_code} ${Number(c.old_val).toFixed(4)}→${Number(c.new_val).toFixed(4)}`
+                ).join('、');
+                window._pathUpdateInfo = {
+                    source: '進階版配合建議',
+                    time: new Date().toLocaleTimeString('zh-TW', { hour: '2-digit', minute: '2-digit' }),
+                    desc: changeSummary
+                };
+
+                html += `<div class="adv-result-ok">✅ ${data.message}</div>`;
+                html += `
+                <table class="adv-change-table">
+                  <thead><tr><th>路徑代碼</th><th>零件</th><th>角色</th><th>原值 (mm)</th><th>新值 (mm)</th><th>來源</th></tr></thead>
+                  <tbody>
+                    ${data.changes.map(c => `
+                      <tr>
+                        <td><code>${c.name}</code></td>
+                        <td>${c.part}</td>
+                        <td>${c.role === 'hole' ? '孔' : '軸'}</td>
+                        <td class="adv-val-old">${c.old_val}</td>
+                        <td class="adv-val-new">${c.new_val}</td>
+                        <td>${c.source}</td>
+                      </tr>`).join('')}
+                  </tbody>
+                </table>`;
+            } else {
+                html += `<div class="adv-result-warn">⚠️ ${data.message}</div>`;
+                html += `
+                <div class="adv-hint-box">
+                  <strong>如何讓自動比對成功？</strong><br>
+                  你的路徑代碼為抽象格式（如 <code>disZ1</code>、<code>co1</code>），不含零件名稱資訊。<br>
+                  請選擇以下任一方式：<br>
+                  1. 在 Excel 的 <strong>G 欄</strong>（所屬零件）填入零件名（如「軸承座」），重新匯入<br>
+                  2. 改用 SFA CSV 格式，代碼如「<code>軸承座-DIA1</code>」，自動帶有零件資訊<br>
+                  3. 參考右側「推薦值」，手動在 Excel 中修改對應公差值
+                </div>`;
+            }
+        } else {
+            html = `<div class="adv-result-error">❌ 更新失敗：${data.msg || '未知錯誤'}</div>`;
+        }
+
+        if (resultEl) resultEl.innerHTML = html;
+        document.getElementById('adv-step4')?.classList.remove('hidden');
+
+    } catch (e) {
+        alert('套用失敗：' + e.message);
+    } finally {
+        if (applyBtn) { applyBtn.disabled = false; applyBtn.textContent = '✅ 更新公差路徑'; }
+    }
+}
+
+/**
+ * 前往公差調配（從進階版配合建議 Wizard 呼叫）
+ * 公差路徑已由配合建議更新，直接進入手動匹配比對模式。
+ */
+function advGotoAllocation() {
+    closeAdvFitPanel();
+    setTimeout(() => {
+        if (typeof openAllocationModal === 'function') openAllocationModal();
+        // 直接切換到手動匹配模式（路徑已手動更新，不需自動調配）
+        setTimeout(() => setAllocMode('compare'), 50);
+    }, 200);
+}
+
+// ════════════════════════════════════════════════════════════════

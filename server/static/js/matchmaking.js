@@ -1,5 +1,8 @@
 /* matchmaking.js — 製程與機台媒合 Modal（與 app.py 介面一模一樣）*/
 
+// 全域維度狀態：{ '中速旋轉': 'required', '精確': 'optional', ... }
+window._dimState = window._dimState || {};
+
 // ── 開關 Modal ──
 function openMatchmakingModal() {
   const modal = document.getElementById('matchmaking-modal');
@@ -12,6 +15,9 @@ function openMatchmakingModal() {
 
   // 初始化 Select2 關鍵字下拉
   _mmInitSelect2();
+
+  // 載入維度勾選 UI
+  _mmInitDimensions();
 }
 
 function closeMatchmakingModal() {
@@ -64,13 +70,107 @@ async function _mmInitSelect2() {
   if (typeof initProcessKB === 'function') initProcessKB();
 }
 
+// ── 載入維度結構並 render（從 /api/matchmaking/dimensions）──
+async function _mmInitDimensions() {
+  const container = document.getElementById('smart-dim-groups');
+  if (!container || container.dataset.loaded === 'true') return;
+
+  try {
+    const res = await fetch('/api/matchmaking/dimensions');
+    const data = await res.json();
+    if (!data.ok) return;
+
+    let html = '';
+    data.groups.forEach(g => {
+      html += `<div class="smart-dim-group">
+        <span class="smart-dim-group-label">${g.group_zh}</span>
+        <div class="smart-dim-chips">`;
+      g.items.forEach(it => {
+        const safeZh = it.zh.replace(/"/g, '&quot;');
+        html += `<button type="button" class="dim-chip"
+                    data-zh="${safeZh}" data-en="${it.en}"
+                    onclick="cycleDim(this)" title="${it.en}">
+                  ${it.zh}
+                </button>`;
+      });
+      html += `</div></div>`;
+    });
+    container.innerHTML = html;
+    container.dataset.loaded = 'true';
+  } catch (e) {
+    console.error('[matchmaking] 載入維度失敗:', e);
+  }
+}
+
+// 切換 chip 狀態：空 → required → optional → 空
+function cycleDim(btn) {
+  const zh = btn.dataset.zh;
+  const cur = window._dimState[zh] || '';
+  const next = cur === '' ? 'required' : (cur === 'required' ? 'optional' : '');
+  if (next === '') {
+    delete window._dimState[zh];
+  } else {
+    window._dimState[zh] = next;
+  }
+  btn.classList.remove('dim-state-required', 'dim-state-optional');
+  if (next) btn.classList.add('dim-state-' + next);
+  _updateDimSummary();
+}
+
+function _updateDimSummary() {
+  const required = Object.keys(window._dimState).filter(k => window._dimState[k] === 'required');
+  const optional = Object.keys(window._dimState).filter(k => window._dimState[k] === 'optional');
+  const summary = document.getElementById('smart-dim-summary');
+  const clearBtn = document.getElementById('smart-dim-clear-btn');
+  if (!required.length && !optional.length) {
+    summary.textContent = '未選擇維度';
+    summary.classList.remove('has-selection');
+    if (clearBtn) clearBtn.style.display = 'none';
+  } else {
+    const parts = [];
+    if (required.length) parts.push(`必選 ${required.length}`);
+    if (optional.length) parts.push(`可選 ${optional.length}`);
+    summary.textContent = '已選 ' + parts.join(' / ');
+    summary.classList.add('has-selection');
+    if (clearBtn) clearBtn.style.display = 'inline-block';
+  }
+}
+
+function toggleDimPanel() {
+  const panel = document.getElementById('smart-dim-panel');
+  const arrow = document.getElementById('smart-dim-toggle-arrow');
+  const open = panel.style.display === 'none' || !panel.style.display;
+  panel.style.display = open ? 'block' : 'none';
+  if (arrow) arrow.textContent = open ? '▾' : '▸';
+}
+
+function clearAllDims() {
+  window._dimState = {};
+  document.querySelectorAll('#smart-dim-panel .dim-chip').forEach(c => {
+    c.classList.remove('dim-state-required', 'dim-state-optional');
+  });
+  _updateDimSummary();
+}
+
+function _mmGetDimensions() {
+  const required = Object.keys(window._dimState).filter(k => window._dimState[k] === 'required');
+  const optional = Object.keys(window._dimState).filter(k => window._dimState[k] === 'optional');
+  return { required, optional };
+}
+
 // ── Smart Fit 查詢（Step 1）──
 async function querySmartFit() {
-  let keywords = $('#smart-keywords').val();
-  if (keywords && !Array.isArray(keywords)) keywords = [keywords];
-  if (!keywords || keywords.length === 0) {
-    showMMResult('smart-result', '請選擇至少一個關鍵字', true);
-    return;
+  const dims = _mmGetDimensions();
+  const useDims = (dims.required.length || dims.optional.length) > 0;
+
+  let keywords = [];
+  if (!useDims) {
+    keywords = $('#smart-keywords').val();
+    if (keywords && !Array.isArray(keywords)) keywords = [keywords];
+    if (!keywords || keywords.length === 0) {
+      showMMResult('smart-result', '請選擇關鍵字或勾選維度', true);
+      return;
+    }
   }
 
   const resultDiv = document.getElementById('smart-result');
@@ -78,30 +178,50 @@ async function querySmartFit() {
   resultDiv.innerHTML = '<div style="color:#94a3b8">搜尋中...</div>';
 
   try {
+    const body = useDims ? { dimensions: dims } : { keywords };
     const res = await fetch('/api/recommend/smart_fit', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ keywords })
+      body: JSON.stringify(body)
     });
     const data = await res.json();
 
     if (!data.ok) { showMMResult('smart-result', data.msg || '搜尋失敗', true); return; }
     if (!data.results.length) { showMMResult('smart-result', '找不到符合條件的配合建議', true); return; }
 
-    let html = `<div class="success">✅ 找到 ${data.results.length} 筆建議</div>`;
+    const modeLabel = data.mode === 'dimensions' ? '維度' : '關鍵字';
+    let html = `<div class="success">✅ ${modeLabel}模式：找到 ${data.results.length} 筆建議</div>`;
     data.results.forEach(item => {
-      const h = (item.hole || '').replace(/'/g, "\\'");
-      const s = (item.shaft || '').replace(/'/g, "\\'");
+      // 新欄位：hole_tol（孔公差）/ shaft_dev（軸偏差）；舊欄位 shaft/hole alias
+      const hole = item.hole_tol || item.shaft || '';
+      const shaft = item.shaft_dev || item.hole || '';
+      const h = hole.replace(/'/g, "\\'");
+      const s = shaft.replace(/'/g, "\\'");
+      const src = item.source || 'ANSI';
+      const srcBadge = ({
+        'ANSI':         '<span class="src-badge src-ansi">ANSI</span>',
+        'YRT100':       '<span class="src-badge src-yrt">YRT100</span>',
+        'RAS400_custom':'<span class="src-badge src-ras">RAS400</span>',
+      })[src] || '';
+      const approxWarn = item.is_approx ? ' <span class="approx-warn" title="軸偏差為近似值，不在 ABC 協議範圍">⚠ 近似值</span>' : '';
+      const scoreBadge = (item.score != null) ? `<span class="score-badge" title="必選+可選命中加權">${item.score}</span>` : '';
+      const matchedBadges = (item.matched_tags || []).map(t =>
+        `<span class="match-tag">${t}</span>`).join('');
+
+      // 非 ISO 代號（YRT100）不能 bridge to machine
+      const canBridge = !/基準/.test(hole) && !/基準/.test(shaft);
+
       html += `
         <div class="result-item smart-result-item">
-          <div class="smart-result-title">${item.type} - ${item.function}</div>
+          <div class="smart-result-title">${srcBadge} ${item.type} - ${item.function} ${scoreBadge}${approxWarn}</div>
           <div class="smart-result-meta">
-            <span>軸: <b style="color:#fff">${item.shaft || '-'}</b></span>
-            <span>孔: <b style="color:#fff">${item.hole || '-'}</b></span>
-            <span>ANSI: ${item.ansi}</span>
+            <span>孔: <b style="color:#1d4ed8">${hole || '-'}</b></span>
+            <span>軸: <b style="color:#15803d">${shaft || '-'}</b></span>
+            <span>ANSI/編碼: ${item.ansi}</span>
           </div>
-          <div class="smart-result-note">${item.note}</div>
-          ${(h || s) ? `<button type="button" class="smart-bridge-btn" onclick="bridgeToMachine('${h}','${s}')">帶入機台篩選 ↓</button>` : ''}
+          <div class="smart-result-note">${item.note || ''}</div>
+          ${matchedBadges ? `<div class="match-tags">${matchedBadges}</div>` : ''}
+          ${canBridge ? `<button type="button" class="smart-bridge-btn" onclick="bridgeToMachine('${h}','${s}')">帶入機台篩選 ↓</button>` : '<div class="bridge-disabled">（YRT100 螺栓鎖附固定，跳過 ISO 機台精度推導）</div>'}
         </div>`;
     });
     resultDiv.innerHTML = html;

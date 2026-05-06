@@ -54,11 +54,16 @@ class AIService:
             print(f'[WARN] 取得 Ollama 模型失敗: {e}')
             raw = ['llama3.1:8b']
 
+        # 需要付費訂閱的本地模型（Ollama 回傳 403）→ 從選單移除
+        _BLOCKED_LOCAL = {'llama3:8b-instruct-q4_k_m', 'llama3:8b-instruct'}
+
         model_dict: dict[str, str] = {}
         for m in raw + _MANUAL_CLOUD_MODELS:
             m_lower = m.lower()
             if 'gemini' in m_lower:
                 continue                         # 過濾 Gemini
+            if m_lower in _BLOCKED_LOCAL:
+                continue                         # 過濾需訂閱的付費模型
             base = self._base_family(m_lower)
             key  = base if _is_cloud(m) else m   # 本地不去重，雲端按 family 去重
             if key not in model_dict:

@@ -1116,6 +1116,30 @@
                 "name": "Tongtai SH-5000P Specs",
                 "url": "#"
             }
+        },
+        {
+            "machine_id": "TONGTAI_CT-350",
+            "company_id": "C_TONGTAI",
+            "brand": "Tongtai",
+            "model": "CT-350",
+            "series": "CT",
+            "process_id": "P_5AX",
+            "source": {
+                "name": "Tongtai CT-350 Specs",
+                "url": "https://www.tongtai.com.tw/en/product-detail.php?id=38"
+            }
+        },
+        {
+            "machine_id": "TONGTAI_TD-2000YBC",
+            "company_id": "C_TONGTAI",
+            "brand": "Tongtai",
+            "model": "TD-2000YBC",
+            "series": "TD",
+            "process_id": "P_TURN",
+            "source": {
+                "name": "Tongtai TD-2000YBC Specs",
+                "url": "https://www.tongtai.com.tw/tw/product-detail.php?id=77"
+            }
         }
     ],
     "capabilities": [
@@ -3592,6 +3616,76 @@
                 "positioning_mm": 0.005,
                 "repeatability_mm": 0.025,
                 "notes": "來自備份20260223"
+            }
+        },
+        {
+            "capability_id": "CAP_TONGTAI_CT-350",
+            "machine_id": "TONGTAI_CT-350",
+            "company_id": "C_TONGTAI",
+            "unit_system": "METRIC",
+            "axes": {
+                "count": 5,
+                "travel_mm": {
+                    "X": 400.0,
+                    "Y": 510.0,
+                    "Z": 510.0
+                }
+            },
+            "spindle": {
+                "speed_max_rpm": "15000",
+                "power_kw": "18.5"
+            },
+            "feed": {
+                "rapid_m_per_min": {
+                    "X": 36,
+                    "Y": 36,
+                    "Z": 30
+                }
+            },
+            "work_envelope": {
+                "table_diameter_mm": 350,
+                "max_load_kg": 200
+            },
+            "accuracy": {
+                "positioning_mm": 0.003,
+                "repeatability_mm": 0.0025,
+                "notes": "線性軸附光學尺；A/C旋轉軸±15 arc sec(選配光學尺±3 arc sec)"
+            }
+        },
+        {
+            "capability_id": "CAP_TONGTAI_TD-2000YBC",
+            "machine_id": "TONGTAI_TD-2000YBC",
+            "company_id": "C_TONGTAI",
+            "unit_system": "METRIC",
+            "axes": {
+                "count": 4,
+                "travel_mm": {
+                    "X": 230.0,
+                    "Y": 102.0,
+                    "Z": 600.0
+                }
+            },
+            "spindle": {
+                "speed_max_rpm": "4500",
+                "power_kw": "18.5"
+            },
+            "feed": {
+                "rapid_m_per_min": {
+                    "X": 30,
+                    "Y": 15,
+                    "Z": 30
+                }
+            },
+            "work_envelope": {
+                "chuck_inch": 8,
+                "bar_capacity_mm": 51,
+                "max_swing_diameter_mm": 700,
+                "sub_spindle_speed_rpm": 5000
+            },
+            "accuracy": {
+                "positioning_mm": null,
+                "repeatability_mm": null,
+                "notes": "定位精度與重現精度未公開；請向東台精機索取規格書"
             }
         }
     ]

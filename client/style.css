@@ -924,3 +924,78 @@ details[open] .kb-details-summary .arrow {
     border: none;
     margin-top: 0;
 }
+
+/* ════════════════════════════════════════════════════════════════════════════
+   Matchmaking 維度勾選 UI
+   ════════════════════════════════════════════════════════════════════════════ */
+
+.smart-dim-toggle-row {
+  display: flex; align-items: center; gap: 10px; margin: 10px 0 4px 0;
+}
+.smart-dim-toggle {
+  background: transparent; color: #cbd5e1; border: 1px solid #475569;
+  border-radius: 6px; padding: 6px 12px; font-size: 13px; cursor: pointer;
+  transition: all .15s;
+}
+.smart-dim-toggle:hover { background: #334155; color: #fff; }
+.smart-dim-summary { font-size: 12px; color: #64748b; flex: 1; }
+.smart-dim-summary.has-selection { color: #38bdf8; font-weight: 600; }
+.smart-dim-clear {
+  background: transparent; color: #f87171; border: 1px solid #7f1d1d;
+  border-radius: 4px; padding: 3px 9px; font-size: 11px; cursor: pointer;
+}
+.smart-dim-clear:hover { background: #7f1d1d; color: #fff; }
+.smart-dim-panel {
+  background: #1e293b; border: 1px solid #334155; border-radius: 6px;
+  padding: 12px; margin-bottom: 8px;
+}
+.smart-dim-legend {
+  font-size: 11px; color: #94a3b8; margin-bottom: 8px;
+  display: flex; align-items: center; gap: 6px; flex-wrap: wrap;
+}
+.smart-dim-legend .dim-chip { padding: 2px 8px; font-size: 11px; cursor: default; }
+.smart-dim-group {
+  display: flex; align-items: flex-start; gap: 10px;
+  padding: 6px 0; border-bottom: 1px dashed #334155;
+}
+.smart-dim-group:last-child { border-bottom: none; }
+.smart-dim-group-label {
+  flex: 0 0 80px; font-size: 12px; color: #94a3b8; font-weight: 600;
+  padding-top: 4px;
+}
+.smart-dim-chips { display: flex; flex-wrap: wrap; gap: 6px; flex: 1; }
+.dim-chip {
+  background: #0f172a; color: #cbd5e1;
+  border: 1px solid #475569; border-radius: 14px;
+  padding: 4px 12px; font-size: 12px; cursor: pointer;
+  transition: all .12s;
+  -webkit-user-select: none; -moz-user-select: none;
+  -ms-user-select: none; user-select: none;
+}
+.dim-chip:hover { border-color: #64748b; color: #fff; }
+.dim-chip.dim-state-required {
+  background: #1e3a8a; color: #fff; border-color: #3b82f6;
+  box-shadow: inset 0 0 0 1px #60a5fa;
+}
+.dim-chip.dim-state-optional {
+  background: #134e4a; color: #ccfbf1; border-color: #14b8a6;
+}
+.smart-result-item .src-badge {
+  display: inline-block; font-size: 10px; padding: 1px 6px;
+  border-radius: 3px; margin-right: 4px; font-weight: 700; vertical-align: middle;
+}
+.src-badge.src-ansi { background: #1e40af; color: #fff; }
+.src-badge.src-yrt  { background: #b45309; color: #fff; }
+.src-badge.src-ras  { background: #6d28d9; color: #fff; }
+.smart-result-item .score-badge {
+  display: inline-block; background: #334155; color: #38bdf8;
+  font-size: 10px; padding: 1px 6px; border-radius: 8px; margin-left: 6px;
+  font-weight: 700;
+}
+.smart-result-item .approx-warn { font-size: 10px; color: #fbbf24; margin-left: 4px; }
+.smart-result-item .match-tags { margin-top: 6px; display: flex; flex-wrap: wrap; gap: 4px; }
+.match-tag {
+  font-size: 10px; background: #134e4a; color: #ccfbf1;
+  padding: 1px 6px; border-radius: 8px;
+}
+.bridge-disabled { font-size: 11px; color: #94a3b8; padding: 6px 0; font-style: italic; }

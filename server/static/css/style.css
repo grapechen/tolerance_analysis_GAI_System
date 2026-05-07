@@ -821,23 +821,67 @@ button:disabled { opacity: 0.5; cursor: not-allowed; }
 }
 .bom-modal-content {
   background: #f8fafc;
-  padding: 30px;
+  padding: 0;
   border-radius: 12px;
   position: relative;
-  width: 95%; /* 增加寬度以適應大圖 */
-  height: 92%; /* 增加高度 */
-  overflow: auto;
+  width: 95%;
+  height: 92%;
+  overflow: hidden;
   box-shadow: 0 10px 25px rgba(0,0,0,0.5);
   border: 1px solid #cbd5e1;
+  display: flex;
+  flex-direction: column;
+}
+.bom-modal-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  background: #f1f5f9;
+  border-bottom: 1px solid #e2e8f0;
+  border-radius: 12px 12px 0 0;
+  flex-shrink: 0;
+}
+.bom-modal-title-text {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #475569;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 60%;
+}
+.bom-modal-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.bom-export-btn {
+  background: #0ea5e9;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 4px 12px;
+  font-size: 0.82rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s;
+}
+.bom-export-btn:hover { background: #0284c7; }
+.bom-export-btn:disabled { background: #94a3b8; cursor: default; }
+#bom-modal-container {
+  flex: 1;
+  overflow: auto;
+  padding: 24px 30px;
 }
 .close-modal-btn {
-  position: absolute;
-  top: 10px; right: 15px;
   background: none;
   border: none;
-  font-size: 24px; color: #64748b;
+  font-size: 22px;
+  color: #64748b;
   cursor: pointer;
-  padding: 0; margin: 0;
+  padding: 0;
+  line-height: 1;
 }
 .close-modal-btn:hover { color: #0f172a; }
 

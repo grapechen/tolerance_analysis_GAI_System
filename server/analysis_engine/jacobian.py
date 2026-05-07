@@ -2,7 +2,7 @@ import numpy as np
 from math import pi, cos, sin
 from .models import ParameterizationModel as PM
 
-def compute_jacobian(tol_data, progress_cb=None):
+def compute_jacobian(tol_data, progress_cb=None, stacking_axis: str = 'Y'):
     """
     優化後的 Jacobian 矩陣分析 (數值鏈式微分版)。
     將運算複雜度從 SymPy 的指數級降低為 O(N^2)。
@@ -87,8 +87,8 @@ def compute_jacobian(tol_data, progress_cb=None):
         sl = s_code.lower()
         
         # 獲取該類型公差在 s=0 時的導數矩陣
-        dm0  = _get_derivative_m(s_code, 0)
-        dm90 = _get_derivative_m(s_code, 90)
+        dm0  = _get_derivative_m(s_code, 0,  stacking_axis)
+        dm90 = _get_derivative_m(s_code, 90, stacking_axis)
         
         # dM_total = Left * dM * Right
         res0  = left_0[path_j].dot(dm0).dot(right_0[path_j])
@@ -158,19 +158,25 @@ def _get_rotate_z(deg):
     c, s = cos(rad), sin(rad)
     return np.array([[c, -s, 0, 0], [s, c, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]], dtype=float)
 
-def _get_derivative_m(s_code, zyz):
-    """取得特定公差類型的導數矩陣 dM/ds (於 s=0 處)"""
+def _get_derivative_m(s_code, zyz, stacking_axis: str = 'Y'):
+    """取得特定公差類型的導數矩陣 dM/ds (於 s=0 處)。
+    stacking_axis: 'X'/'Y'/'Z' — dis/fla/sym 無軸後綴時的堆疊方向。
+    """
     sl = s_code.lower()
     z_rad = zyz * pi / 180
     cz, sz = cos(z_rad), sin(z_rad)
-    
+
+    # 堆疊軸 → 矩陣列索引
+    _stack_row = {'X': 0, 'Y': 1, 'Z': 2}.get(stacking_axis.upper(), 1)
+
     # 預設為零矩陣
     d = np.zeros((4, 4))
-    
+
     # ── 直移類公差 (dM/dx = [0,0,0,1]) ──
-    if any(p in sl for p in ('disx', 'flax', 'symx')): d[0, 3] = 1.0
+    if   any(p in sl for p in ('disx', 'flax', 'symx')): d[0, 3] = 1.0
     elif any(p in sl for p in ('disy', 'flay', 'symy')): d[1, 3] = 1.0
-    elif any(p in sl for p in ('dis', 'fla', 'sym')): d[2, 3] = 1.0
+    elif any(p in sl for p in ('disz', 'flaz', 'symz')): d[2, 3] = 1.0
+    elif any(p in sl for p in ('dis',  'fla',  'sym' )): d[_stack_row, 3] = 1.0  # 使用者指定軸向
     
     # ── 角度類公差 (旋轉型) ──
     elif 'angx' in sl or 'perx' in sl or 'parx' in sl or 'crax' in sl:

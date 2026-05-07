@@ -1,4 +1,4 @@
-"""plan_service.py - 方案一(推薦)/方案二(調配) 業務邏輯
+﻿"""plan_service.py - 方案一(推薦)/方案二(調配) 業務邏輯
 
 Plan 1: 由零件功能描述推薦公差配合（rule-based + ansi_fits 對照）
 Plan 2: 對 Plan 1 結果做敏感度分析，高貢獻調緊、低貢獻放寬
@@ -41,12 +41,12 @@ class FitRule:
 # 上方規則優先；第一個命中即停止。
 FIT_RULES: list[tuple[callable, FitRule]] = [
     (
-        lambda d: '軸承外圈' in d and ('固定' in d or '承載' in d or '承受' in d),
-        FitRule('H7', 'p6', 'LN2', '過盈配合', '軸承外圈固定承載，採過盈以防外圈滑轉'),
+        lambda d: '軸承外環' in d and ('固定' in d or '承載' in d or '承受' in d),
+        FitRule('H7', 'p6', 'LN2', '過盈配合', '軸承外環固定承載，採過盈以防外環滑轉'),
     ),
     (
-        lambda d: '軸承內圈' in d and ('旋轉' in d or '過盈' in d),
-        FitRule('H7', 'p6', 'LN2', '過盈配合', '軸承內圈隨軸旋轉，採過盈確保同步'),
+        lambda d: '軸承內環' in d and ('旋轉' in d or '過盈' in d),
+        FitRule('H7', 'p6', 'LN2', '過盈配合', '軸承內環隨軸旋轉，採過盈確保同步'),
     ),
     (
         lambda d: ('傳遞' in d and '扭矩' in d) or '對接' in d,
@@ -428,19 +428,32 @@ class PlanService:
 
         return matched
 
-    @staticmethod
-    def _select_dia_items(items: list[dict]) -> list[dict]:
-        """篩選應被更新的路徑項目：優先 tol_type=='dia'，fallback 到無 tol_type。
-        幾何公差（fla/par/per/co/cyl/cir/run/tot/pos/ang/sym）及 dis 一律排除。
+    # 幾何公差型別清單（不能被 DIA 配合更新）
+    _GEO_TYPES = frozenset({
+        'fla', 'par', 'per', 'co', 'cyl', 'cir', 'run', 'tot',
+        'pos', 'ang', 'sym', 'pro', 'dis',
+    })
+
+    @classmethod
+    def _select_dia_items(cls, items: list[dict]) -> list[dict]:
+        """篩選應被更新的路徑項目（三層 fallback）。
+
+        1st: tol_type == 'dia'（明確直徑公差）
+        2nd: tol_type 為空（未標記，視為尺寸公差）
+        3rd: tol_type 不在幾何公差清單（自訂類型如 'size'/'linear'）
+        幾何公差（fla/par/per/co … 及 dis）一律排除。
         """
-        EXCLUDE_TYPES = {
-            'fla', 'par', 'per', 'co', 'cyl', 'cir', 'run', 'tot',
-            'pos', 'ang', 'sym', 'dis',
-        }
-        dia_items = [i for i in items if (i.get('tol_type') or '').lower() == 'dia']
-        if dia_items:
-            return dia_items
-        return [i for i in items if not (i.get('tol_type') or '').strip()]
+        def tt(i):
+            return (i.get('tol_type') or '').lower().strip()
+
+        dia   = [i for i in items if tt(i) == 'dia']
+        if dia:
+            return dia
+        empty = [i for i in items if not tt(i)]
+        if empty:
+            return empty
+        # 第三層：非幾何自訂類型（如 'size', 'linear' 等）
+        return [i for i in items if tt(i) not in cls._GEO_TYPES]
 
     def advanced_recommend(
         self,
@@ -576,13 +589,18 @@ class PlanService:
                 )
             else:
                 matched_parts = []
-                if hole_candidates:
-                    matched_parts.append(pair['hole_part'])
-                if shaft_candidates:
-                    matched_parts.append(pair['shaft_part'])
+                geo_names: list[str] = []
+                for cands, pname in ((hole_candidates, pair['hole_part']),
+                                     (shaft_candidates, pair['shaft_part'])):
+                    if cands:
+                        matched_parts.append(pname)
+                        geo_names += [i.get('name', '') for i in cands if i.get('name')]
+                geo_sample = '、'.join(geo_names[:3]) + ('…' if len(geo_names) > 3 else '')
                 msg = (
-                    f'找到「{"、".join(matched_parts)}」的路徑項目，但均非 DIA 型尺寸公差（可能為幾何公差）。\n'
-                    f'幾何公差（fla/par/per/co 等）不在自動更新範圍內，請手動確認。'
+                    f'找到「{"、".join(matched_parts)}」的路徑項目（{geo_sample}），'
+                    f'但均為幾何公差（fla/par/per/co 等），無直徑尺寸公差可更新。\n\n'
+                    f'解決方式：在 Excel 路徑中為「{"、".join(matched_parts)}」補上一列 tol_type=dia 的'
+                    f'孔/軸直徑公差（例如：軸承座孔徑 H7 → 加一列 name=軸承座-DIA1，tol_type=dia）後重新匯入。'
                 )
             return {'ok': True, 'updated_path': current_path, 'changes': [], 'message': msg}
 

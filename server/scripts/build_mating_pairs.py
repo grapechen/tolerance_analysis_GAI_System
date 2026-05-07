@@ -1,4 +1,4 @@
-"""
+﻿"""
 Extract H↔S (cylindrical hole ↔ cylindrical shaft) mating pairs from
 ras400_ontology_contacts.csv and merge with hand-curated nominal_dia /
 function_desc / priority drafts to produce ras400_mating_pairs.csv.
@@ -27,12 +27,12 @@ ASSEMBLY_REL = "有組裝接觸"
 DRAFT: dict[tuple[str, str, str, str], dict] = {
     ("軸承", "S-3", "軸承座", "H-1"): {
         "nominal_dia": 47,
-        "function_desc": "軸承外圈固定於軸承座，承受徑向負載",
+        "function_desc": "軸承外環固定於軸承座，承受徑向負載",
         "priority": "high",
     },
     ("軸承", "H-4", "工作臺心軸", "S-1"): {
         "nominal_dia": 25,
-        "function_desc": "軸承內圈隨心軸旋轉，過盈固定",
+        "function_desc": "軸承內環隨心軸旋轉，過盈固定",
         "priority": "high",
     },
     ("工作臺", "H-2", "工作臺心軸", "S-3"): {

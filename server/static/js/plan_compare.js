@@ -1,4 +1,4 @@
-/* plan_compare.js — 公差配合推薦 */
+﻿/* plan_compare.js — 公差配合推薦 */
 (function () {
   'use strict';
 
@@ -39,9 +39,9 @@
   // partB_label 是顯示給使用者看的「配合對象 — 功能描述」字樣
   const PC1_PART_PAIRS = [
     { partA: '工作臺(1)',     partB: '工作臺心軸(5)',     partB_label: '工作臺心軸(5)（螺栓+定位銷）',  required: ['定位','精確','過渡','可裝拆'], expected_ansi: 'H7/k6', fit_text: 'H7/k6' },
-    { partA: '軸承座(2)',     partB: '軸承(3) 外圈',        partB_label: '軸承(3) 外圈（YRT 螺栓鎖附）', required: ['定位','固定'],                  expected_ansi: 'H6',    fit_text: 'H6' },
+    { partA: '軸承座(2)',     partB: '軸承(3) 外環',        partB_label: '軸承(3) 外環（YRT 螺栓鎖附）', required: ['定位','固定'],                  expected_ansi: 'H6',    fit_text: 'H6' },
     { partA: '軸承座(2)',     partB: '馬達水套(7)',           partB_label: '馬達水套(7)',                   required: ['定位','固定','可裝拆'],         expected_ansi: 'H7/h6', fit_text: 'H7/h6' },
-    { partA: '軸承YRT(3)',   partB: '工作臺心軸(5) 內圈',   partB_label: '工作臺心軸(5) 內圈（YRT 螺栓鎖附）', required: ['定位','過渡'],            expected_ansi: 'js5',   fit_text: 'js5' },
+    { partA: '軸承YRT(3)',   partB: '工作臺心軸(5) 內環',   partB_label: '工作臺心軸(5) 內環（YRT 螺栓鎖附）', required: ['定位','過渡'],            expected_ansi: 'js5',   fit_text: 'js5' },
     { partA: '轉動軸(4)',     partB: '工作臺心軸(5)',         partB_label: '工作臺心軸(5)（永久固定）',     required: ['壓入','強制壓入'],            expected_ansi: 'H7/u6', fit_text: 'H7/u6' },
     { partA: '馬達(6)',         partB: '馬達水套(7)',           partB_label: '馬達水套(7)（永久固定）',         required: ['壓入','中壓入'],              expected_ansi: 'H7/s6', fit_text: 'H7/s6' },
     { partA: '馬達水套(7)',   partB: '馬達座(10)',           partB_label: '馬達座(10)',                   required: ['定位','固定','可裝拆'],         expected_ansi: 'H7/h6', fit_text: 'H7/h6' },

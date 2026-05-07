@@ -1,4 +1,4 @@
-"""plan_bp.py - 公差配合推薦 Blueprint
+﻿"""plan_bp.py - 公差配合推薦 Blueprint
 
 路由：
   POST /api/plan1/recommend_one   方案一（單對輸入）：零件+功能+尺寸 → fit + 機台
@@ -74,7 +74,7 @@ def recommend_one():
     Request JSON:
       {
         "part_name": "軸承座",
-        "function_desc": "軸承外圈固定，承受徑向負載",
+        "function_desc": "軸承外環固定，承受徑向負載",
         "nominal_dia": 47
       }
     """

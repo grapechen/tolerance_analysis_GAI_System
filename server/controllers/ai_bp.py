@@ -65,6 +65,7 @@ def api_chat():
     current_allocation  = data.get('current_allocation')
     current_pmi_session = data.get('current_pmi_session_id')
     wf_state            = data.get('wf_state') or {}
+    stacking_axis       = data.get('stacking_axis', 'Y')
 
     if not msg:
         return jsonify({'reply': '請輸入訊息' if lang != 'en' else 'Please enter a message'}), 400
@@ -84,7 +85,7 @@ def api_chat():
             msg, model_name=model, base_url=base_url, history=history, lang=lang,
             current_analysis=current_analysis, current_path=current_path,
             current_allocation=current_allocation, current_pmi_session=current_pmi_session,
-            wf_state=wf_state,
+            wf_state=wf_state, stacking_axis=stacking_axis,
         )
     except Exception as e:
         import sys
@@ -111,13 +112,18 @@ def analyze_tolerance_stream():
     except (ValueError, TypeError):
         mc_samples, mc_sigma, mc_dist = 10000, 3.0, 0
 
+    stacking_axis = str(body.get('stacking_axis', 'Y'))
+    if stacking_axis.upper() not in ('X', 'Y', 'Z'):
+        stacking_axis = 'Y'
+
     try:
         from analysis_service import analyze_stream
     except ImportError as e:
         return jsonify({'error': f'analysis_service 載入失敗: {e}'}), 500
 
     return Response(
-        analyze_stream(path_data, mc_samples=mc_samples, mc_sigma=mc_sigma, mc_dist=mc_dist),
+        analyze_stream(path_data, mc_samples=mc_samples, mc_sigma=mc_sigma, mc_dist=mc_dist,
+                       stacking_axis=stacking_axis),
         mimetype='text/event-stream',
         headers={'Cache-Control': 'no-cache', 'X-Accel-Buffering': 'no'},
     )
@@ -217,12 +223,12 @@ def sfa_import_csv():
             iso2768_linear_class = linear_class,
         )
 
-        axis = 'Z'
+        axis = 'Y'
         include_types = None
 
         if 'csv_file' in request.files:
             f    = request.files['csv_file']
-            axis = request.form.get('axis', 'Z')
+            axis = request.form.get('axis', 'Y')
             ts   = request.form.get('include_types', '')
             if ts:
                 include_types = set(ts.split(','))
@@ -232,7 +238,7 @@ def sfa_import_csv():
         else:
             body     = request.get_json() or {}
             csv_path = body.get('csv_path')
-            axis     = body.get('axis', 'Z')
+            axis     = body.get('axis', 'Y')
             tl       = body.get('include_types')
             if tl:
                 include_types = set(tl)

@@ -9,6 +9,7 @@
   
   <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
   <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <!-- Three.js & OrbitControls for 3D Scatter View -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
@@ -141,11 +142,17 @@
           <input type="file" id="xlsx-file-input" accept=".xlsx,.xls" style="display:none;" onchange="uploadXlsxFile(this.files[0])">
         </label>
         <button onclick="parsePMI()" style="padding:5px 11px; background:#ffe082; color:#1a202c; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;">🔄 比對 & 解析 PMI</button>
+        <button onclick="StepViewer.focusOnGeometry(true)" title="置中並以等角視角顯示全部零件與標註" style="padding:5px 11px; background:#e1bee7; color:#1a202c; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;">🎯 置中視角</button>
         <button onclick="exportStepCSV()" style="padding:5px 11px; background:#cfd8dc; color:#1a202c; border:none; border-radius:4px; cursor:pointer; font-size:12px; font-weight:bold; white-space:nowrap;">💾 導出 CSV</button>
       </div>
 
       <!-- 工具列 - 第二列 -->
-      <div style="padding:6px 10px; background:#eceff1; display:flex; align-items:center; gap:6px; border-bottom:1px solid #cbd5e1; flex-wrap:wrap;">
+      <div style="padding:6px 10px; background:#eceff1; display:flex; align-items:center; gap:8px; border-bottom:1px solid #cbd5e1; flex-wrap:wrap;">
+        <label style="font-size:11px; color:#444; white-space:nowrap; font-weight:bold;">🔲 零件透明度</label>
+        <input id="step-opacity-slider" type="range" min="0" max="1" step="0.05" value="0.3"
+          style="width:110px; cursor:pointer; accent-color:#7c3aed;"
+          oninput="StepViewer.setBaseOpacity(this.value); document.getElementById('step-opacity-val').textContent = Math.round(this.value*100)+'%';">
+        <span id="step-opacity-val" style="font-size:11px; color:#444; min-width:32px;">30%</span>
         <span style="font-size:11px; color:#666; margin-left:auto;">載入組合件 STP，偵測零件間接觸面</span>
       </div>
 
@@ -194,7 +201,13 @@
 
   <div class="bom-modal-overlay" id="bom-modal-overlay" onclick="if(event.target === this) closeBomModal()">
     <div class="bom-modal-content">
-      <button class="close-modal-btn" onclick="closeBomModal()">&times;</button>
+      <div class="bom-modal-header">
+        <span id="bom-modal-title" class="bom-modal-title-text"></span>
+        <div class="bom-modal-actions">
+          <button id="export-png-btn" class="bom-export-btn" onclick="exportBomAsPng()" title="匯出為 PNG">&#128247; PNG</button>
+          <button class="close-modal-btn" onclick="closeBomModal()">&times;</button>
+        </div>
+      </div>
       <div id="bom-modal-container"></div>
     </div>
   </div>
@@ -238,6 +251,14 @@
           <select id="mc-dist" title="分布模式/Distribution" onchange="document.getElementById('mc-sigma').disabled = this.value === '0';">
             <option value="0">{% if lang == 'en' %}Uniform{% else %}均勻分布{% endif %}</option>
             <option value="1" selected>{% if lang == 'en' %}Normal{% else %}常態分佈{% endif %}</option>
+          </select>
+        </div>
+        <div class="setting-item">
+          <label for="stacking-axis-select">📐 {% if lang == 'en' %}Stacking Axis{% else %}堆疊軸向{% endif %}</label>
+          <select id="stacking-axis-select" title="{% if lang == 'en' %}Stacking/axial direction for dis/fla/sym tolerances without explicit axis suffix{% else %}dis/fla/sym 無軸後綴時的堆疊方向{% endif %}">
+            <option value="X">X</option>
+            <option value="Y" selected>Y</option>
+            <option value="Z">Z</option>
           </select>
         </div>
       </div>

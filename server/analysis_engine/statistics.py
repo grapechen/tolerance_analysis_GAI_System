@@ -38,7 +38,8 @@ def compute_rss(tol_data):
     sum_wc_aX = sum_wc_aY = sum_wc_aZ = 0.0
 
     for i in range(n):
-        t = values[i]
+        t_full = values[i]
+        t = t_full / 2.0   # 單機版 IntervalAnalysis 用半帶 t/2
         cX  = sX[i]  * t
         cY  = sY[i]  * t
         cZ  = sZ[i]  * t
@@ -54,7 +55,7 @@ def compute_rss(tol_data):
         sum_rss_aZ += caZ ** 2;  sum_wc_aZ += abs(caZ)
 
         contribs.append({
-            "name": names[i], "val": t,
+            "name": names[i], "val": t_full,
             "sX": round(sX[i], 6),  "sY": round(sY[i], 6),  "sZ": round(sZ[i], 6),
             "saX": round(saX[i], 6), "saY": round(saY[i], 6), "saZ": round(saZ[i], 6),
             "cX": round(cX, 8),  "cY": round(cY, 8),  "cZ": round(cZ, 8),

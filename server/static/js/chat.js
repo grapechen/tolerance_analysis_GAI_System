@@ -355,7 +355,8 @@ async function sendMessage() {
         current_path: (typeof editorPathData !== 'undefined') ? editorPathData : null,
         current_allocation: window._lastAllocationResult || null,
         current_pmi_session_id: window._stepSessionId || null,
-        wf_state: window._wf || {}
+        wf_state: window._wf || {},
+        stacking_axis: document.getElementById('stacking-axis-select')?.value || 'Y'
       })
     });
     const data = await r.json();

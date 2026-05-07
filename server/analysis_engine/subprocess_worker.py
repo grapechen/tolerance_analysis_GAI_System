@@ -43,12 +43,13 @@ def main():
         _emit({'error': f'stdin JSON 解析失敗: {e}'})
         sys.exit(1)
 
-    path_data  = data.get('path_data', [])
-    mc_samples = int(data.get('mc_samples', 10000))
-    mc_sigma   = float(data.get('mc_sigma', 3.0))
-    mc_dist    = int(data.get('mc_dist', 0))
-    run_mc     = bool(data.get('run_mc', True))
-    mc_raw_cap = int(data.get('mc_raw_cap', 2000))
+    path_data     = data.get('path_data', [])
+    mc_samples    = int(data.get('mc_samples', 10000))
+    mc_sigma      = float(data.get('mc_sigma', 3.0))
+    mc_dist       = int(data.get('mc_dist', 0))
+    run_mc        = bool(data.get('run_mc', True))
+    mc_raw_cap    = int(data.get('mc_raw_cap', 2000))
+    stacking_axis = str(data.get('stacking_axis', 'Y'))
 
     try:
         from analysis_service import ToleranceData
@@ -75,7 +76,7 @@ def main():
     _emit({'progress': 5})
 
     try:
-        t_ideal = compute_jacobian(tol_data)
+        t_ideal = compute_jacobian(tol_data, stacking_axis=stacking_axis)
     except Exception as e:
         import traceback
         _emit({'error': f'compute_jacobian 失敗: {e}\n{traceback.format_exc()}'})

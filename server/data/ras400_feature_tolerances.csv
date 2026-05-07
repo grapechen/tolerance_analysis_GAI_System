@@ -1,10 +1,10 @@
-part,feature,feature_type,nominal_mm,Cir,Cyl,Per,Par,Co,Run,Fla,it_dim,note
+﻿part,feature,feature_type,nominal_mm,Cir,Cyl,Per,Par,Co,Run,Fla,it_dim,note
 軸承座,H-2,H,185,0.015,,,,,,,6,DIA2+CIR1 ⌀185 基準B
 軸承座,H-4,H,265,,,,,,,,8,DIA4 ⌀265 H8
 軸承座,S-1,S,275,,,,,,,,12,DIA5 ⌀275 ±0.25
 軸承座,P-5,P,15,,,,0.02,,,9,DIS3+PAR1 安裝基準台面
-軸承,S-1,S,161,,,,,,,,8,DIA4 ⌀161 外圈
-軸承,S-2,S,161,,,,,,,,8,DIA1 ⌀161 外圈
+軸承,S-1,S,161,,,,,,,,8,DIA4 ⌀161 外環
+軸承,S-2,S,161,,,,,,,,8,DIA1 ⌀161 外環
 軸承,H-1,H,101,,,,,,,,9,DIA2 ⌀101
 軸承,H-2,H,100,,,,,,,,3,DIA3 ⌀100 精密
 軸承,P-1,P,,,,,,,,0.002,,FLA1 端面 基準B

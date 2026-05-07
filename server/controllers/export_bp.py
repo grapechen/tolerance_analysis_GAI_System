@@ -77,10 +77,22 @@ def _write_summary_blocks(ws, result: dict):
         ['Yerror', result.get('wc_Y', 0)*-1, result.get('wc_Y', 0)],
         ['Zerror', result.get('wc_Z', 0)*-1, result.get('wc_Z', 0)],
     ])
+    _write_block(ws, 20, 11, 'Angle Statistics Model(arc_second)', YELLOW_FILL, ['tol_range','-3sigma','+3sigma'], [
+        ['Xerror', result.get('rss_aX', 0)*-1, result.get('rss_aX', 0)],
+        ['Yerror', result.get('rss_aY', 0)*-1, result.get('rss_aY', 0)],
+        ['Zerror', result.get('rss_aZ', 0)*-1, result.get('rss_aZ', 0)],
+    ])
+    _write_block(ws, 26, 11, 'Angle Worst Case Model(arc_second)', GREEN_FILL, ['tol_range','min','max'], [
+        ['Xerror', result.get('wc_aX', 0)*-1, result.get('wc_aX', 0)],
+        ['Yerror', result.get('wc_aY', 0)*-1, result.get('wc_aY', 0)],
+        ['Zerror', result.get('wc_aZ', 0)*-1, result.get('wc_aZ', 0)],
+    ])
     def _rows(data_list):
-        return [[d.get('name',''), d.get('x',0), d.get('y',0), d.get('z',0)] for d in data_list[:8]]
-    _write_block(ws, 1, 16, 'Sensitivity Analysis',  BLUE_FILL, ['tol_sym','X(%)','Y(%)','Z(%)'], _rows(result.get('sensitivity',   [])))
-    _write_block(ws, 1, 22, 'Contribution Analysis', RED_FILL,  ['tol_sym','X(%)','Y(%)','Z(%)'], _rows(result.get('contribution',  [])))
+        return [[d.get('name',''), d.get('x',0), d.get('y',0), d.get('z',0)] for d in data_list]
+    _write_block(ws, 1, 16, 'Sensitivity Analysis',       BLUE_FILL,  ['tol_sym','X(%)','Y(%)','Z(%)'], _rows(result.get('sensitivity',        [])))
+    _write_block(ws, 1, 22, 'Contribution Analysis',      RED_FILL,   ['tol_sym','X(%)','Y(%)','Z(%)'], _rows(result.get('contribution',       [])))
+    _write_block(ws, 1, 28, 'Angle Sensitivity Analysis', DBLUE_FILL, ['tol_sym','X(%)','Y(%)','Z(%)'], _rows(result.get('angle_sensitivity',  [])))
+    _write_block(ws, 1, 34, 'Angle Contribution Analysis',DBLUE_FILL, ['tol_sym','X(%)','Y(%)','Z(%)'], _rows(result.get('angle_contribution', [])))
 
 
 # ── 路由 ──────────────────────────────────────────────────────────────────────
@@ -100,6 +112,10 @@ def export_tolerance_csv():
             ('Value(tra/rot/tol)'      if en else '數值(平移、旋轉、公差值)'): item.get('val', 0.01),
             ('Bias(offset)'            if en else '偏差值(公差帶偏移值)'):     item.get('bias', 0),
             ('Ang Tol Dist'            if en else '角度公差轉換距離'):         item.get('dist', '') or '',
+            ('Nominal Size'            if en else '公稱尺寸'):                item.get('nominal_size', '') or '',
+            ('IT Grade'                if en else 'IT等級'):                  item.get('it_grade', '') or '',
+            ('Part Name'               if en else '所屬零件'):                item.get('part', '') or '',
+            ('Tol Type'                if en else '公差類型'):                item.get('tol_type', '') or '',
         })
 
     df  = pd.DataFrame(rows)
@@ -269,7 +285,11 @@ def run_allocation():
             strategy = body.get('weight', 'medium')
             axis     = body.get('axis', 'Z')
 
-            res_data = compute_allocation(path_data, analysis_result, target, strategy, axis)
+            # 重新分析當前路徑，取得調配前的真實基準值
+            # （路徑可能在上次分析後被 IT 調整或配合建議修改過）
+            before_res = analysis_service.analyze_tolerance_path(path_data)
+
+            res_data = compute_allocation(path_data, before_res, target, strategy, axis)
 
             overrides = {}
             quadrants = {}
@@ -286,14 +306,15 @@ def run_allocation():
 
             final_res  = analysis_service.analyze_tolerance_path(res_data['newPathData'])
 
+            def _ipct(b, a):
+                return 0.0 if b == 0 else round((b - a) / b * 100, 2)
+
             full_report = {}
             for ax in ['X','Y','Z','aX','aY','aZ']:
-                rb = analysis_result.get(f'rss_{ax}', 0) or 0
-                ra = final_res.get(f'rss_{ax}',       0) or 0
-                wb2 = analysis_result.get(f'wc_{ax}', 0) or 0
-                wa = final_res.get(f'wc_{ax}',        0) or 0
-                def _ipct(b, a):
-                    return 0.0 if b == 0 else round((b-a)/b*100, 2)
+                rb  = before_res.get(f'rss_{ax}', 0) or 0   # 當前路徑真實前值
+                ra  = final_res.get(f'rss_{ax}',  0) or 0
+                wb2 = before_res.get(f'wc_{ax}',  0) or 0   # 當前路徑真實前值
+                wa  = final_res.get(f'wc_{ax}',   0) or 0
                 full_report[ax] = {
                     'rss_before': round(rb, 6), 'rss_after': round(ra, 6),
                     'rss_improve_pct': _ipct(rb, ra),
@@ -305,7 +326,9 @@ def run_allocation():
             return jsonify({
                 'ok': True, 'mode': 'auto',
                 'newPathData': res_data['newPathData'],
-                'report': full_report, 'dsl': updated_dsl, 'analysisResult': final_res,
+                'report': full_report, 'dsl': updated_dsl,
+                'analysisResult': final_res,
+                'beforeResult': before_res,   # 回傳真實前值供前端更新
             })
 
         elif mode == 'compare':

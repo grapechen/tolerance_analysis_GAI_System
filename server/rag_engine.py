@@ -1,4 +1,4 @@
-import re
+﻿import re
 try:
     from google import genai
 except ImportError:
@@ -21,12 +21,12 @@ _PART_FUNCTION_MAP = {
         {'label': '定位 ＋ 精確 ＋ 過渡 ＋ 可裝拆', 'fit': 'H7/k6', 'counterpart': '工作臺心軸(5)'}
     ],
     '軸承座': [
-        {'label': '定位 ＋ 固定', 'fit': 'H6', 'counterpart': '軸承(3)外圈'},
+        {'label': '定位 ＋ 固定', 'fit': 'H6', 'counterpart': '軸承(3)外環'},
         {'label': '定位 ＋ 固定 ＋ 可裝拆', 'fit': 'H7/h6', 'counterpart': '馬達水套(7)'}
     ],
     '軸承': [
-        {'label': '定位 ＋ 固定 (YRT 外圈)', 'fit': 'H6', 'counterpart': '軸承座(2)'},
-        {'label': '定位 ＋ 過渡 (YRT 內圈)', 'fit': 'js5', 'counterpart': '工作臺心軸(5)'}
+        {'label': '定位 ＋ 固定 (YRT 外環)', 'fit': 'H6', 'counterpart': '軸承座(2)'},
+        {'label': '定位 ＋ 過渡 (YRT 內環)', 'fit': 'js5', 'counterpart': '工作臺心軸(5)'}
     ],
     '轉動軸': [
         {'label': '壓入 ＋ 強制壓入 (永久固定)', 'fit': 'H7/u6', 'counterpart': '工作臺心軸(5)'}
@@ -49,7 +49,7 @@ _PART_FUNCTION_MAP = {
     ],
     '工作臺心軸': [
         {'label': '定位 ＋ 精確 ＋ 過渡 ＋ 可裝拆 (工作臺)',   'fit': 'H7/k6',  'counterpart': '工作臺(1)'},
-        {'label': '定位 ＋ 過渡 (YRT 軸承內圈，螺栓固定)',      'fit': 'js5',    'counterpart': '軸承(3)'},
+        {'label': '定位 ＋ 過渡 (YRT 軸承內環，螺栓固定)',      'fit': 'js5',    'counterpart': '軸承(3)'},
         {'label': '壓入 ＋ 強制壓入 (轉動軸，永久固定)',         'fit': 'H7/u6',  'counterpart': '轉動軸(4)'},
         {'label': '定位 ＋ 精確 ＋ 可裝拆 (編碼器心軸，同軸)', 'fit': 'H7/h6',  'counterpart': '編碼器心軸(8)'},
     ]
@@ -76,12 +76,16 @@ def _normalize_action_word(action: str) -> str:
     return action
 
 
-def _normalize_action(user_msg: str) -> str:
-    """從整句訊息推斷動作（含「縮緊」alias）。"""
+def _normalize_action(user_msg: str, from_it: int = None, to_it: int = None) -> str:
+    """從整句訊息推斷動作（含「縮緊」alias）。
+    若明確指定 from_it / to_it，則由 IT 等級大小自動判斷。
+    """
     if '放寬' in user_msg:
         return '放寬'
     if '收緊' in user_msg or '縮緊' in user_msg:
         return '收緊'
+    if from_it is not None and to_it is not None:
+        return '放寬' if to_it > from_it else '收緊'
     return '調整'
 
 
@@ -170,17 +174,21 @@ def parse_structured_command(user_msg: str):
     zh_names_re = '|'.join(re.escape(n) for n in _zh_names_sorted)
     _name_to_num = {n: num for n, num in _PART_NUM_MAP}
 
+    # 動作詞改為可選；支援「由IT6改為IT7」「由IT6調整到IT7」「由IT6改成IT7」等格式
     zh_direct_pattern = (
-        r'(' + zh_names_re + r')-([A-Za-z]{1,3})-?(\d+)'   # group 1,2,3: 零件-tol_code-序號（橫線可省）
-        r'.*?(?:放寬|收緊|縮緊|調整)'                              # 動作
-        r'.*?IT\s*(\d+)'                                     # group 4: 目標 IT
+        r'(' + zh_names_re + r')-([A-Za-z]{1,3})-?(\d+)'          # group 1,2,3: 零件-tol_code-序號
+        r'.*?(?:(?:由|從)IT\s*(\d+))?'                              # group 4: 來源 IT（可選）
+        r'.*?(?:放寬|收緊|縮緊|調整|改為|改成|改|調)?'              # 動作詞（可選）
+        r'.*?IT\s*(\d+)'                                            # group 5: 目標 IT
     )
     m = re.search(zh_direct_pattern, user_msg)
     if m:
-        zh_name, tol_code, tol_idx, target_it = m.group(1), m.group(2), m.group(3), m.group(4)
-        action = _normalize_action(user_msg)
-        part_id = _name_to_num.get(zh_name, zh_name)
-        tol_code = tol_code.capitalize()
+        zh_name, tol_code, tol_idx = m.group(1), m.group(2), m.group(3)
+        from_it    = int(m.group(4)) if m.group(4) else None
+        target_it  = m.group(5)
+        action     = _normalize_action(user_msg, from_it=from_it, to_it=int(target_it))
+        part_id    = _name_to_num.get(zh_name, zh_name)
+        tol_code   = tol_code.capitalize()
         return _build_command_result(part_id, tol_code, int(tol_idx), action, int(target_it))
 
     zh_direct_pattern_alt = (
@@ -638,7 +646,7 @@ def _shorten_names(text: str) -> str:
 
 def _handle_bearing_cmd(user_msg: str, current_path: list, wf_state: dict):
     """
-    偵測軸承配合選擇指令（如「選 H6/js5」「套用軸承外圈 H6」「軸承配合 H6」）。
+    偵測軸承配合選擇指令（如「選 H6/js5」「套用軸承外環 H6」「軸承配合 H6」）。
     回傳 (reply_str, updated_path, intent_dict) 或 None（表示非軸承指令）。
     """
     msg = user_msg.strip()
@@ -676,7 +684,7 @@ def _handle_bearing_cmd(user_msg: str, current_path: list, wf_state: dict):
         from services.plan_service import PlanService
         svc = PlanService()
         pairs = svc.load_mating_pairs()
-        # 找軸承相關配對（取第一個外圈或 H 字頭用孔，內圈用軸）
+        # 找軸承相關配對（取第一個外環或 H 字頭用孔，內環用軸）
         bearing_pairs = [p for p in pairs if '軸承' in p.get('hole_part', '') or '軸承' in p.get('shaft_part', '')]
         if not bearing_pairs:
             return "⚠️ 找不到配對清單中的軸承配對，請確認配對資料。", current_path, {}
@@ -725,7 +733,7 @@ def _handle_bearing_cmd(user_msg: str, current_path: list, wf_state: dict):
         return f"⚠️ 套用軸承配合時發生錯誤：{e}", current_path, {}
 
 
-def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhost:11434", history=None, lang="zh-TW", current_analysis=None, current_path=None, current_allocation=None, current_pmi_session=None, wf_state=None):
+def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhost:11434", history=None, lang="zh-TW", current_analysis=None, current_path=None, current_allocation=None, current_pmi_session=None, wf_state=None, stacking_axis: str = 'Y'):
     """
     統一管理 RAG 的查詢邏輯、Prompt 封裝、以及遇到無資料時的 Fallback 機制。
 
@@ -831,7 +839,7 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
             bom_intent["pmi_label"] = f"{pmi_code_match.group(1).lower()}{pmi_code_match.group(2)}"
 
     # 意圖分析：特定零件標定
-    want_all = any(k in user_msg for k in ["完整", "全部", "所有", "每個", "整體", "系統", "架構", "零件", "特徵", "公差", "精密迴轉滑台", "RAS400", "ras400"])
+    want_all = any(k in user_msg for k in ["完整", "全部", "所有", "每個", "整體", "系統", "精密迴轉滑台", "RAS400", "ras400"])
     if not want_all:
         part_id_match = re.search(r'(\d+)[\-－]([\u4e00-\u9fa5a-zA-Z\d]+)', user_msg)
         if part_id_match:
@@ -839,7 +847,11 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
             pname = part_id_match.group(2)
             bom_intent["target_part"] = f"{pid}-{pname}"
         else:
-            part_keywords = ["底座", "固定座", "軸承", "蝸輪", "蝸桿", "上板", "下板", "間隔環", "間隔", "螺帽", "滑台"]
+            part_keywords = ["工作臺心軸", "編碼器心軸", "馬達水套",
+                "軸承座", "馬達座", "分流座",
+                "工作臺", "轉動軸", "編碼器", "軸承", "馬達",
+                "底座", "固定座", "蝸輪", "蝸桿", "上板", "下板",
+                "間隔環", "間隔", "螺帽", "滑台",]
             for pk in part_keywords:
                 if pk in user_msg:
                     bom_intent["target_part"] = pk
@@ -850,6 +862,7 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
     if current_analysis:
         a = current_analysis
         analysis_context = "\n【當前公差分析報表數據】：\n"
+        analysis_context += f"- 堆疊軸向（主要累積方向）：{stacking_axis} 軸\n"
 
         # RSS（6軸）
         analysis_context += (
@@ -1004,7 +1017,11 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
     # ══════════════════════════════════════════════════════════════
     wf = wf_state or {}
     _wants_alloc   = any(k in user_msg for k in ['公差調配', '調配', 'allocation', '最佳化'])
-    _wants_analysis = any(k in user_msg for k in ['分析', 'analysis', '公差分析'])
+    _iso_fit_kw    = ['配合分析', '配合查詢', 'H7', 'H6', 'H8', 'h6', 'h7', 'js5', 'k5', 'g6', '/h', '/H']
+    _wants_analysis = (
+        any(k in user_msg for k in ['分析', 'analysis', '公差分析'])
+        and not any(k in user_msg for k in _iso_fit_kw)
+    )
     _wants_it_adj  = re.search(r'IT\d+|it\d+|放寬|收緊|調整.*公差', user_msg)
 
     if _wants_alloc and not wf.get('pathLoaded'):
@@ -1092,6 +1109,94 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
         )
         print(f"[CMD] 結構化指令 → {action_zh} {matched_name} → {after['it_grade']} (val {before['val_mm']:.4f}→{after['val_mm']:.4f})")
         return reply, bom_intent
+
+    # ══════════════════════════════════════════════════════════════
+    # [Fast Path] ISO 286 配合分析 — 查 MySQL，不依賴 LLM
+    # 偵測格式：「30mm H7/h6」或「30 H7/h6」
+    # ══════════════════════════════════════════════════════════════
+    _fit_notation = re.search(
+        r'(\d+\.?\d*)\s*[mM][mM]?\s*([A-Z]{1,2}\d+)\s*/\s*([a-z]{1,2}\d+)', user_msg
+    ) or re.search(
+        r'([A-Z]{1,2}\d+)\s*/\s*([a-z]{1,2}\d+).*?(\d+\.?\d*)\s*[mM][mM]?', user_msg
+    )
+    if _fit_notation:
+        try:
+            from services.fit_service import FitService
+            _fs = FitService()
+            groups = _fit_notation.groups()
+            if len(groups) == 3 and groups[0].replace('.','').isdigit():
+                _size_mm = float(groups[0]); _hole_str = groups[1]; _shaft_str = groups[2]
+            elif len(groups) == 3:
+                _hole_str = groups[0]; _shaft_str = groups[1]; _size_mm = float(groups[2])
+            else:
+                raise ValueError('無法解析尺寸')
+            _fit_result, _fit_err = _fs.analyze_fit(_size_mm, _hole_str, _shaft_str)
+            if _fit_result:
+                h = _fit_result['hole'];  s = _fit_result['shaft']
+                max_c = _fit_result['max_clearance_um']; min_c = _fit_result['min_clearance_um']
+                fit_type = _fit_result['fit_type']
+                _clearance_label = '最大餘隙' if max_c >= 0 else '最大過盈'
+                _c2_label        = '最小餘隙' if min_c >= 0 else '最小過盈（干涉量）'
+                reply = (
+                    f"## ISO 286 配合分析：{_size_mm:g} mm  {_hole_str}/{_shaft_str}\n\n"
+                    f"**配合類型：{fit_type}**\n\n"
+                    f"| | 代號 | 上偏差 (μm) | 下偏差 (μm) |\n"
+                    f"|--|--|--|--|\n"
+                    f"| 孔 | {h['公差類型']} | +{h['上偏差(um)']:.1f} | {h['下偏差(um)']:+.1f} |\n"
+                    f"| 軸 | {s['公差類型']} | {s['上偏差(um)']:+.1f} | {s['下偏差(um)']:+.1f} |\n\n"
+                    f"- {_clearance_label}：**{abs(max_c):.1f} μm**\n"
+                    f"- {_c2_label}：**{abs(min_c):.1f} μm**\n\n"
+                    f"*（正值＝餘隙，負值＝過盈；資料來源：MySQL ISO 286 資料庫）*"
+                )
+                print(f"[CMD] ISO 286 fit fast path: {_size_mm}mm {_hole_str}/{_shaft_str} → {fit_type}")
+                return reply, bom_intent
+            elif _fit_err:
+                return f"⚠️ 配合分析失敗：{_fit_err}", bom_intent
+        except Exception as _fe:
+            print(f"[WARN] ISO 286 fit fast path 失敗: {_fe}")
+
+    # ══════════════════════════════════════════════════════════════
+    # [Fast Path] ISO 286 單孔 / 單軸查詢 — 查 MySQL，不依賴 LLM
+    # 偵測格式：「25mm H7」「25mm h6」（不含「/」，避免與配合分析重複）
+    # ══════════════════════════════════════════════════════════════
+    _single_notation = re.search(
+        r'(\d+\.?\d*)\s*[mM][mM]?\s*([A-Za-z]{1,2}\d+)(?!\s*/\s*[A-Za-z])', user_msg
+    )
+    if _single_notation:
+        try:
+            from repositories.tolerance_repo import ToleranceRepository
+            _repo2 = ToleranceRepository()
+            _size2 = float(_single_notation.group(1))
+            _code_raw = _single_notation.group(2)
+            _is_hole2 = _code_raw[0].isupper()
+            _letter = re.match(r'([A-Za-z]+)', _code_raw).group(1)
+            _it_num  = re.search(r'(\d+)', _code_raw).group(1)
+            _it2 = 'IT' + _it_num
+
+            if _is_hole2:
+                _row2 = _repo2.find_hole(_size2, _letter.upper(), _it2)
+                _type_label = '孔'
+            else:
+                _row2 = _repo2.find_shaft(_size2, _letter.lower(), _it2)
+                _type_label = '軸'
+
+            if _row2:
+                _upper = float(_row2.upper_dev_um) if _row2.upper_dev_um is not None else 0
+                _lower = float(_row2.lower_dev_um) if _row2.lower_dev_um is not None else 0
+                _tol_um = abs(_upper - _lower)
+                reply = (
+                    f"## ISO 286 {_type_label}公差：{_size2:g} mm  {_code_raw}\n\n"
+                    f"| 項目 | 數值 |\n"
+                    f"|------|------|\n"
+                    f"| 上偏差 | {_upper:+.1f} μm |\n"
+                    f"| 下偏差 | {_lower:+.1f} μm |\n"
+                    f"| 公差帶寬 | {_tol_um:.1f} μm |\n\n"
+                    f"*（資料來源：MySQL ISO 286 資料庫）*"
+                )
+                print(f"[CMD] ISO 286 single {_type_label} fast path: {_size2}mm {_code_raw}")
+                return reply, bom_intent
+        except Exception as _se:
+            print(f"[WARN] ISO 286 single fast path 失敗: {_se}")
 
     # ══════════════════════════════════════════════════════════════
     # [Fast Path] 製程查詢 — 確定性回答，不需 LLM
@@ -1191,10 +1296,11 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
         is_bom_query = any(k in user_msg for k in ["零件", "包含", "架構", "BOM", "哪些", "列出", "結構"])
         is_feature_query = any(k in user_msg for k in ["特徵", "公差", "網路", "接觸", "連接"])
         
+        _pf = bom_intent.get('target_part') or None
         if bom_intent.get('contact') or bom_intent.get('network') or bom_intent.get('layout') == 'grid' or bom_intent.get('edit'):
-            dsl = build_feature_dsl(level='network', show_contacts=bom_intent.get('contact', False))
+            dsl = build_feature_dsl(level='network', show_contacts=bom_intent.get('contact', False), part_filter=_pf)
         elif bom_intent.get('features'):
-            dsl = build_feature_dsl(level='feature')
+            dsl = build_feature_dsl(level='feature', part_filter=_pf)
         elif is_bom_query:
             dsl = build_bom_dsl()
         else:
@@ -1215,28 +1321,46 @@ def ask_rag_engine(user_msg, model_name="llama3.1:8b", base_url="http://localhos
                 elif is_contact_query:
                     summary_mode = 'contact'
 
-                summary = build_text_summary(mode=summary_mode)
-
-                answer_match = re.search(r'<FINAL_ANSWER>([\s\S]*?)<\/FINAL_ANSWER>', summary)
-                answer_content = answer_match.group(1).strip() if answer_match else ""
-                # contact 模式保留完整零件名稱（分流座-H-3），只有純 network 模式才縮短
-                if bom_intent.get('network') and not bom_intent.get('contact'):
-                    answer_content = _shorten_names(answer_content)
-
-                # 編輯模式：只顯示固定系統提示，省略 AI 生成內容
-                if summary_mode == 'edit':
-                    reply = f"[系統訊息] 已準備好公差路徑數據\n\n正在為您開啟「公差路徑編輯器」... 您可以手動調整平移 (tra)、旋轉 (rot) 與特徵公差值 (tol)，調整後點擊「匯出 CSV」即可下載。\n\n{dsl}"
-                else:
-                    audit_match = re.search(r'<AUDIT_REPORT>([\s\S]*?)<\/AUDIT_REPORT>', summary)
-                    audit_content = audit_match.group(1).strip() if audit_match else "數據處理完成。"
+                # 有零件過濾時：不呼叫 build_text_summary（它永遠輸出所有零件），
+                # 改用簡短說明，避免聊天泡泡顯示全部零件讓使用者誤以為是全圖
+                if _pf:
+                    _pf_display = re.sub(r'^\d+[-－]', '', _pf).strip()
                     reply = (
-                        f"<AUDIT_REPORT>\n{audit_content}\n</AUDIT_REPORT>\n\n"
-                        f"{answer_content}\n\n"
+                        f"<AUDIT_REPORT>\n已篩選零件「{_pf_display}」，以下為其公差網路圖。\n</AUDIT_REPORT>\n\n"
                         f"{dsl}"
                     )
+                else:
+                    summary = build_text_summary(mode=summary_mode)
+                    answer_match = re.search(r'<FINAL_ANSWER>([\s\S]*?)<\/FINAL_ANSWER>', summary)
+                    answer_content = answer_match.group(1).strip() if answer_match else ""
+                    # contact 模式保留完整零件名稱，只有純 network 模式才縮短
+                    if bom_intent.get('network') and not bom_intent.get('contact'):
+                        answer_content = _shorten_names(answer_content)
+
+                    # 編輯模式：只顯示固定系統提示，省略 AI 生成內容
+                    if summary_mode == 'edit':
+                        reply = f"[系統訊息] 已準備好公差路徑數據\n\n正在為您開啟「公差路徑編輯器」... 您可以手動調整平移 (tra)、旋轉 (rot) 與特徵公差值 (tol)，調整後點擊「匯出 CSV」即可下載。\n\n{dsl}"
+                    else:
+                        audit_match = re.search(r'<AUDIT_REPORT>([\s\S]*?)<\/AUDIT_REPORT>', summary)
+                        audit_content = audit_match.group(1).strip() if audit_match else "數據處理完成。"
+                        reply = (
+                            f"<AUDIT_REPORT>\n{audit_content}\n</AUDIT_REPORT>\n\n"
+                            f"{answer_content}\n\n"
+                            f"{dsl}"
+                        )
             elif bom_intent.get('features'):
-                # 特徵面架構圖：保留 LLM 原始回答，附加 DSL 供前端渲染圖表
-                reply = reply + ('\n\n' if reply else '') + dsl
+                # 特徵面架構圖：LLM 容易幻覺特徵清單，改用確定性 build_feature_summary
+                from dsl_builder import build_feature_summary
+                _feat_summary = build_feature_summary(part_filter=_pf)
+                _fa_match = re.search(r'<FINAL_ANSWER>([\s\S]*?)<\/FINAL_ANSWER>', _feat_summary)
+                _feat_content = _fa_match.group(1).strip() if _fa_match else ""
+                _au_match = re.search(r'<AUDIT_REPORT>([\s\S]*?)<\/AUDIT_REPORT>', _feat_summary)
+                _feat_audit = _au_match.group(1).strip() if _au_match else "數據處理完成。"
+                reply = (
+                    f"<AUDIT_REPORT>\n{_feat_audit}\n</AUDIT_REPORT>\n\n"
+                    f"{_feat_content}\n\n"
+                    f"{dsl}"
+                )
             else:
                 reply = reply + ('\n\n' if reply else '') + dsl
             print(f'[DSL Builder] 確定性 DSL 已注入 ({"Edit/Network" if (bom_intent.get("network") or bom_intent.get("edit")) else "BOM"})')

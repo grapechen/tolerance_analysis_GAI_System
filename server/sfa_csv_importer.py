@@ -331,7 +331,7 @@ class SfaCsvImporter:
     def build_path_from_csv(
         self,
         csv_path: str,
-        axis: str = 'Z',
+        axis: str = 'Y',
         include_types: set = None,
         nominal_dist: float = None,
     ) -> list:
@@ -463,7 +463,7 @@ class SfaCsvImporter:
     # ─────────────────────────────────────────────────────
     # 5. 跨零件路徑（透過 ontology 接觸關係串聯）
     # ─────────────────────────────────────────────────────
-    def build_assembly_path(self, csv_files: list, axis: str = 'Z') -> list:
+    def build_assembly_path(self, csv_files: list, axis: str = 'Y') -> list:
         """
         從多個零件 CSV 建構整個組合件的公差分析路徑
 

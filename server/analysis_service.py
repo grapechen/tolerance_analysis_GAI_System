@@ -352,10 +352,13 @@ def parse_excel_to_path(file_stream, filename=None):
                 dist = float(sheet.cell(row=row_idx, column=4).value or 1.0)
                 if dist == 0: dist = 1.0
 
-                # [新增] 讀取公稱尺寸與 IT 等級
-                nominal  = sheet.cell(row=row_idx, column=5).value
-                it_grade = sheet.cell(row=row_idx, column=6).value
-                # 正規化 it_grade 為 string-or-None（前端會做 .trim()，不可為 int/float）
+                # 讀取公稱尺寸、IT 等級、所屬零件、公差類型
+                nominal   = sheet.cell(row=row_idx, column=5).value
+                it_grade  = sheet.cell(row=row_idx, column=6).value
+                part_val  = sheet.cell(row=row_idx, column=7).value   # G 欄：所屬零件
+                tol_type_val = sheet.cell(row=row_idx, column=8).value  # H 欄：公差類型
+
+                # 正規化 it_grade
                 if it_grade is None:
                     pass
                 elif isinstance(it_grade, (int, float)):
@@ -365,12 +368,22 @@ def parse_excel_to_path(file_stream, filename=None):
                     if it_grade and it_grade.isdigit():
                         it_grade = f"IT{it_grade}"
 
+                # 正規化 part（所屬零件）
+                part_str = str(part_val).strip() if part_val else None
+
+                # 正規化 tol_type
+                tol_type_str = str(tol_type_val).strip().lower() if tol_type_val else None
+
                 is_spatial = (sym_str in PURE_SPATIAL_AXES)
                 item = {
                     "type": "spatial" if is_spatial else "feature",
                     "val": val, "bias": bias, "dist": dist,
                     "nominal_size": nominal, "it_grade": it_grade
                 }
+                if part_str:
+                    item["part"] = part_str
+                if tol_type_str:
+                    item["tol_type"] = tol_type_str
                 if is_spatial: item["axis"] = sym_str
                 else: item["name"] = sym_str
                 items.append(item)
@@ -400,7 +413,7 @@ def parse_excel_to_path(file_stream, filename=None):
 MC_RAW_CAP = 2000
 
 
-def analyze_stream(path_data: list, run_mc: bool = True, mc_samples: int = 10000, mc_sigma: float = 3.0, mc_dist: int = 0):
+def analyze_stream(path_data: list, run_mc: bool = True, mc_samples: int = 10000, mc_sigma: float = 3.0, mc_dist: int = 0, stacking_axis: str = 'Y'):
     """
     Generator，以 SSE 格式 yield 進度與結果。
 
@@ -424,12 +437,13 @@ def analyze_stream(path_data: list, run_mc: bool = True, mc_samples: int = 10000
     )
 
     input_payload = json.dumps({
-        'path_data':  path_data,
-        'mc_samples': mc_samples,
-        'mc_sigma':   mc_sigma,
-        'mc_dist':    mc_dist,
-        'run_mc':     run_mc,
-        'mc_raw_cap': MC_RAW_CAP,
+        'path_data':    path_data,
+        'mc_samples':   mc_samples,
+        'mc_sigma':     mc_sigma,
+        'mc_dist':      mc_dist,
+        'run_mc':       run_mc,
+        'mc_raw_cap':   MC_RAW_CAP,
+        'stacking_axis': stacking_axis,
     }, default=str).encode('utf-8')
 
     try:

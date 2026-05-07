@@ -254,9 +254,9 @@ function renderCustomBomTree(text, bubbleElement, intent) {
                 }
 
                 if (layoutClass === 'layout-tree') {
-                    treeHtml += `<div id="bom-tree-wrapper" class="bom-tree-canvas" style="position:relative;">`;
+                    treeHtml += `<div id="bom-tree-wrapper" class="bom-tree-canvas" data-dsl-title="${assemblyName}" style="position:relative;">`;
                 } else {
-                    treeHtml += `<div id="bom-tree-wrapper" style="position:relative; width:100%;">`;
+                    treeHtml += `<div id="bom-tree-wrapper" data-dsl-title="${assemblyName}" style="position:relative; width:100%;">`;
                 }
 
                 if (enableContact) {
@@ -650,12 +650,35 @@ function renderStructureDirectly(dsl, container, intent) {
     return null;
 }
 
+function _inferDiagramType(treeHtml, b64Topology) {
+    const hasNetwork = b64Topology && b64Topology.length > 20;
+    const hasContact = treeHtml && treeHtml.includes('contact-lines-svg');
+    const isFeature  = treeHtml && treeHtml.includes('(feature)');
+
+    // 從 data-dsl-title 提取完整 DSL 標題（如「軸承座 (network)」、「RAS400 (feature)」）
+    const titleMatch = treeHtml && treeHtml.match(/data-dsl-title="([^"]+)"/);
+    const dslTitle   = titleMatch ? titleMatch[1] : '';
+    // 去掉括號裡的 level，只留零件/組件名
+    const partHint   = dslTitle ? ` — ${dslTitle.replace(/\s*\(.*?\)\s*$/, '').trim()}` : '';
+
+    if (hasContact) return { label: '組裝接觸圖' + partHint, key: 'contact' };
+    if (hasNetwork) return { label: '公差網路圖' + partHint, key: 'network' };
+    if (isFeature)  return { label: '特徵面架構圖' + partHint, key: 'feature' };
+    return { label: '產品架構圖' + partHint, key: 'bom' };
+}
+
 function openBomModal(treeHtml, b64Topology, preloadedPairs) {
     const modalContainer = document.getElementById('bom-modal-container');
     modalContainer.innerHTML = treeHtml;
     document.getElementById('bom-modal-overlay').style.display = 'flex';
     window.__bomActiveDrawingRoot = modalContainer;
     selectedContactNode = null;
+
+    // 設定標題列
+    const diagInfo = _inferDiagramType(treeHtml, b64Topology);
+    const titleEl = document.getElementById('bom-modal-title');
+    if (titleEl) titleEl.textContent = diagInfo.label;
+    window.__currentDiagramInfo = diagInfo;
 
     // 若傳入預載的接觸配對（來自 DSL 解析快照），直接使用；否則清空再由 matingConstraints 補
     if (preloadedPairs && preloadedPairs.length > 0) {
@@ -676,13 +699,96 @@ function openBomModal(treeHtml, b64Topology, preloadedPairs) {
         drawAllBomNetworks(window.__bomActiveDrawingRoot);
     }, 100);
 
-    const modalContent = document.querySelector('.bom-modal-content');
-    if (modalContent) {
-        if (_bomScrollEl) _bomScrollEl.removeEventListener('scroll', _bomScrollHandler);
-        _bomScrollEl = modalContent;
-        _bomScrollEl.addEventListener('scroll', _bomScrollHandler, { passive: true });
-    }
+    // scroll listener 掛在可捲動的 container（非外框 content）
+    if (_bomScrollEl) _bomScrollEl.removeEventListener('scroll', _bomScrollHandler);
+    _bomScrollEl = modalContainer;
+    _bomScrollEl.addEventListener('scroll', _bomScrollHandler, { passive: true });
     attachBomObservers(modalContainer);
+}
+
+async function exportBomAsPng() {
+    if (typeof html2canvas === 'undefined') {
+        alert('html2canvas 未載入，請重新整理頁面後再試。');
+        return;
+    }
+
+    const container = document.getElementById('bom-modal-container');
+    if (!container) return;
+
+    const btn = document.getElementById('export-png-btn');
+    const origText = btn ? btn.innerHTML : '';
+    if (btn) { btn.innerHTML = '產生中…'; btn.disabled = true; }
+
+    try {
+        const card = document.querySelector('.bom-modal-content');
+
+        // 暫時展開卡片與內部容器，讓全部內容可見
+        const savedCard = { overflow: card.style.overflow, height: card.style.height, maxHeight: card.style.maxHeight };
+        const savedCont = { overflow: container.style.overflow, maxHeight: container.style.maxHeight };
+
+        card.style.overflow  = 'visible';
+        card.style.height    = 'auto';
+        card.style.maxHeight = 'none';
+        container.style.overflow  = 'visible';
+        container.style.maxHeight = 'none';
+
+        // 等 layout 穩定後重繪 SVG 網路線
+        await new Promise(r => setTimeout(r, 180));
+        drawAllBomNetworks(container);
+        await new Promise(r => setTimeout(r, 80));
+
+        // 自動降階：瀏覽器 canvas 上限約 16384px / 268M px²
+        // 超過時按比例縮小 scale，確保不產生空白/損毀的檔案
+        const W = card.scrollWidth, H = card.scrollHeight;
+        const MAX_DIM = 15000, MAX_PX = 200_000_000;
+        let scale = 3;
+        while (scale > 1 && (W * scale > MAX_DIM || H * scale > MAX_DIM || W * H * scale * scale > MAX_PX)) {
+            scale -= 0.5;
+        }
+
+        const canvas = await html2canvas(card, {
+            backgroundColor: '#f8fafc',
+            scale,
+            useCORS: true,
+            allowTaint: false,
+            logging: false,
+            scrollX: 0,
+            scrollY: 0,
+            width:  W,
+            height: H,
+        });
+
+        // 還原樣式
+        Object.assign(card.style, savedCard);
+        Object.assign(container.style, savedCont);
+        drawAllBomNetworks(container);
+
+        // 組合檔名
+        const diagInfo = window.__currentDiagramInfo || { label: 'diagram' };
+        const ts = new Date().toISOString().slice(0,16).replace('T','_').replace(/:/g,'');
+        const safeLabel = diagInfo.label.replace(/[\\/:*?"<>|]/g, '_');
+        const filename  = `${safeLabel}_${ts}.png`;
+
+        // 用 toBlob 下載（比 toDataURL 更穩，不受 data URL 長度限制）
+        if (!canvas.width || !canvas.height) throw new Error('Canvas 為空，圖表可能太大');
+        await new Promise((resolve, reject) => {
+            canvas.toBlob(blob => {
+                if (!blob) { reject(new Error('toBlob 失敗')); return; }
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.download = filename;
+                link.href = url;
+                link.click();
+                setTimeout(() => URL.revokeObjectURL(url), 2000);
+                resolve();
+            }, 'image/png');
+        });
+    } catch (err) {
+        console.error('[exportBomAsPng]', err);
+        alert('匯出失敗：' + err.message);
+    } finally {
+        if (btn) { btn.innerHTML = origText; btn.disabled = false; }
+    }
 }
 
 function closeBomModal() {
@@ -1307,7 +1413,7 @@ async function _fillISO2768References() {
 }
 
 function addSpatialNode(index) {
-    editorPathData.splice(index, 0, { type: 'spatial', axis: 'traZ', val: 0.0, bias: 0, dist: 1 });
+    editorPathData.splice(index, 0, { type: 'spatial', axis: 'traY', val: 0.0, bias: 0, dist: 1 });
     renderEditorList();
 }
 
@@ -1486,9 +1592,10 @@ function runDeepAnalysis() {
     }
 
     // 讀取使用者設定的分析參數
-    const nSamples = parseInt(document.getElementById('mc-samples')?.value) || 10000;
-    const sigma    = parseFloat(document.getElementById('mc-sigma')?.value) || 3.0;
-    const distType = parseInt(document.getElementById('mc-dist')?.value) || 0;
+    const nSamples    = parseInt(document.getElementById('mc-samples')?.value) || 10000;
+    const sigma       = parseFloat(document.getElementById('mc-sigma')?.value) || 3.0;
+    const distType    = parseInt(document.getElementById('mc-dist')?.value) || 0;
+    const stackingAxis = document.getElementById('stacking-axis-select')?.value || 'Y';
 
     // 使用 POST 避免 pathData 超過 URL 長度上限（RAS400 路徑可達 11KB+）
     let _analysisTimer = null;
@@ -1551,6 +1658,9 @@ function runDeepAnalysis() {
             }, 1000);
             window._lastAnalysisResult = payload.result;
             window._lastPathData = JSON.parse(JSON.stringify(editorPathData));
+            // 分析完成後自動切換到使用者選擇的堆疊軸
+            const _selAxis = document.getElementById('stacking-axis-select')?.value || 'Y';
+            if (typeof filterAxis === 'function') filterAxis(_selAxis);
             if (!window._baselineResult) {
                 window._baselineResult = payload.result;
                 window._baselinePathData = JSON.parse(JSON.stringify(editorPathData));
@@ -1571,7 +1681,7 @@ function runDeepAnalysis() {
     fetch('/api/analyze_tolerance_stream', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pathData: editorPathData, n_samples: nSamples, sigma, dist_type: distType }),
+        body: JSON.stringify({ pathData: editorPathData, n_samples: nSamples, sigma, dist_type: distType, stacking_axis: stackingAxis }),
         signal: _abortCtrl.signal,
     }).then(resp => {
         if (!resp.ok) {
@@ -2241,6 +2351,13 @@ async function runAllocation() {
                 (weight === 'precision' ? 'Precision Focus (Q1)' : 'Cost Focus (Q4)') :
                 (weight === 'precision' ? '精度考量 (主攻 Q1)' : '成本考量 (考慮 Q4)');
 
+            // 用後端回傳的真實調配後結果更新 _lastAnalysisResult
+            // 讓下一次調配的「前」值 = 本次的「後」值（而非初始分析結果）
+            if (data.analysisResult) {
+                window._lastAnalysisResult = data.analysisResult;
+                window._lastPathData = JSON.parse(JSON.stringify(editorPathData));
+            }
+
             if (typeof renderAllocationResult === 'function') {
                 renderAllocationResult({
                     report: data.report || {},
@@ -2250,7 +2367,7 @@ async function runAllocation() {
                     dsl: data.dsl,
                     prevPathData: prevPathSnapshot, // 修改前的快照
                     newPathData: data.newPathData,
-                    analysisResult: data.analysisResult 
+                    analysisResult: data.analysisResult
                 });
             }
 

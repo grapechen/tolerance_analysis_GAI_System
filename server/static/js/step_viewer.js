@@ -427,12 +427,24 @@ const StepViewer = (() => {
     }
 
     /**
-     * 調整相機聚焦在幾何上
+     * 設定底模（基礎幾何）透明度，0 = 完全透明，1 = 完全不透明。
      */
-    function focusOnGeometry() {
-        let boundingBox = new THREE.Box3();
+    function setBaseOpacity(value) {
+        if (!baseGeometryMesh) return;
+        const v = Math.max(0, Math.min(1, parseFloat(value)));
+        baseGeometryMesh.material.opacity    = v;
+        baseGeometryMesh.material.depthWrite = (v >= 0.99);
+        baseGeometryMesh.material.needsUpdate = true;
+    }
+
+    /**
+     * 置中並調整視角：將場景所有幾何（零件 + PMI 標註）納入視野。
+     * @param {boolean} isometric - true 使用等角斜上視角，false 使用正面 Z 視角（預設 true）
+     */
+    function focusOnGeometry(isometric = true) {
+        const boundingBox = new THREE.Box3();
         scene.traverse(obj => {
-            if (obj.isMesh) {
+            if (obj.isMesh || obj.isLine) {
                 boundingBox.expandByObject(obj);
             }
         });
@@ -443,13 +455,19 @@ const StepViewer = (() => {
         }
 
         const center = boundingBox.getCenter(new THREE.Vector3());
-        const size = boundingBox.getSize(new THREE.Vector3());
+        const size   = boundingBox.getSize(new THREE.Vector3());
         const maxDim = Math.max(size.x, size.y, size.z);
-        const fov = camera.fov * (Math.PI / 180); // 轉換為弧度
-        let cameraZ = maxDim / 2 / Math.tan(fov / 2);
+        const fov    = camera.fov * (Math.PI / 180);
+        const dist   = (maxDim / 2 / Math.tan(fov / 2)) * 1.4;
 
-        camera.position.copy(center);
-        camera.position.z += cameraZ * 1.2;
+        if (isometric) {
+            // 等角斜上方：從右前上方俯視，讓零件形狀更立體易讀
+            const dir = new THREE.Vector3(1, 0.7, 1).normalize();
+            camera.position.copy(center).addScaledVector(dir, dist);
+        } else {
+            camera.position.set(center.x, center.y, center.z + dist);
+        }
+
         camera.lookAt(center);
         controls.target.copy(center);
         controls.update();
@@ -541,6 +559,7 @@ const StepViewer = (() => {
         syncHighlights,
         clearHighlights,
         focusOnGeometry,
+        setBaseOpacity,
         onResize: onWindowResize,
         dispose
     };

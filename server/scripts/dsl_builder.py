@@ -273,10 +273,11 @@ def build_bom_dsl() -> Optional[str]:
     return '\n'.join(lines)
 
 
-def build_feature_dsl(level='network', show_contacts=False) -> Optional[str]:
+def build_feature_dsl(level='network', show_contacts=False, part_filter: str = None) -> Optional[str]:
     """
     產生指定等層級的 DSL。
     level: 'feature' (零件+特徵) or 'network' (零件+特徵+公差+接觸)
+    part_filter: 若指定，只輸出名稱包含此字串的零件（如 '軸承座'）
     """
     df = _load_csv()
     if df is None: return None
@@ -284,8 +285,17 @@ def build_feature_dsl(level='network', show_contacts=False) -> Optional[str]:
     parts, feat_to_part, feat_type, feat_ind, feat_itr, feat_con, part_feats = _parse_ontology(df)
     if not parts: return None
 
+    if part_filter:
+        # 去除「2-軸承座」式的數字前綴，取純零件名稱
+        pf_name = re.sub(r'^\d+[-－]', '', part_filter).strip()
+        # 優先精確比對，避免「工作臺」匹配到「工作臺心軸」、「馬達」匹配到「馬達座/馬達水套」
+        exact = [p for p in parts if p == pf_name]
+        parts = exact if exact else [p for p in parts if pf_name in p]
+        if not parts: return None
+
     title = _detect_assembly_title(df)
-    lines = ['---BOM_START---', f'# {title} ({level})']
+    label = f'{part_filter} ({level})' if part_filter else f'{title} ({level})'
+    lines = ['---BOM_START---', f'# {label}']
     for p in parts:
         lines.append(f'- {p}')
         feats = sorted(part_feats.get(p, []), key=_feat_sort_key)
@@ -408,6 +418,44 @@ def build_full_dsl(mode='network', tolerance_overrides=None, quadrants=None):
     # 組合最終文本
     final_output = "\n".join(bom_lines)
     return f"<AUDIT_REPORT>\n已基於最新的公差調配結果生成產品架構圖。\n</AUDIT_REPORT>\n\n<FINAL_ANSWER>\n{final_output}\n</FINAL_ANSWER>"
+
+def build_feature_summary(part_filter: str = None) -> str:
+    """
+    產生精簡的特徵面結構摘要（不含公差），供「特徵面結構圖」查詢使用。
+    格式：零件名 (N 個特徵面): P-1~P-6, S-1~S-2, H-1~H-4, C-1~C-7
+    """
+    df = _load_csv()
+    if df is None: return "<AUDIT_REPORT>\n無法讀取本體庫。\n</AUDIT_REPORT>\n\n<FINAL_ANSWER>\n無資料\n</FINAL_ANSWER>"
+
+    parts, _, _, _, _, _, part_feats = _parse_ontology(df)
+
+    if part_filter:
+        pf_name = re.sub(r'^\d+[-－]', '', part_filter).strip()
+        exact = [p for p in parts if p == pf_name]
+        parts = exact if exact else [p for p in parts if pf_name in p]
+
+    TYPE_LABEL = {'P': '平面', 'S': '軸面', 'H': '孔面', 'C': '接觸面'}
+
+    lines = ["**特徵面結構摘要**\n"]
+    for p in parts:
+        feats = sorted(part_feats.get(p, []), key=_feat_sort_key)
+        if not feats:
+            lines.append(f"- {p}：無特徵面資料")
+            continue
+        by_type: dict = {}
+        for f in feats:
+            t = f.split('-')[1] if '-' in f else '?'
+            by_type.setdefault(t, []).append(f.split('-', 1)[1])  # e.g. "P-1"
+        type_strs = []
+        for t in ['P', 'H', 'S', 'C']:
+            if t in by_type:
+                items = sorted(by_type[t])
+                type_strs.append(f"{TYPE_LABEL.get(t, t)} {', '.join(items)}")
+        lines.append(f"- **{p}**（{len(feats)} 個）：{'；'.join(type_strs)}")
+
+    audit = f"<AUDIT_REPORT>\n共 {len(parts)} 個零件，特徵面資料來自本體庫（0 幻覺）。\n</AUDIT_REPORT>"
+    return audit + "\n\n<FINAL_ANSWER>\n" + "\n".join(lines) + "\n</FINAL_ANSWER>"
+
 
 def build_text_summary(mode='network') -> str:
     """

@@ -48,7 +48,6 @@ Thumbs.db
 # 不需要的資料檔案
 server/data/*.csv.tmp
 test.xlsx
-ISO_286_1_test.xlsx
 
 # Node
 node_modules/
